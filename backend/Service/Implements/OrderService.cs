@@ -64,7 +64,7 @@ public class OrderService :IOrderService
             new CreateOrderItemDto()
             {
                 ProductId = product.Id,
-                ProductImage = product.ImageUrl,
+                // ProductImage = product.ImageUrl,
                 ProductName = product.Name,
                 Quantity  = request.Quantity,
                 UnitPrice = product.Price,
@@ -96,7 +96,7 @@ public class OrderService :IOrderService
         var items = cartItems.Select(ci=> new CreateOrderItemDto
         {
                 ProductId = ci.Product.Id,
-                ProductImage = ci.Product.ImageUrl,
+                // ProductImage = ci.Product.ImageUrl,
                 ProductName = ci.Product.Name,
                 Quantity  = ci.Quantity,
                 UnitPrice = ci.Product.Price,

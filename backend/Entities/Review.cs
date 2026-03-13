@@ -17,5 +17,8 @@ namespace FoodDelivery.Entities
         public string? Comment { get; set; }
         public bool IsHidden { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? UpdatedAt { get; set; }
+        public Guid RestaurantId { get; set; }
+        public virtual Restaurant Restaurant { get; set; } = null!;
     }
 }

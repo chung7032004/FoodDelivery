@@ -40,7 +40,7 @@ public class CartRepository : ICartRepository
                             Id = ci.Product.Id,
                             Name = ci.Product.Name,
                             Price = ci.Product.Price,
-                            ImageUrl = ci.Product.ImageUrl,
+                            // ImageUrl = ci.Product.ImageUrl,
                             Category = new Category
                             {
                                 Id = ci.Product.Category.Id,

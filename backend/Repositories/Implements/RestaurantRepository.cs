@@ -12,15 +12,15 @@ public class RestaurantRepository : IRestaurantRepository
     {
         _context = context;
     }
-    public async Task<RestaurantProfile?> GetMyRestaurant()
+    public async Task<Restaurant?> GetMyRestaurant()
     {
-        return await _context.RestaurantProfiles.FirstOrDefaultAsync();   
+        return await _context.Restaurants.FirstOrDefaultAsync();   
     }
-    public async Task<RestaurantProfile?> GetStatusRestaurantAsync()
+    public async Task<Restaurant?> GetStatusRestaurantAsync()
     {
-        return await _context.RestaurantProfiles
+        return await _context.Restaurants
             .AsNoTracking()
-            .Select(r => new RestaurantProfile
+            .Select(r => new Restaurant
             {
                 IsOpen = r.IsOpen,
                 OpenTime = r.OpenTime,
@@ -30,7 +30,7 @@ public class RestaurantRepository : IRestaurantRepository
             })
             .FirstOrDefaultAsync();
     }
-    public async Task UpdateAsync (RestaurantProfile restaurant)
+    public async Task UpdateAsync (Restaurant restaurant)
     {
         _context.Update(restaurant);
         await Task.CompletedTask;

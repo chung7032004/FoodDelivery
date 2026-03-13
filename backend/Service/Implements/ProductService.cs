@@ -72,7 +72,7 @@ namespace FoodDelivery.Service.Implements
                 CategoryId = dto.CategoryId,
                 Name = dto.Name,
                 Price = dto.Price,
-                ImageUrl = dto.ImageUrl ?? string.Empty,
+                // ImageUrl = dto.ImageUrl ?? string.Empty,
                 IsAvailable = dto.IsAvailable,
                 IsFeatured = dto.IsFeatured,
                 DisplayOrder = displayOrder,
@@ -92,7 +92,7 @@ namespace FoodDelivery.Service.Implements
 
             product.Name = dto.Name;
             product.Price = dto.Price;
-            product.ImageUrl = dto.ImageUrl ?? string.Empty;
+            // product.ImageUrl = dto.ImageUrl ?? string.Empty;
             product.IsAvailable = dto.IsAvailable;
             product.IsFeatured = dto.IsFeatured;
             product.DisplayOrder = dto.DisplayOrder;
@@ -148,7 +148,7 @@ namespace FoodDelivery.Service.Implements
                 CategoryName = p.Category?.Name ?? "",
                 Name = p.Name,
                 Price = p.Price,
-                ImageUrl = p.ImageUrl,
+                // ImageUrl = p.ImageUrl,
                 IsAvailable = p.IsAvailable,
                 IsFeatured = p.IsFeatured,
                 DisplayOrder = p.DisplayOrder,

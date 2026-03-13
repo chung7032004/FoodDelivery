@@ -113,7 +113,7 @@ public class StaffController : ControllerBase
     {
         var userId = User.GetUserId();
         // Get first restaurant (for testing)
-        var restaurant = await _context.RestaurantProfiles.FirstOrDefaultAsync();
+        var restaurant = await _context.Restaurants.FirstOrDefaultAsync();
         if (restaurant == null)
             return BadRequest(new { message = "No restaurant found" });
 

@@ -1,3 +1,5 @@
+using System.Reflection;
+using FoodDelivery.Constants;
 using FoodDelivery.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +9,7 @@ public class FoodContext : DbContext
     public DbSet<Staff> Staff { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
-    public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
+    public DbSet<Restaurant> Restaurants{get; set;} 
     public DbSet<Address> Addresses{get;set;}
     public DbSet<Cart> Carts{get;set;}
     public DbSet<CartItem> CartItems{get;set;}
@@ -23,6 +25,8 @@ public class FoodContext : DbContext
     public DbSet<User> Users{get;set;}
     public DbSet<UserRole> UserRoles{get;set;}
     public DbSet<PasswordResetOtp> PasswordResetOtp{get; set;}
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<ProductImage> ProductImages { get; set; }
     public override async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
@@ -32,8 +36,8 @@ public class FoodContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<RestaurantProfile>().HasData(
-            new RestaurantProfile
+        modelBuilder.Entity<Restaurant>().HasData(
+            new Restaurant
             {
                 Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Name = "Food Delivery Shop",
@@ -49,6 +53,20 @@ public class FoodContext : DbContext
                 UpdatedAt = DateTime.UtcNow
             }
         );
+
+        var permissions = typeof(Permissions)
+        .GetNestedTypes()
+        .SelectMany(c => c.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+        .Where(f => f.IsLiteral && !f.IsInitOnly)
+        .Select(f => new Permission
+        {
+            Id = Guid.NewGuid(), // Lưu ý: Trong thực tế nên dùng ID cố định cho Permission để tránh duplicate khi Re-migration
+            Name = f.GetRawConstantValue()?.ToString() ?? string.Empty,
+            Description = $"Quyền cho {f.ReflectedType?.Name ?? "UnknownClass"} - {f.Name}",
+            CreatedAt = DateTime.UtcNow
+        })
+        .ToList();
+        modelBuilder.Entity<Permission>().HasData(permissions);
         modelBuilder.Entity<User>()
             .HasIndex(u=>u.Email)
             .IsUnique();
@@ -207,5 +225,36 @@ public class FoodContext : DbContext
             entity.HasIndex(n => new { n.UserId, n.CreatedAt })
                 .IsDescending();
         });
+        modelBuilder.Entity<Restaurant>()
+            .HasMany(r => r.Products)
+            .WithOne(p => p.Restaurant)
+            .HasForeignKey(p => p.RestaurantId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Restaurant>()
+            .HasMany(r => r.Categories)
+            .WithOne(c => c.Restaurant)
+            .HasForeignKey(c => c.RestaurantId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Restaurant>()
+            .HasMany(r => r.Staff)
+            .WithOne(s => s.Restaurant)
+            .HasForeignKey(s => s.RestaurantId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Restaurant>()
+            .HasMany(r => r.Orders)
+            .WithOne(o => o.Restaurant)
+            .HasForeignKey(o => o.RestaurantId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Restaurant>()
+            .HasMany(r => r.Reviews)
+            .WithOne(rv => rv.Restaurant)
+            .HasForeignKey(rv => rv.RestaurantId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<ProductImage>()
+            .HasOne(pi => pi.Product)
+            .WithMany(p=>p.ProductImages)
+            .HasForeignKey(pi=>pi.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

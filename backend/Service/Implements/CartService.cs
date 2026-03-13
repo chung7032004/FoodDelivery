@@ -39,7 +39,7 @@ public class CartService : ICartService
 
             Quantity = ci.Quantity,
             Price = ci.Product.Price,
-            ImageUrl = ci.Product.ImageUrl
+            // ImageUrl = ci.Product.ImageUrl
         }).ToList();
         var totalItems = await _cartItemRepository.CountByCustomerIdAsync(customerId);
         var responseMeta = new PaginationMeta(
