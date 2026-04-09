@@ -55,8 +55,7 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest logoutRequest)
     {
-        if(!User.TryGetUserId(out Guid userId))
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+        var userId = User.GetUserId();
         var result = await _authService.LogoutAsync(userId,logoutRequest.RefreshToken);
         if (!result.IsSuccess)
         {
@@ -79,8 +78,7 @@ public class AuthController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
     {
-        if(!User.TryGetUserId(out Guid userId))
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+        var userId = User.GetUserId();
         var result = await _authService.ChangePasswordAsync(userId,changePasswordRequest);
         if (!result.IsSuccess)
         {

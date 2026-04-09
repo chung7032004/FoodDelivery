@@ -144,6 +144,7 @@ namespace FoodDelivery.Service.Implementations
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("name", user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim("jti", Guid.NewGuid().ToString())// chống replay
@@ -151,29 +152,42 @@ namespace FoodDelivery.Service.Implementations
             
             // Add explicit roles from UserRoles
             var rolesAdded = false;
-            if(user.UserRoles != null && user.UserRoles.Count > 0)
+            var permissionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (user.UserRoles != null && user.UserRoles.Count > 0)
             {
-                foreach(var userRole in user.UserRoles)
+                foreach (var userRole in user.UserRoles)
                 {
-                    if (userRole.Role != null && !string.IsNullOrEmpty(userRole.Role.Name))
+                    if (userRole.Role != null)
                     {
-                        claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
-                        rolesAdded = true;
-                        Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
+                        if (!string.IsNullOrEmpty(userRole.Role.Name))
+                        {
+                            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                            rolesAdded = true;
+                            Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
+                        }
+
+                        if (userRole.Role.RolePermissions != null)
+                        {
+                            foreach (var rolePermission in userRole.Role.RolePermissions)
+                            {
+                                var permissionName = rolePermission.Permission?.Name;
+                                if (!string.IsNullOrWhiteSpace(permissionName) && permissionNames.Add(permissionName))
+                                {
+                                    claims.Add(new Claim("permission", permissionName));
+                                }
+                            }
+                        }
                     }
                 }
             }
-            
-            // If no explicit roles, infer from relationships
-            if (!rolesAdded)
+
+            if (!rolesAdded && user.Shipper != null)
             {
-                if (user.Shipper != null)
-                {
-                    claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
-                    Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
-                }
+                claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
+                Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
             }
-            
+
             Console.WriteLine($"DEBUG - Total claims in token: {claims.Count}");
             foreach (var claim in claims)
             {

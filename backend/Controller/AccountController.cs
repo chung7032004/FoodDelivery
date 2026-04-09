@@ -20,10 +20,7 @@ public class AccountController : ControllerBase
     [HttpGet()]
     public async Task<IActionResult> GetAccount()
     {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result<AccountResponse>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
+        var userId = User.GetUserId();
         var result = await _service.GetAccountAsync(userId);
         if (!result.IsSuccess)
         {
@@ -36,38 +33,8 @@ public class AccountController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateAccount([FromForm] AccountRequest accountRequest)
     {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result<AccountResponse>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
+        var userId = User.GetUserId();
         var result = await _service.UpdateAccountAsync(userId, accountRequest);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
-    }
-
-    [HttpPut("profile")]
-    [Consumes("application/json")]
-    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
-    {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result<AccountResponse>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
-
-        if (string.IsNullOrWhiteSpace(request.FullName))
-        {
-            return BadRequest(Result<AccountResponse>.Failure("INVALID_NAME", "Tên không được để trống"));
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Phone))
-        {
-            return BadRequest(Result<AccountResponse>.Failure("INVALID_PHONE", "Số điện thoại không được để trống"));
-        }
-
-        var result = await _service.UpdateProfileAsync(userId, request);
         if (!result.IsSuccess)
         {
             return BadRequest(result);

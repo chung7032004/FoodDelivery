@@ -44,10 +44,7 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyReviews([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result<PagedResponse<ReviewHistoryResponseDto>>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
+        var userId = User.GetUserId();
         var result = await _reviewService.GetMyReviewsAsync(userId,page,pageSize);
         return Ok(result);
     }
@@ -56,10 +53,7 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> UpdateReview(Guid reviewId, [FromBody] ReviewUpdateDto request)
     {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
+        var userId = User.GetUserId();
         var result = await _reviewService.UpdateReviewAsync(userId,reviewId,request);
         if (!result.IsSuccess)
         {
@@ -79,10 +73,7 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> DeleteReview(Guid reviewId)
     {
-        if(!User.TryGetUserId(out Guid userId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        }
+        var userId = User.GetUserId();
         var result = await _reviewService.DeleteReviewAsync(userId,reviewId);
         if (!result.IsSuccess)
         {

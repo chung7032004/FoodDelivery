@@ -21,10 +21,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CreateOrderBuyNow([FromBody] BuyNowRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.BuyNowAsync(customerId,request);
         if (!result.IsSuccess)
         {
@@ -47,10 +44,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CheckoutCartItems([FromBody] CheckoutRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.CheckoutAsync(customerId,request);
         if (!result.IsSuccess)
         {
@@ -74,11 +68,6 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] int itemCount = 1)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<ShippingFeeResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
-        
         var result = await _orderService.CalculateShippingFeeAsync(addressId);
         if (!result.IsSuccess)
         {
@@ -98,10 +87,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyOrderHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
          var result = await _orderService.GetMyOrderAsync(customerId, page, pageSize);
         if (!result.IsSuccess)
             return BadRequest(result); 
@@ -111,12 +97,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin,Customer")]
     public async Task<IActionResult> GetOrderDetail(Guid orderId)
     {
-        Console.WriteLine($"[GetOrderDetail] Called with orderId: {orderId}");
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            Console.WriteLine($"[GetOrderDetail] Failed to get userId from claims");
-            return Unauthorized(Result<OrderDetailResponse>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
         Console.WriteLine($"[GetOrderDetail] UserId: {customerId}, Roles: {string.Join(",", roles)}");
         
@@ -135,10 +116,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles ="Customer")]
     public async Task<IActionResult> CancelOrderByCustomer(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.CancelOrderByCustomerAsync(customerId,orderId,request);
         if (result.IsSuccess)
         {
@@ -150,10 +128,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> RespondToProposal(Guid orderId , [FromBody] OrderProposalResponseDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.RespondToProposalAsync(customerId,orderId,request);
         if (result.IsSuccess)
         {
@@ -180,10 +155,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ConfirmOrder(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.ConfirmOrderAsync(adminId,orderId);
         if (!result.IsSuccess)
         {
@@ -200,10 +172,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> OutOfStock(Guid orderId, [FromBody] OutOfStockRequest request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.OutOfStockAsync(adminId,orderId,request);
         if (!result.IsSuccess)
         {
@@ -221,10 +190,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> StartPreparing(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.StartPreparingAsync(adminId,orderId);
         if (!result.IsSuccess)
         {
@@ -241,10 +207,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> MarkAsReady(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.MarkAsReadyAsync(adminId,orderId);
         if (!result.IsSuccess)
         {
@@ -265,10 +228,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Shipper")]
     public async Task<IActionResult> MarkAsDelivered(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid shipperId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var shipperId = User.GetUserId();
         var result = await _orderService.MarkAsDeliveredAsync(shipperId, orderId);
         if (!result.IsSuccess)
         {
@@ -305,10 +265,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelByAdmin(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.CancelOrderByAdminAsync(adminId,orderId,request);
         if (!result.IsSuccess)
         {
@@ -326,10 +283,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AssignShipper(Guid orderId, [FromBody] AssignShipperRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.AssignShipperAsync(adminId, orderId, request.ShipperId);
         if (!result.IsSuccess)
         {
