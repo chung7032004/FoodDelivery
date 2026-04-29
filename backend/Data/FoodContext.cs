@@ -274,7 +274,6 @@ public class FoodContext : DbContext
                 PermissionConstants.Orders.UpdateStatus,
                 PermissionConstants.Orders.AssignShipper,
 
-                PermissionConstants.Restaurants.ViewProfile,
                 PermissionConstants.Restaurants.UpdateProfile,
                 PermissionConstants.Restaurants.ManageSettings,
                 PermissionConstants.Restaurants.ViewRevenue,
@@ -285,7 +284,9 @@ public class FoodContext : DbContext
                 PermissionConstants.Staffs.Delete,
 
                 PermissionConstants.Users.View,
-                PermissionConstants.Users.ManageReviews
+                PermissionConstants.Users.ManageReviews,
+
+                PermissionConstants.Accounts.View,
             },
 
             [Guid.Parse("33333333-3333-3333-3333-333333333333")] = new List<string>
@@ -295,14 +296,18 @@ public class FoodContext : DbContext
                 PermissionConstants.Categories.View,
                 PermissionConstants.Orders.View,
                 PermissionConstants.Orders.UpdateStatus,
-                PermissionConstants.Restaurants.ViewProfile
+                
+                PermissionConstants.Accounts.View,
             },
 
             [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new List<string>
             {
                 PermissionConstants.Orders.View,
                 PermissionConstants.Orders.UpdateStatus,
-                PermissionConstants.Shippers.AcceptOrder
+                PermissionConstants.Shippers.AcceptOrder,
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
             },
 
             [Guid.Parse("55555555-5555-5555-5555-555555555555")] = new List<string>
@@ -310,7 +315,15 @@ public class FoodContext : DbContext
                 PermissionConstants.Products.View,
                 PermissionConstants.Categories.View,
                 PermissionConstants.Orders.Create,
-                PermissionConstants.Orders.View
+                PermissionConstants.Orders.View,
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+                PermissionConstants.Address.View,
+                PermissionConstants.Address.Create,
+                PermissionConstants.Address.Delete,
+                PermissionConstants.Address.Edit,
+                PermissionConstants.Address.SetDefault,
             }
         };
         var rolePermissionData = new List<RolePermission>();

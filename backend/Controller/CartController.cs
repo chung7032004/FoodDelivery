@@ -3,6 +3,7 @@ using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 
 namespace FoodDelivery.Controllers;
 
@@ -18,7 +19,7 @@ public class CartController : ControllerBase
     }
     
     [HttpGet]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.View)]
     public async Task<IActionResult> GetCart([FromQuery] int page = 1, int pageSize = 10)
     {
         var userId = User.GetUserId();
@@ -31,7 +32,7 @@ public class CartController : ControllerBase
     }
     
     [HttpPost]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.AddItem)]
     public async Task<IActionResult> AddCartItem([FromBody] CartItemRequest cartItemRequest)
     {
         var userId = User.GetUserId();
@@ -50,7 +51,7 @@ public class CartController : ControllerBase
     }
 
     [HttpPatch("item/{productId}")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.UpdateItem)]
     public async Task<IActionResult> UpdateQuantity(Guid productId, [FromBody] UpdateQuantityRequest request)
     {
         var userId = User.GetUserId();
@@ -71,7 +72,7 @@ public class CartController : ControllerBase
     }
     
     [HttpDelete("item/{productId}")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.RemoveItem)]
     public async Task<IActionResult> DeleteCartItem(Guid productId)
     {
         var userId = User.GetUserId();
@@ -89,7 +90,7 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("items")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.RemoveItem)]
     public async Task<IActionResult> DeleteCartItemRange([FromBody] DeleteCartItemsDto request)
     {
         var userId = User.GetUserId();
@@ -107,7 +108,7 @@ public class CartController : ControllerBase
         };
     }
     [HttpDelete()]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Cart.ClearCart)]
     public async Task<IActionResult> DeleteCart()
     {
         var userId = User.GetUserId();
@@ -117,26 +118,5 @@ public class CartController : ControllerBase
             return Ok(result);
         }
         return NotFound(result);
-    }
-
-    [HttpPost("save")]
-    [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> SaveCart([FromBody] SaveCartRequest? request)
-    {
-        var userId = User.GetUserId();
-        
-        // Handle null request
-        if (request == null)
-        {
-            request = new SaveCartRequest { Items = new() };
-        }
-        
-        var result = await _cartService.SaveCartAsync(userId, request);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        
-        return BadRequest(result);
     }
 }

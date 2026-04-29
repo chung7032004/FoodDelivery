@@ -7,12 +7,12 @@ namespace FoodDelivery.Service.Implementations;
 public class AccountService : IAccountService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IFileService _fileService;
-    public AccountService (IUserRepository userRepository, IUnitOfWork unitOfWork, IFileService fileService)
+    private readonly FoodContext _context;
+    public AccountService (IUserRepository userRepository, FoodContext context, IFileService fileService)
     {
         _userRepository = userRepository;
-        _unitOfWork = unitOfWork;
+        _context = context;
         _fileService = fileService;
     }
     public async Task <Result<AccountResponse>> GetAccountAsync(Guid userId)
@@ -71,7 +71,7 @@ public class AccountService : IAccountService
         if(accountRequest.Phone != null && accountRequest.Phone.Length > 0) user.Phone = accountRequest.Phone;
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -88,7 +88,7 @@ public class AccountService : IAccountService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
 
         return Result<AccountResponse>.Success(new AccountResponse
         {
@@ -100,5 +100,18 @@ public class AccountService : IAccountService
                 ? "/uploads/avatars/default.png"
                 : user.AvatarUrl,
         });
+    }
+    public async Task<Result> DeleteAccountAsync(Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("USER_NOT_FOUND", "User không tồn tại");
+        }
+
+        _fileService.DeleteFile(user.AvatarUrl);
+        await _userRepository.DeleteSoftAsync(userId);
+        await _context.SaveChangesAsync();
+        return Result.Success();
     }
 }

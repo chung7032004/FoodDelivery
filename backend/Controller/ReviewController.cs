@@ -4,7 +4,7 @@ using FoodDelivery.Service.Interfaces;
 using FoodDelivery.DTOs.Review;
 using Microsoft.AspNetCore.Authorization;
 using FoodDelivery.Extensions;
-using FoodDelivery.Common;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -19,7 +19,7 @@ public class ReviewController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [HasPermission(PermissionConstants.Review.Create)]
     public async Task<IActionResult> CreateReview([FromBody] ReviewCreateDto request)
     {
         var customerId = User.GetUserId();
@@ -41,7 +41,7 @@ public class ReviewController : ControllerBase
     }
     //GET	/api/customers/me/reviews
     [HttpGet("me/reviews")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Review.View)]
     public async Task<IActionResult> GetMyReviews([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var userId = User.GetUserId();
@@ -50,7 +50,7 @@ public class ReviewController : ControllerBase
     }
     //PUT	/api/reviews/{id}
     [HttpPut("{reviewId}")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Review.Edit)] 
     public async Task<IActionResult> UpdateReview(Guid reviewId, [FromBody] ReviewUpdateDto request)
     {
         var userId = User.GetUserId();
@@ -70,7 +70,7 @@ public class ReviewController : ControllerBase
     }
     //DELETE	/api/reviews/{id}
     [HttpDelete("{reviewId}")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Review.Manage)]
     public async Task<IActionResult> DeleteReview(Guid reviewId)
     {
         var userId = User.GetUserId();
@@ -89,7 +89,6 @@ public class ReviewController : ControllerBase
     }
     //GET	/api/products/{productId}/reviews
     [HttpGet("/api/products/{productId}/reviews")]
-    [AllowAnonymous] 
     public async Task<IActionResult> GetProductReviews(Guid productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var result = await _reviewService.GetReviewsAsync(productId,page,pageSize);
@@ -97,7 +96,7 @@ public class ReviewController : ControllerBase
     }
     //GET	/api/admin/reviews
     [HttpGet("/api/admin/reviews")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Review.Manage)]
     public async Task<IActionResult> GetAllReviews(
         [FromQuery] int? rating,      
         [FromQuery] bool? isHidden,   
@@ -109,7 +108,7 @@ public class ReviewController : ControllerBase
     }
     //PATCH	/api/admin/reviews/{id}/hide
     [HttpPatch("/api/admin/reviews/{reviewId}/hide")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Review.Manage)]
     public async Task<IActionResult> HideReview(Guid reviewId)
     {
         var result = await _reviewService.HideReviewAsync(reviewId);
@@ -126,7 +125,7 @@ public class ReviewController : ControllerBase
     }
     //GET	/api/admin/reports/reviews
     [HttpGet("/api/admin/reports/reviews")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Review.Manage)]
     public async Task<IActionResult> GetReviewReport([FromQuery] Guid? productId)
     {
         var report = await _reviewService.GetReviewReportAsync(productId);
@@ -134,7 +133,7 @@ public class ReviewController : ControllerBase
     }
     //DELETE	/api/admin/reviews/{id}
     [HttpDelete("/api/admin/reviews/{reviewId}")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Review.Manage)]
     public async Task<IActionResult> AdminDeleteReview(Guid reviewId)
     {
         var result = await _reviewService.DeleteAsync(reviewId);

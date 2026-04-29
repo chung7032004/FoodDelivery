@@ -17,20 +17,20 @@ namespace FoodDelivery.Service.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly FoodContext _context;
         private readonly string _tokenSecretKey;
         private readonly IEmailService _emailService;
         private readonly IPasswordResetOtpRepository _passwordResetOtpRepository;
         private readonly ILogger<AuthService> _logger;
         public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,
-                            IRoleRepository roleRepository,IUnitOfWork unitOfWork, IConfiguration configuration,
+                            IRoleRepository roleRepository,FoodContext context, IConfiguration configuration,
                             IEmailService emailService, IPasswordResetOtpRepository passwordResetOtpRepository,
                             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _tokenSecretKey = configuration["TokenSecretKey"] ?? "default_secret_key_2025_food_delivery";
-            _unitOfWork = unitOfWork;
+            _context = context;
             _roleRepository = roleRepository;
             _emailService = emailService;
             _passwordResetOtpRepository = passwordResetOtpRepository;
@@ -76,7 +76,7 @@ namespace FoodDelivery.Service.Implementations
                     RoleId = defaultRole.Id
                 };
                 await _userRepository.AddUserRoleAsync(userRole);
-                await _unitOfWork.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
             return Result.Success();
         }
@@ -121,7 +121,7 @@ namespace FoodDelivery.Service.Implementations
             await _userRepository.UpdateLastLoginAsync(user.Id);
             
             await _refreshTokenRepository.AddAsync(refresh);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return Result<LoginResponse>.Success(new LoginResponse
             {
                 AccessToken = accessToken,
@@ -150,49 +150,51 @@ namespace FoodDelivery.Service.Implementations
                 new Claim("jti", Guid.NewGuid().ToString())// chống replay
             };
             
-            // Add explicit roles from UserRoles
-            var rolesAdded = false;
-            var permissionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
             if (user.UserRoles != null && user.UserRoles.Count > 0)
             {
                 foreach (var userRole in user.UserRoles)
                 {
-                    if (userRole.Role != null)
+                    if (!string.IsNullOrEmpty(userRole.Role?.Name))
                     {
-                        if (!string.IsNullOrEmpty(userRole.Role.Name))
-                        {
-                            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
-                            rolesAdded = true;
-                            Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
-                        }
-
-                        if (userRole.Role.RolePermissions != null)
-                        {
-                            foreach (var rolePermission in userRole.Role.RolePermissions)
-                            {
-                                var permissionName = rolePermission.Permission?.Name;
-                                if (!string.IsNullOrWhiteSpace(permissionName) && permissionNames.Add(permissionName))
-                                {
-                                    claims.Add(new Claim("permission", permissionName));
-                                }
-                            }
-                        }
+                        claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
                     }
                 }
             }
-
-            if (!rolesAdded && user.Shipper != null)
+            else if (user.Shipper != null)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
                 Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
             }
 
-            Console.WriteLine($"DEBUG - Total claims in token: {claims.Count}");
-            foreach (var claim in claims)
-            {
-                Console.WriteLine($"  Claim: {claim.Type} = {claim.Value}");
-            }
+
+            // // Add explicit roles from UserRoles
+            // var permissionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // if (user.UserRoles != null && user.UserRoles.Count > 0)
+            // {
+            //     foreach (var userRole in user.UserRoles)
+            //     {
+            //         if (userRole.Role != null)
+            //         {
+            //             if (!string.IsNullOrEmpty(userRole.Role.Name))
+            //             {
+            //                 claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            //                 Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
+            //             }
+
+            //             if (userRole.Role.RolePermissions != null)
+            //             {
+            //                 foreach (var rolePermission in userRole.Role.RolePermissions)
+            //                 {
+            //                     var permissionName = rolePermission.Permission?.Name;
+            //                     if (!string.IsNullOrWhiteSpace(permissionName) && permissionNames.Add(permissionName))
+            //                     {
+            //                         claims.Add(new Claim("permission", permissionName));
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
             
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -235,7 +237,7 @@ namespace FoodDelivery.Service.Implementations
                 UserId = user.Id,
             };
             await _refreshTokenRepository.AddAsync(newRefreshToken);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return  Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
             {
                 AccessToken = newAccessToken,
@@ -257,7 +259,7 @@ namespace FoodDelivery.Service.Implementations
             refresh.IsRevoked = true;
             refresh.RevokedAt = DateTime.UtcNow;
             await _refreshTokenRepository.UpdateAsync(refresh);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return Result.Success();
         }
         public async Task<Result> ChangePasswordAsync (Guid userId,ChangePasswordRequest changePasswordRequest)
@@ -312,7 +314,7 @@ namespace FoodDelivery.Service.Implementations
                     RetryCount = 0
                 };
                 await _passwordResetOtpRepository.AddAsync(reset);
-                await _unitOfWork.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 try{
                 await _emailService.SendOtpEmailAsync(request.Email,otp);
                 }
@@ -346,7 +348,7 @@ namespace FoodDelivery.Service.Implementations
                 {
                     //Nếu sai quá nhiều, xóa luôn OTP để bắt người dùng tạo yêu cầu mới
                     await _passwordResetOtpRepository.DeleteAsync(record);
-                    await _unitOfWork.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
                     return Result.Failure("OTP_LOCKED", "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.");
                 }
                 if(record.ExpiresAt  < DateTime.UtcNow)
@@ -356,7 +358,7 @@ namespace FoodDelivery.Service.Implementations
                 if(!VerifyPasswordHash(otp, record.OtpHash, record.OtpSalt))
                 {
                     record.RetryCount++;
-                    await _unitOfWork.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
                     return Result.Failure("OTP_INVALID","OTP không đúng.");
                 }
                 var hmac = new HMACSHA512();
@@ -365,7 +367,7 @@ namespace FoodDelivery.Service.Implementations
                 var newPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
                 await _userRepository.ChangePasswordAsync(record.UserId,newPasswordHash,newPasswordSalt);
                 await _passwordResetOtpRepository.DeleteAsync(record);
-                await _unitOfWork.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 return Result.Success();
             }
             catch (DbUpdateException ex)

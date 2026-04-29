@@ -1,9 +1,8 @@
-using FoodDelivery.Common;
 using FoodDelivery.DTOs.Restaurant;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 namespace FoodDelivery.Controllers;
 [ApiController]
 [Route("api/[controller]")]
@@ -44,7 +43,7 @@ public class RestaurantController : ControllerBase
         return Ok(result);
     }
     [HttpPut("open")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Restaurants.ManageSettings)]
     public async Task<IActionResult> Open()
     {
         var result = await _restaurantService.OpenRestaurantAsync();
@@ -60,7 +59,7 @@ public class RestaurantController : ControllerBase
         return Ok(result);
     }
     [HttpPut("Close")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Restaurants.ManageSettings)]
     public async Task<IActionResult> Close([FromBody] CloseRestaurantRequest request)
     {
         var result = await _restaurantService.CloseRestaurantAsync(request);
@@ -76,7 +75,7 @@ public class RestaurantController : ControllerBase
         return Ok(result);
     }
     [HttpPut("profile")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Restaurants.UpdateProfile)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateRestaurantProfileRequest request)
     {
         var result = await _restaurantService.UpdateRestaurantAsync(request);

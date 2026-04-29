@@ -8,11 +8,12 @@ public class PermissionPolicyProvider : DefaultAuthorizationPolicyProvider
     }
     public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        var policy = await base.GetPolicyAsync(policyName);
-        if(policy != null)
+        var policy = await base.GetPolicyAsync(policyName); // Tìm trong các policy đã đăng ký
+        if(policy != null) // Nếu là policy có sẵn (VD: "Admin") → dùng luôn
         {
             return policy;
         }
+        // Tự động wrap vào PermissionRequirement
         return new AuthorizationPolicyBuilder()
             .AddRequirements(new PermissionRequirement(policyName))
             .Build();

@@ -1,9 +1,9 @@
-using FoodDelivery.Common;
 using FoodDelivery.DTOs;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 
 namespace FoodDelivery.Controllers;
 
@@ -18,6 +18,7 @@ public class AddressController : ControllerBase
         _addressService = addressService;
     }
     [HttpGet]
+    [HasPermission(PermissionConstants.Address.View)]
     public async Task<IActionResult> GetMyAddress()
     {
         var userId = User.GetUserId();
@@ -25,9 +26,11 @@ public class AddressController : ControllerBase
         return Ok(result);
     }
     [HttpGet("{id}")]
+    [HasPermission(PermissionConstants.Address.View)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _addressService.GetAddressById(id);
+        var userId = User.GetUserId();
+        var result = await _addressService.GetAddressById(id, userId);
         if (!result.IsSuccess)
         {
             return BadRequest(result); 
@@ -35,6 +38,7 @@ public class AddressController : ControllerBase
         return Ok(result);
     }
     [HttpPost]
+    [HasPermission(PermissionConstants.Address.Create)]
     public async Task<IActionResult> Create(AddAddressRequest request)
     {
         var userId = User.GetUserId();
@@ -46,6 +50,7 @@ public class AddressController : ControllerBase
         return BadRequest(result);
     }
     [HttpPut("{id}")]
+    [HasPermission(PermissionConstants.Address.Edit)]
     public async Task<IActionResult> Update(Guid id , AddressRequest addressRequest)
     {
         var userId = User.GetUserId();
@@ -57,6 +62,7 @@ public class AddressController : ControllerBase
         return Ok(result);
     }
     [HttpDelete("{id}")]
+    [HasPermission(PermissionConstants.Address.Delete)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _addressService.DeleteAddress(id);
@@ -67,6 +73,7 @@ public class AddressController : ControllerBase
         return Ok(result);
     }
     [HttpPatch("{id}/default")]
+    [HasPermission(PermissionConstants.Address.SetDefault)]
     public async Task<IActionResult> SetDefault(Guid id)
     {
         var userId = User.GetUserId();
@@ -77,5 +84,4 @@ public class AddressController : ControllerBase
         }
         return Ok(result);
     }
-    
 }

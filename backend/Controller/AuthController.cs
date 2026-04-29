@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using FoodDelivery.Service.Interfaces;
-using FoodDelivery.Common;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 using FoodDelivery.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using FoodDelivery.Extensions;
@@ -13,11 +13,9 @@ namespace FoodDelivery.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IEmailService _emailService;
 
-    public AuthController(IAuthService authService, IEmailService emailService)
+    public AuthController(IAuthService authService)
     {
-        _emailService = emailService;
         _authService = authService;
     }
     [HttpPost("register")]
@@ -76,6 +74,7 @@ public class AuthController : ControllerBase
     }
     [Authorize]
     [HttpPost("change-password")]
+    [HasPermission(PermissionConstants.Accounts.ChangePassword)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
     {
         var userId = User.GetUserId();

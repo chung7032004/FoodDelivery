@@ -72,7 +72,6 @@ builder.Services.AddCors(options => {
                         .AllowAnyHeader()
                         .AllowCredentials());
 });
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
@@ -105,12 +104,20 @@ builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+
+
+builder.Services.AddMemoryCache();
+// Cấu hình Redis Cache
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = configuration["Redis:ConnectionString"];
+});
 
 // Đăng ký các dịch vụ liên quan đến Authorization
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>(); // Đăng ký PermissionHandler để xử lý các yêu cầu về quyền
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>(); // Đăng ký PermissionPolicyProvider để tạo chính sách động dựa trên tên quyền
 builder.Services.AddAuthorization();
-
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, CustomAuthorizationMiddlewareResultHandler>(); // Đăng ký CustomAuthorizationMiddlewareResultHandler để trả về lỗi 403 chuẩn hóa khi bị từ chối truy cập
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // Đăng ký GlobalExceptionHandler để xử lý lỗi toàn cục

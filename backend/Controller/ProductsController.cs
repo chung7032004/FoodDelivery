@@ -2,6 +2,7 @@ using FoodDelivery.DTOs.Product;
 using FoodDelivery.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 
     namespace FoodDelivery.Controllers
 {
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _productService;
-
         public ProductsController(IProductService productService)
         {
             _productService = productService;
@@ -31,27 +31,27 @@ using Microsoft.AspNetCore.Mvc;
             return  product == null ? NotFound() : Ok(product);
         }
         
-        [Authorize(Roles = "Admin")]
+        [HasPermission(PermissionConstants.Products.Create)]
         [HttpPost]
         public async Task<IActionResult> Create(ProductCreateDto dto)
             => Ok(await _productService.CreateProductAsync(dto));
 
-        [Authorize(Roles = "Admin")]
+        [HasPermission(PermissionConstants.Products.Edit)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, ProductUpdateDto dto)
             => await _productService.UpdateProductAsync(id, dto) ? Ok() : NotFound();
 
-        [Authorize(Roles = "Admin")]
+        [HasPermission(PermissionConstants.Products.Edit)]
         [HttpPatch("{id}/display-order")]
         public async Task<IActionResult> UpdateDisplayOrder(Guid id, [FromBody] UpdateDisplayOrderDto dto)
             => await _productService.UpdateDisplayOrderAsync(id, dto.NewDisplayOrder) ? Ok() : NotFound();
 
-        [Authorize(Roles = "Admin")]
+        [HasPermission(PermissionConstants.Products.ToggleAvailability)]
         [HttpPatch("{id}/toggle")]
         public async Task<IActionResult> ToggleAvailability(Guid id)
             => await _productService.ToggleProductAvailabilityAsync(id) ? Ok() : NotFound();
 
-        [Authorize(Roles = "Admin")]
+        [HasPermission(PermissionConstants.Products.Delete)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
             => await _productService.DeleteProductAsync(id) ? Ok() : NotFound();

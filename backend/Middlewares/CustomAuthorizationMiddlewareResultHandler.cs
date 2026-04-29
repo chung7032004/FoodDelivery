@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FoodDelivery.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;

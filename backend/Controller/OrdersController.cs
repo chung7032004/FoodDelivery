@@ -1,11 +1,10 @@
 using System.Security.Claims;
-using FoodDelivery.Common;
 using FoodDelivery.DTOs.Order;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 namespace FoodDelivery.Controllers;
 
 [ApiController]
@@ -18,7 +17,7 @@ public class OrdersController : ControllerBase
         _orderService = orderService;
     }
     [HttpPost("orders/buy-now")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.Create)]
     public async Task<IActionResult> CreateOrderBuyNow([FromBody] BuyNowRequestDto request)
     {
         var customerId = User.GetUserId();
@@ -41,7 +40,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("orders/checkout")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.Create)]
     public async Task<IActionResult> CheckoutCartItems([FromBody] CheckoutRequestDto request)
     {
         var customerId = User.GetUserId();
@@ -65,7 +64,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("orders/shipping-fee")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.View)]
     public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] int itemCount = 1)
     {
         var result = await _orderService.CalculateShippingFeeAsync(addressId);
@@ -84,7 +83,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("orders/history")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.ViewHistory)]
     public async Task<IActionResult> GetMyOrderHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var customerId = User.GetUserId();
@@ -94,7 +93,7 @@ public class OrdersController : ControllerBase
         return Ok(result);
     }
     [HttpGet("orders/{orderId}")]
-    [Authorize(Roles = "Admin,Customer")]
+    [HasPermission(PermissionConstants.Orders.View)]
     public async Task<IActionResult> GetOrderDetail(Guid orderId)
     {
         var customerId = User.GetUserId();
@@ -113,7 +112,7 @@ public class OrdersController : ControllerBase
         return Ok(result);
     }
     [HttpPost("orders/{orderId}/cancel")]
-    [Authorize(Roles ="Customer")]
+    [HasPermission(PermissionConstants.Orders.Cancel)]
     public async Task<IActionResult> CancelOrderByCustomer(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
         var customerId = User.GetUserId();
@@ -125,7 +124,7 @@ public class OrdersController : ControllerBase
         return BadRequest(result);
     }
     [HttpPost("orders/{orderId}/respond-proposal")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.RespondToProposal)]
     public async Task<IActionResult> RespondToProposal(Guid orderId , [FromBody] OrderProposalResponseDto request)
     {
         var customerId = User.GetUserId();
@@ -145,14 +144,14 @@ public class OrdersController : ControllerBase
     }
     
     [HttpGet("admin/orders")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.ViewAll)]
     public async Task<IActionResult> GetAdminOrder([FromQuery] OrderFilterModel filter)
     {
         var result = await _orderService.GetOrderAdminAsync(filter);
         return Ok(result);
     }
     [HttpPost("admin/orders/{orderId}/confirm")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.ConfirmOrder)]
     public async Task<IActionResult> ConfirmOrder(Guid orderId)
     {
         var adminId = User.GetUserId();
@@ -169,7 +168,7 @@ public class OrdersController : ControllerBase
         return Ok(result);
     }
     [HttpPost("admin/orders/{orderId}/out-of-stock")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.OutOfStock)]
     public async Task<IActionResult> OutOfStock(Guid orderId, [FromBody] OutOfStockRequest request)
     {
         var adminId = User.GetUserId();
@@ -187,7 +186,7 @@ public class OrdersController : ControllerBase
         return Ok(result);
     }
     [HttpPost("admin/orders/{orderId}/start-preparing")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.StartPreparing)]
     public async Task<IActionResult> StartPreparing(Guid orderId)
     {
         var adminId = User.GetUserId();
@@ -204,7 +203,7 @@ public class OrdersController : ControllerBase
         return Ok(result);
     }
     [HttpPost("admin/orders/{orderId}/final-preparing")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.MarkAsReady)]
     public async Task<IActionResult> MarkAsReady(Guid orderId)
     {
         var adminId = User.GetUserId();
@@ -225,7 +224,7 @@ public class OrdersController : ControllerBase
     /// Mark order as delivered (Shipper)
     /// </summary>
     [HttpPut("shipper/orders/{orderId}/delivered")]
-    [Authorize(Roles = "Shipper")]
+    [HasPermission(PermissionConstants.Orders.MarkAsDelivered)]
     public async Task<IActionResult> MarkAsDelivered(Guid orderId)
     {
         var shipperId = User.GetUserId();
@@ -241,12 +240,9 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-
-    /// <summary>
-    /// Mark payment as complete (called after payment success)
-    /// </summary>
+    
     [HttpPut("orders/{orderId}/payment-complete")]
-    [Authorize]
+    [HasPermission(PermissionConstants.Orders.MarkPaymentComplete)]
     public async Task<IActionResult> MarkPaymentComplete(Guid orderId)
     {
         var result = await _orderService.MarkPaymentCompleteAsync(orderId);
@@ -262,6 +258,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("admin/orders/{orderId}/cancel")]
+    [HasPermission(PermissionConstants.Orders.Cancel)]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelByAdmin(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
@@ -280,7 +277,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("admin/orders/{orderId}/assign-shipper")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.AssignShipper)]
     public async Task<IActionResult> AssignShipper(Guid orderId, [FromBody] AssignShipperRequestDto request)
     {
         var adminId = User.GetUserId();

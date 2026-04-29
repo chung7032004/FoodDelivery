@@ -9,16 +9,13 @@ namespace FoodDelivery.Service.Implementations
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _repo;
-        private readonly IUnitOfWork _unitOfWork;
         private readonly FoodContext _context;
 
         public CategoryService(
             ICategoryRepository repo,
-            IUnitOfWork unitOfWork,
             FoodContext context)
         {
             _repo = repo;
-            _unitOfWork = unitOfWork;
             _context = context;
         }
 

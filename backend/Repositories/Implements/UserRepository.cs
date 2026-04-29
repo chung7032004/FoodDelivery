@@ -80,6 +80,7 @@ namespace FoodDelivery.Repositories.Implementations
                 string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
                 user.Email = $"deleted_{timestamp}_{user.Email}";
                 user.UpdatedAt = DateTime.UtcNow;
+                user.AvatarUrl = null!;
             }
         }
         public async Task UpdateLastLoginAsync(Guid userId)

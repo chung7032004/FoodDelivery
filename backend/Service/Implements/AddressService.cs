@@ -9,11 +9,11 @@ namespace FoodDelivery.Service.Implementations;
 public class AddressService : IAddressService
 {
     private readonly IAddressRepository _addressRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    public AddressService (IAddressRepository addressRepository, IUnitOfWork unitOfWork)
+    private readonly FoodContext _context;
+    public AddressService (IAddressRepository addressRepository, FoodContext context)
     {
         _addressRepository = addressRepository;
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
     public async Task <Result<List<AddressResponse>>> GetMyAddresses(Guid userId)
     {
@@ -31,9 +31,9 @@ public class AddressService : IAddressService
         }).ToList();
         return Result<List<AddressResponse>>.Success(addressesResponse);
     }
-    public async Task <Result<AddressResponse>> GetAddressById(Guid addressId)
+    public async Task <Result<AddressResponse>> GetAddressById(Guid addressId, Guid userId)
     {
-        var address = await _addressRepository.GetByIdAsync(addressId);
+        var address = await _addressRepository.GetByIdAndUserIdAsync(addressId, userId);
         if(address == null)
         {
             return Result<AddressResponse>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
@@ -85,7 +85,7 @@ public class AddressService : IAddressService
             address.IsDefault = true;
         }
         await _addressRepository.AddAsync(address);
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         var response = new AddAddressResponse
         {
             Id = address.Id,
@@ -122,12 +122,12 @@ public class AddressService : IAddressService
             {
                 addressDefault.IsDefault = false;
                 await _addressRepository.UpdateAsync(addressDefault);
-                await _unitOfWork.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
             address.IsDefault = true;
         }
         await _addressRepository.UpdateAsync(address);
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return Result.Success();
     }
     public async Task <Result> DeleteAddress (Guid addressId)
@@ -143,7 +143,7 @@ public class AddressService : IAddressService
 
         if (wasDefault)
         {
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             var remainingAddress = await _addressRepository.GetByUserIdAsync(userId);
             var newAddress = remainingAddress.OrderByDescending(r=>r.CreatedAt).FirstOrDefault();
             if(newAddress!= null)
@@ -152,7 +152,7 @@ public class AddressService : IAddressService
                 await _addressRepository.UpdateAsync(newAddress);
             }
         }
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return Result.Success();
     }
     public async Task <Result> SetDefault (Guid userId, Guid addressId)
@@ -169,12 +169,12 @@ public class AddressService : IAddressService
             {
                 addressDefault.IsDefault = false;
                 await _addressRepository.UpdateAsync(addressDefault);
-                await _unitOfWork.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
             address.IsDefault = true;
         }
         await _addressRepository.UpdateAsync(address);
-        await _unitOfWork.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return Result.Success();
     }
 }
