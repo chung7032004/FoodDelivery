@@ -450,378 +450,538 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             Id = new Guid("4a5e57f9-7371-ff34-a7c0-e6cf47f912c8"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6885),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3813),
                             Description = "Quyền cho Products - View",
                             Name = "Permissions.Products.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6460)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3483)
                         },
                         new
                         {
                             Id = new Guid("641ccf8e-48a4-63f9-ea51-46a8f84e8275"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6914),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3860),
                             Description = "Quyền cho Products - Create",
                             Name = "Permissions.Products.Create",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6895)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3845)
                         },
                         new
                         {
                             Id = new Guid("35f5f086-45fa-c7c6-8a5e-ea8f9c97cea8"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6932),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3885),
                             Description = "Quyền cho Products - Edit",
                             Name = "Permissions.Products.Edit",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6916)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3873)
                         },
                         new
                         {
                             Id = new Guid("f1d8a62c-3192-969d-5d75-025c2928d679"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6953),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3927),
                             Description = "Quyền cho Products - Delete",
                             Name = "Permissions.Products.Delete",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6934)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3888)
                         },
                         new
                         {
                             Id = new Guid("2f7e4df2-8507-4ef5-625a-2f7959334de6"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7018),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3963),
                             Description = "Quyền cho Products - ToggleAvailability",
                             Name = "Permissions.Products.ToggleAvailability",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(6955)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3930)
                         },
                         new
                         {
                             Id = new Guid("462495bb-1b19-10a6-a40f-a2f15ed27874"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7042),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3986),
                             Description = "Quyền cho Categories - View",
                             Name = "Permissions.Categories.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7026)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3971)
                         },
                         new
                         {
                             Id = new Guid("1cf712ea-bf75-5da7-0315-f6abf938c90c"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7058),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4002),
                             Description = "Quyền cho Categories - Manage",
                             Name = "Permissions.Categories.Manage",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7044)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(3989)
                         },
                         new
                         {
                             Id = new Guid("01fbb69d-2fe0-cfe2-60cc-9ddefdb59221"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7081),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4023),
                             Description = "Quyền cho Orders - View",
                             Name = "Permissions.Orders.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7066)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4010)
+                        },
+                        new
+                        {
+                            Id = new Guid("79a651a3-d1ae-03dd-9d16-6378fa5a8da3"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4044),
+                            Description = "Quyền cho Orders - ViewAll",
+                            Name = "Permissions.Orders.ViewAll",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4030)
+                        },
+                        new
+                        {
+                            Id = new Guid("91bb8b66-0967-83ce-7056-629707d49a86"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4062),
+                            Description = "Quyền cho Orders - ViewHistory",
+                            Name = "Permissions.Orders.ViewHistory",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4048)
                         },
                         new
                         {
                             Id = new Guid("55674d3f-5e0b-2f4e-0123-849bc32efd83"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7097),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4079),
                             Description = "Quyền cho Orders - Create",
                             Name = "Permissions.Orders.Create",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7084)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4066)
                         },
                         new
                         {
                             Id = new Guid("67c04dad-c1c4-c165-628f-62f4f39794d1"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7114),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4093),
                             Description = "Quyền cho Orders - Confirm",
                             Name = "Permissions.Orders.Confirm",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7101)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4081)
                         },
                         new
                         {
                             Id = new Guid("19bddbc6-bc3d-33b5-9a93-ac104667687f"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7129),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4109),
                             Description = "Quyền cho Orders - Cancel",
                             Name = "Permissions.Orders.Cancel",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7116)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4095)
                         },
                         new
                         {
                             Id = new Guid("19fc086c-165d-67c5-668f-56661a36164d"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7145),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4124),
                             Description = "Quyền cho Orders - UpdateStatus",
                             Name = "Permissions.Orders.UpdateStatus",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7132)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4111)
                         },
                         new
                         {
                             Id = new Guid("ccc21865-8cbd-f136-7f56-5c9551c5c120"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7161),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4139),
                             Description = "Quyền cho Orders - AssignShipper",
                             Name = "Permissions.Orders.AssignShipper",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7147)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4126)
                         },
                         new
                         {
-                            Id = new Guid("9a3ba0a0-2914-e381-87df-4a00988bf036"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7183),
-                            Description = "Quyền cho Restaurants - ViewProfile",
-                            Name = "Permissions.Restaurants.ViewProfile",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7169)
+                            Id = new Guid("7c06b883-0b51-f2eb-74b0-435447264e2f"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4180),
+                            Description = "Quyền cho Orders - RespondToProposal",
+                            Name = "Permissions.Orders.RespondToProposal",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4141)
+                        },
+                        new
+                        {
+                            Id = new Guid("a2da381b-d201-15a4-1949-e2e85417c86a"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4197),
+                            Description = "Quyền cho Orders - ConfirmOrder",
+                            Name = "Permissions.Orders.ConfirmOrder",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4183)
+                        },
+                        new
+                        {
+                            Id = new Guid("0798cb38-d699-bcc8-774f-87ac16dcb56d"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4215),
+                            Description = "Quyền cho Orders - OutOfStock",
+                            Name = "Permissions.Orders.OutOfStock",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4201)
+                        },
+                        new
+                        {
+                            Id = new Guid("416c3b00-b88a-f2d6-0f98-edd2530f4cfd"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4234),
+                            Description = "Quyền cho Orders - StartPreparing",
+                            Name = "Permissions.Orders.StartPreparing",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4220)
+                        },
+                        new
+                        {
+                            Id = new Guid("ec601469-ca78-db72-cd02-248fd76a3558"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4249),
+                            Description = "Quyền cho Orders - MarkAsReady",
+                            Name = "Permissions.Orders.MarkAsReady",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4237)
+                        },
+                        new
+                        {
+                            Id = new Guid("98a8f386-db29-0ea2-98df-a340c0787c08"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4264),
+                            Description = "Quyền cho Orders - MarkAsDelivered",
+                            Name = "Permissions.Orders.MarkAsDelivered",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4252)
+                        },
+                        new
+                        {
+                            Id = new Guid("531335c1-be81-604d-927f-38492c2a3bdb"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4281),
+                            Description = "Quyền cho Orders - MarkPaymentComplete",
+                            Name = "Permissions.Orders.MarkPaymentComplete",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4267)
+                        },
+                        new
+                        {
+                            Id = new Guid("745be01f-d2c8-8cca-6684-f322171229ff"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4299),
+                            Description = "Quyền cho Restaurants - View",
+                            Name = "Permissions.Restaurants.View",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4286)
                         },
                         new
                         {
                             Id = new Guid("2821a053-365e-d274-2f88-c10912fd142b"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7199),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4314),
                             Description = "Quyền cho Restaurants - UpdateProfile",
                             Name = "Permissions.Restaurants.UpdateProfile",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7185)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4301)
                         },
                         new
                         {
                             Id = new Guid("d2865fa6-328c-da22-aad5-12cd86505b1b"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7216),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4329),
                             Description = "Quyền cho Restaurants - ManageSettings",
                             Name = "Permissions.Restaurants.ManageSettings",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7203)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4316)
                         },
                         new
                         {
                             Id = new Guid("28fc09cf-1d97-d3cc-66b9-e7a6210a3ced"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7232),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4343),
                             Description = "Quyền cho Restaurants - ViewRevenue",
                             Name = "Permissions.Restaurants.ViewRevenue",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7218)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4331)
                         },
                         new
                         {
                             Id = new Guid("676d33fc-eacf-fcc4-00a5-09c3521386f3"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7281),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4384),
                             Description = "Quyền cho Staffs - View",
                             Name = "Permissions.Staffs.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7267)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4350)
                         },
                         new
                         {
                             Id = new Guid("00d42e12-16d8-1161-d9c3-8198d016b61d"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7298),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4400),
                             Description = "Quyền cho Staffs - Create",
                             Name = "Permissions.Staffs.Create",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7283)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4386)
                         },
                         new
                         {
                             Id = new Guid("83bc6004-6954-1c64-f355-b54fa1e8f7cc"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7312),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4416),
                             Description = "Quyền cho Staffs - Edit",
                             Name = "Permissions.Staffs.Edit",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7300)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4403)
                         },
                         new
                         {
                             Id = new Guid("6f6232a5-e70c-eb97-a1e8-cfb0190dfc80"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7328),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4430),
                             Description = "Quyền cho Staffs - Delete",
                             Name = "Permissions.Staffs.Delete",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7314)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4418)
                         },
                         new
                         {
                             Id = new Guid("ba2e8da4-a36d-4bc8-25fc-ae51d41fea7d"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7346),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4447),
                             Description = "Quyền cho Shippers - View",
                             Name = "Permissions.Shippers.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7333)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4435)
                         },
                         new
                         {
                             Id = new Guid("87a96f18-d58d-24eb-e677-ca0abfb99bec"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7361),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4462),
                             Description = "Quyền cho Shippers - Verify",
                             Name = "Permissions.Shippers.Verify",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7348)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4450)
                         },
                         new
                         {
                             Id = new Guid("18637eb6-dd2d-4916-90e3-d190753fe651"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7377),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4477),
                             Description = "Quyền cho Shippers - Block",
                             Name = "Permissions.Shippers.Block",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7365)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4465)
                         },
                         new
                         {
                             Id = new Guid("40486d09-d640-93b6-125b-742b3fb9c30a"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7393),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4494),
                             Description = "Quyền cho Shippers - AcceptOrder",
                             Name = "Permissions.Shippers.AcceptOrder",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7380)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4481)
                         },
                         new
                         {
                             Id = new Guid("6bc3f860-b68c-8568-6564-78b6a17735fa"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7411),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4516),
                             Description = "Quyền cho Users - View",
                             Name = "Permissions.Users.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7398)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4503)
                         },
                         new
                         {
                             Id = new Guid("e6b7aa38-22c2-348d-5827-efeb05b4b45e"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7426),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4533),
                             Description = "Quyền cho Users - ManageReviews",
                             Name = "Permissions.Users.ManageReviews",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7412)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4519)
                         },
                         new
                         {
                             Id = new Guid("db454c1f-a726-589d-5585-7ee8c79c3434"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7445),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4552),
                             Description = "Quyền cho Accounts - ViewOwn",
                             Name = "Permissions.Accounts.ViewOwn",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7432)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4539)
                         },
                         new
                         {
                             Id = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7460),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4567),
                             Description = "Quyền cho Accounts - UpdateOwn",
                             Name = "Permissions.Accounts.UpdateOwn",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7447)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4554)
                         },
                         new
                         {
                             Id = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7517),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4608),
                             Description = "Quyền cho Accounts - ChangePassword",
                             Name = "Permissions.Accounts.ChangePassword",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7463)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4593)
                         },
                         new
                         {
                             Id = new Guid("89c37a1c-4545-d211-ab83-1785370f3c10"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7535),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4623),
                             Description = "Quyền cho Accounts - ViewAll",
                             Name = "Permissions.Accounts.ViewAll",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7519)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4610)
                         },
                         new
                         {
                             Id = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7551),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4638),
                             Description = "Quyền cho Accounts - View",
                             Name = "Permissions.Accounts.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7538)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4625)
                         },
                         new
                         {
                             Id = new Guid("e8031eea-0eef-f077-9aa5-c44e18fef35f"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7565),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4653),
                             Description = "Quyền cho Accounts - Edit",
                             Name = "Permissions.Accounts.Edit",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7553)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4640)
                         },
                         new
                         {
                             Id = new Guid("428a7672-6e0e-5486-0493-dd54a9d9ecb0"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7585),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4670),
                             Description = "Quyền cho Accounts - Delete",
                             Name = "Permissions.Accounts.Delete",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7569)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4657)
                         },
                         new
                         {
                             Id = new Guid("54d379ae-ad74-040a-c946-f56cd58ef72a"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7600),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4684),
                             Description = "Quyền cho Accounts - Lock",
                             Name = "Permissions.Accounts.Lock",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7587)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4672)
                         },
                         new
                         {
                             Id = new Guid("c501c51b-6061-b652-d47f-8a593e35e5bb"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7615),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4698),
                             Description = "Quyền cho Accounts - Unlock",
                             Name = "Permissions.Accounts.Unlock",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7602)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4686)
                         },
                         new
                         {
                             Id = new Guid("1f20e50d-312e-e12d-bbe3-9b176f4055dc"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7630),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4713),
                             Description = "Quyền cho Accounts - AssignRole",
                             Name = "Permissions.Accounts.AssignRole",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7617)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4701)
                         },
                         new
                         {
                             Id = new Guid("62bf81bb-b05b-3dab-ab8e-46f87cf16bbf"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7651),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4733),
                             Description = "Quyền cho Address - View",
                             Name = "Permissions.Address.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7638)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4720)
                         },
                         new
                         {
                             Id = new Guid("e827ae98-f118-1f4e-e890-4cb036aba6b8"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7665),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4747),
                             Description = "Quyền cho Address - Create",
                             Name = "Permissions.Address.Create",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7653)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4735)
                         },
                         new
                         {
                             Id = new Guid("f8edc86c-8f35-bc18-75a5-17cfec2310f0"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7684),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4762),
                             Description = "Quyền cho Address - Edit",
                             Name = "Permissions.Address.Edit",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7669)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4750)
                         },
                         new
                         {
                             Id = new Guid("c4bdb36c-4205-1966-10fc-6b5701a69c42"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7699),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4788),
                             Description = "Quyền cho Address - Delete",
                             Name = "Permissions.Address.Delete",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7686)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4764)
                         },
                         new
                         {
                             Id = new Guid("e35c101b-a88c-8804-7ccb-6f0c2a5cf1e1"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7713),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4806),
                             Description = "Quyền cho Address - SetDefault",
                             Name = "Permissions.Address.SetDefault",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7701)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4792)
                         },
                         new
                         {
                             Id = new Guid("496fc662-2331-b5ab-2dba-803c897dd134"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7756),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4824),
                             Description = "Quyền cho Cart - View",
                             Name = "Permissions.Cart.View",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7718)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4811)
                         },
                         new
                         {
                             Id = new Guid("c5355ae4-569e-3834-47be-60ae6c73b9c5"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7771),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4843),
                             Description = "Quyền cho Cart - AddItem",
                             Name = "Permissions.Cart.AddItem",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7758)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4829)
                         },
                         new
                         {
                             Id = new Guid("3e1115c6-b4da-0b86-6140-c77889a5dec1"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7786),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4859),
                             Description = "Quyền cho Cart - UpdateItem",
                             Name = "Permissions.Cart.UpdateItem",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7773)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4845)
                         },
                         new
                         {
                             Id = new Guid("08965e65-eaba-3846-f3ca-5de5a9894e08"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7800),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4874),
                             Description = "Quyền cho Cart - RemoveItem",
                             Name = "Permissions.Cart.RemoveItem",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7788)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4861)
                         },
                         new
                         {
                             Id = new Guid("9153963b-fc31-2e9b-2a99-d243b6081845"),
-                            CreatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7815),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4888),
                             Description = "Quyền cho Cart - ClearCart",
                             Name = "Permissions.Cart.ClearCart",
-                            UpdatedAt = new DateTime(2026, 4, 29, 10, 53, 14, 256, DateTimeKind.Utc).AddTicks(7802)
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4876)
+                        },
+                        new
+                        {
+                            Id = new Guid("a1bb2e7a-c3c4-31c0-8a79-931946540a5e"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4908),
+                            Description = "Quyền cho Review - Create",
+                            Name = "Permissions.Review.Create",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4894)
+                        },
+                        new
+                        {
+                            Id = new Guid("008769f2-b432-ec12-a2a3-abf5f664c802"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4923),
+                            Description = "Quyền cho Review - Edit",
+                            Name = "Permissions.Review.Edit",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4910)
+                        },
+                        new
+                        {
+                            Id = new Guid("1b25fc03-7ad1-c69c-dae0-25daab39a24b"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4939),
+                            Description = "Quyền cho Review - View",
+                            Name = "Permissions.Review.View",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4927)
+                        },
+                        new
+                        {
+                            Id = new Guid("fea911ea-a325-1e7e-8feb-866ad4a9a5c4"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4954),
+                            Description = "Quyền cho Review - Manage",
+                            Name = "Permissions.Review.Manage",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4942)
+                        },
+                        new
+                        {
+                            Id = new Guid("2e9b21fa-0456-1c67-b02f-77c8ffbdd1bc"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4969),
+                            Description = "Quyền cho Review - Delete",
+                            Name = "Permissions.Review.Delete",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4956)
+                        },
+                        new
+                        {
+                            Id = new Guid("924c4e8c-1963-ec6b-7602-4a7700971a14"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4988),
+                            Description = "Quyền cho Notifications - View",
+                            Name = "Permissions.Notifications.View",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4975)
+                        },
+                        new
+                        {
+                            Id = new Guid("ee00f29c-4500-640d-cb1d-8909ae281747"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5038),
+                            Description = "Quyền cho Notifications - MarkAsRead",
+                            Name = "Permissions.Notifications.MarkAsRead",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(4991)
+                        },
+                        new
+                        {
+                            Id = new Guid("5273f960-e88a-b69b-c87c-aa16332b9d5d"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5054),
+                            Description = "Quyền cho Notifications - Delete",
+                            Name = "Permissions.Notifications.Delete",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5041)
+                        },
+                        new
+                        {
+                            Id = new Guid("1972a37c-ad35-0c73-ec42-8f1e18925e33"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5069),
+                            Description = "Quyền cho Notifications - Send",
+                            Name = "Permissions.Notifications.Send",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5057)
+                        },
+                        new
+                        {
+                            Id = new Guid("d8d648d0-c0f5-523a-3dda-d95613982d96"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5092),
+                            Description = "Quyền cho Dashboard - ViewOwn",
+                            Name = "Permissions.Dashboard.ViewOwn",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5078)
+                        },
+                        new
+                        {
+                            Id = new Guid("408a4c2e-b781-797e-1ac0-462ac106ba27"),
+                            CreatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5109),
+                            Description = "Quyền cho Dashboard - ViewSystem",
+                            Name = "Permissions.Dashboard.ViewSystem",
+                            UpdatedAt = new DateTime(2026, 5, 10, 17, 31, 31, 331, DateTimeKind.Utc).AddTicks(5096)
                         });
                 });
 
@@ -1128,6 +1288,16 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("79a651a3-d1ae-03dd-9d16-6378fa5a8da3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("91bb8b66-0967-83ce-7056-629707d49a86")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
                             PermissionId = new Guid("55674d3f-5e0b-2f4e-0123-849bc32efd83")
                         },
                         new
@@ -1153,7 +1323,42 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
-                            PermissionId = new Guid("9a3ba0a0-2914-e381-87df-4a00988bf036")
+                            PermissionId = new Guid("7c06b883-0b51-f2eb-74b0-435447264e2f")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("a2da381b-d201-15a4-1949-e2e85417c86a")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("0798cb38-d699-bcc8-774f-87ac16dcb56d")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("416c3b00-b88a-f2d6-0f98-edd2530f4cfd")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("ec601469-ca78-db72-cd02-248fd76a3558")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("98a8f386-db29-0ea2-98df-a340c0787c08")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("531335c1-be81-604d-927f-38492c2a3bdb")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("745be01f-d2c8-8cca-6684-f322171229ff")
                         },
                         new
                         {
@@ -1322,6 +1527,61 @@ namespace FoodDelivery.Migrations
                         },
                         new
                         {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("a1bb2e7a-c3c4-31c0-8a79-931946540a5e")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("008769f2-b432-ec12-a2a3-abf5f664c802")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("1b25fc03-7ad1-c69c-dae0-25daab39a24b")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("fea911ea-a325-1e7e-8feb-866ad4a9a5c4")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("2e9b21fa-0456-1c67-b02f-77c8ffbdd1bc")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("924c4e8c-1963-ec6b-7602-4a7700971a14")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("ee00f29c-4500-640d-cb1d-8909ae281747")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("5273f960-e88a-b69b-c87c-aa16332b9d5d")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("1972a37c-ad35-0c73-ec42-8f1e18925e33")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("d8d648d0-c0f5-523a-3dda-d95613982d96")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            PermissionId = new Guid("408a4c2e-b781-797e-1ac0-462ac106ba27")
+                        },
+                        new
+                        {
                             RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
                             PermissionId = new Guid("4a5e57f9-7371-ff34-a7c0-e6cf47f912c8")
                         },
@@ -1363,6 +1623,21 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("79a651a3-d1ae-03dd-9d16-6378fa5a8da3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("91bb8b66-0967-83ce-7056-629707d49a86")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("55674d3f-5e0b-2f4e-0123-849bc32efd83")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
                             PermissionId = new Guid("67c04dad-c1c4-c165-628f-62f4f39794d1")
                         },
                         new
@@ -1383,7 +1658,42 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
-                            PermissionId = new Guid("9a3ba0a0-2914-e381-87df-4a00988bf036")
+                            PermissionId = new Guid("7c06b883-0b51-f2eb-74b0-435447264e2f")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("a2da381b-d201-15a4-1949-e2e85417c86a")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("0798cb38-d699-bcc8-774f-87ac16dcb56d")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("416c3b00-b88a-f2d6-0f98-edd2530f4cfd")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("ec601469-ca78-db72-cd02-248fd76a3558")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("98a8f386-db29-0ea2-98df-a340c0787c08")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("531335c1-be81-604d-927f-38492c2a3bdb")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("745be01f-d2c8-8cca-6684-f322171229ff")
                         },
                         new
                         {
@@ -1433,7 +1743,32 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("fea911ea-a325-1e7e-8feb-866ad4a9a5c4")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
                             PermissionId = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("62bf81bb-b05b-3dab-ab8e-46f87cf16bbf")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            PermissionId = new Guid("d8d648d0-c0f5-523a-3dda-d95613982d96")
                         },
                         new
                         {
@@ -1458,17 +1793,52 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("91bb8b66-0967-83ce-7056-629707d49a86")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("67c04dad-c1c4-c165-628f-62f4f39794d1")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
                             PermissionId = new Guid("19fc086c-165d-67c5-668f-56661a36164d")
                         },
                         new
                         {
                             RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
-                            PermissionId = new Guid("9a3ba0a0-2914-e381-87df-4a00988bf036")
+                            PermissionId = new Guid("416c3b00-b88a-f2d6-0f98-edd2530f4cfd")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("ec601469-ca78-db72-cd02-248fd76a3558")
                         },
                         new
                         {
                             RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
                             PermissionId = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("db454c1f-a726-589d-5585-7ee8c79c3434")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("33333333-3333-3333-3333-333333333333"),
+                            PermissionId = new Guid("19bddbc6-bc3d-33b5-9a93-ac104667687f")
                         },
                         new
                         {
@@ -1478,7 +1848,17 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("91bb8b66-0967-83ce-7056-629707d49a86")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PermissionId = new Guid("19fc086c-165d-67c5-668f-56661a36164d")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("98a8f386-db29-0ea2-98df-a340c0787c08")
                         },
                         new
                         {
@@ -1493,12 +1873,22 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("db454c1f-a726-589d-5585-7ee8c79c3434")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PermissionId = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8")
                         },
                         new
                         {
                             RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PermissionId = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("62bf81bb-b05b-3dab-ab8e-46f87cf16bbf")
                         },
                         new
                         {
@@ -1513,6 +1903,31 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("496fc662-2331-b5ab-2dba-803c897dd134")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("c5355ae4-569e-3834-47be-60ae6c73b9c5")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("3e1115c6-b4da-0b86-6140-c77889a5dec1")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("08965e65-eaba-3846-f3ca-5de5a9894e08")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("9153963b-fc31-2e9b-2a99-d243b6081845")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
                             PermissionId = new Guid("55674d3f-5e0b-2f4e-0123-849bc32efd83")
                         },
                         new
@@ -1523,17 +1938,12 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            PermissionId = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821")
+                            PermissionId = new Guid("91bb8b66-0967-83ce-7056-629707d49a86")
                         },
                         new
                         {
                             RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            PermissionId = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            PermissionId = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3")
+                            PermissionId = new Guid("7c06b883-0b51-f2eb-74b0-435447264e2f")
                         },
                         new
                         {
@@ -1548,17 +1958,57 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            PermissionId = new Guid("c4bdb36c-4205-1966-10fc-6b5701a69c42")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
                             PermissionId = new Guid("f8edc86c-8f35-bc18-75a5-17cfec2310f0")
                         },
                         new
                         {
                             RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("c4bdb36c-4205-1966-10fc-6b5701a69c42")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
                             PermissionId = new Guid("e35c101b-a88c-8804-7ccb-6f0c2a5cf1e1")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("a1bb2e7a-c3c4-31c0-8a79-931946540a5e")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("008769f2-b432-ec12-a2a3-abf5f664c802")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("1b25fc03-7ad1-c69c-dae0-25daab39a24b")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("db454c1f-a726-589d-5585-7ee8c79c3434")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("55555555-5555-5555-5555-555555555555"),
+                            PermissionId = new Guid("19bddbc6-bc3d-33b5-9a93-ac104667687f")
                         });
                 });
 

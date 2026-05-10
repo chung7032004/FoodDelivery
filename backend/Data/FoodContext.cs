@@ -57,6 +57,7 @@ public class FoodContext : DbContext
             Description = $"Quyền cho {f.ReflectedType?.Name ?? "UnknownClass"} - {f.Name}",
             CreatedAt = DateTime.UtcNow
         })
+        .DistinctBy(p=> p.Name) // loại bỏ trùng lặp nếu có
         .ToList();
 
         modelBuilder.Entity<Permission>().HasData(permissions);
@@ -256,9 +257,13 @@ public class FoodContext : DbContext
         //seed role-permission
         var rolePermissions = new Dictionary<Guid, List<string>>
         {
-            [Guid.Parse("11111111-1111-1111-1111-111111111111")] = permissions.Select(p => p.Name).ToList(), // Admin có tất cả quyền
+            // Admin: Toàn quyền trên hệ thống
+            [Guid.Parse("11111111-1111-1111-1111-111111111111")] = permissions.Select(p => p.Name).ToList(),
+            
+            // RestaurantOwner: Chủ quán
             [Guid.Parse("22222222-2222-2222-2222-222222222222")] = new List<string>
             {
+                // Quản lý thực đơn
                 PermissionConstants.Products.View,
                 PermissionConstants.Products.Create,
                 PermissionConstants.Products.Edit,
@@ -268,68 +273,145 @@ public class FoodContext : DbContext
                 PermissionConstants.Categories.View,
                 PermissionConstants.Categories.Manage,
 
+                // Quản lý đơn hàng
                 PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewAll,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.Create,
                 PermissionConstants.Orders.Confirm,
                 PermissionConstants.Orders.Cancel,
                 PermissionConstants.Orders.UpdateStatus,
                 PermissionConstants.Orders.AssignShipper,
+                PermissionConstants.Orders.RespondToProposal,
+                PermissionConstants.Orders.ConfirmOrder,
+                PermissionConstants.Orders.OutOfStock,
+                PermissionConstants.Orders.StartPreparing,
+                PermissionConstants.Orders.MarkAsReady,
+                PermissionConstants.Orders.MarkAsDelivered,
+                PermissionConstants.Orders.MarkPaymentComplete,
 
+                // Quản lý quán
+                PermissionConstants.Restaurants.View,
                 PermissionConstants.Restaurants.UpdateProfile,
                 PermissionConstants.Restaurants.ManageSettings,
                 PermissionConstants.Restaurants.ViewRevenue,
 
+                // Quản lý nhân viên
                 PermissionConstants.Staffs.View,
                 PermissionConstants.Staffs.Create,
                 PermissionConstants.Staffs.Edit,
                 PermissionConstants.Staffs.Delete,
 
+                // Quản lý khách hàng & đánh giá
                 PermissionConstants.Users.View,
                 PermissionConstants.Users.ManageReviews,
+                PermissionConstants.Review.Manage,
 
+                // Quản lý tài khoản
                 PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                // Xem địa chỉ giao hàng
+                PermissionConstants.Address.View,
+
+                PermissionConstants.Orders.Cancel,            // Chủ quán phải được hủy đơn
+                PermissionConstants.Dashboard.ViewOwn,
             },
 
+            // RestaurantStaff: Nhân viên quán
             [Guid.Parse("33333333-3333-3333-3333-333333333333")] = new List<string>
             {
+                // Quản lý thực đơn
                 PermissionConstants.Products.View,
                 PermissionConstants.Products.ToggleAvailability,
                 PermissionConstants.Categories.View,
+
+                // Quản lý đơn hàng
                 PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.Confirm,
                 PermissionConstants.Orders.UpdateStatus,
-                
+                PermissionConstants.Orders.StartPreparing,
+                PermissionConstants.Orders.MarkAsReady,
+
+                // Quản lý tài khoản
                 PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                PermissionConstants.Orders.Cancel,            // Nhân viên hủy khi hết hàng
             },
 
+            // Shipper: Tài xế giao hàng
             [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new List<string>
             {
+                // Quản lý đơn hàng
                 PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewHistory,
                 PermissionConstants.Orders.UpdateStatus,
+                PermissionConstants.Orders.MarkAsDelivered,
+
+                // Quản lý tài xế
                 PermissionConstants.Shippers.AcceptOrder,
+
+                // Quản lý tài khoản
                 PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
                 PermissionConstants.Accounts.UpdateOwn,
                 PermissionConstants.Accounts.ChangePassword,
+
+                // Xem địa chỉ giao hàng
+                PermissionConstants.Address.View,
+
             },
 
+            // Customer: Khách hàng
             [Guid.Parse("55555555-5555-5555-5555-555555555555")] = new List<string>
             {
+                // Xem sản phẩm & danh mục
                 PermissionConstants.Products.View,
                 PermissionConstants.Categories.View,
+
+                // Quản lý giỏ hàng
+                PermissionConstants.Cart.View,
+                PermissionConstants.Cart.AddItem,
+                PermissionConstants.Cart.UpdateItem,
+                PermissionConstants.Cart.RemoveItem,
+                PermissionConstants.Cart.ClearCart,
+
+                // Quản lý đơn hàng
                 PermissionConstants.Orders.Create,
                 PermissionConstants.Orders.View,
-                PermissionConstants.Accounts.View,
-                PermissionConstants.Accounts.UpdateOwn,
-                PermissionConstants.Accounts.ChangePassword,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.RespondToProposal,
+
+                // Quản lý địa chỉ
                 PermissionConstants.Address.View,
                 PermissionConstants.Address.Create,
-                PermissionConstants.Address.Delete,
                 PermissionConstants.Address.Edit,
+                PermissionConstants.Address.Delete,
                 PermissionConstants.Address.SetDefault,
+
+                // Quản lý đánh giá
+                PermissionConstants.Review.Create,
+                PermissionConstants.Review.Edit,
+                PermissionConstants.Review.View,
+
+                // Quản lý tài khoản
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                PermissionConstants.Orders.Cancel,            // Khách tự hủy đơn chưa xác nhận
             }
         };
         var rolePermissionData = new List<RolePermission>();
         foreach (var role in rolePermissions)
         {
-            foreach(var permissionName in role.Value)
+            foreach(var permissionName in role.Value.Distinct()) // đảm bảo không có quyền trùng lặp trong cùng 1 role
             {
                 rolePermissionData.Add(new RolePermission
                 {

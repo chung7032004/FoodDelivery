@@ -16,14 +16,17 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
             _productService = productService;
         }
 
+        [HasPermission(PermissionConstants.Products.View)]
         [HttpGet]
         public async Task<IActionResult> GetAllProducts([FromQuery] Guid? categoryId, [FromQuery] string? q)
             => Ok(await _productService.GetAllProductsAsync(categoryId, q));
         
+        [HasPermission(PermissionConstants.Products.View)]
         [HttpGet("featured")]
         public async Task<IActionResult> GetFeaturedProducts()
             => Ok(await _productService.GetFeaturedProductsAsync());
         
+        [HasPermission(PermissionConstants.Products.View)]
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductById(Guid productId)
         {

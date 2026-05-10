@@ -9,6 +9,10 @@ using Microsoft.EntityFrameworkCore;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
     public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
     {
         _logger = logger;
@@ -17,15 +21,15 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         if (exception is AggregateException agg)
         {
+            
             exception = agg.Flatten().InnerException ?? agg;
-            {
-                exception = agg.Flatten().InnerException ?? agg;
-            }
+            
         }
         // Phân loại Exception sang StatusCode và ErrorCode bằng Pattern Matching
         var (statusCode, errorCode, message) = exception switch
         {
-            AppException appException => (appException.StatusCode, appException.ErrorCode, appException.Message),
+            AppException appException => 
+                (appException.StatusCode, appException.ErrorCode, appException.Message),
             SecurityException or UnauthorizedAccessException => 
                 (StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Yêu cầu xác thực hoặc không có quyền."),
             
@@ -35,9 +39,13 @@ public class GlobalExceptionHandler : IExceptionHandler
             ArgumentException or JsonException or ValidationException => 
                 (StatusCodes.Status400BadRequest, "INVALID_INPUT", exception.Message),
             
-            OperationCanceledException => 
-                (StatusCodes.Status408RequestTimeout, "TIMEOUT", "Yêu cầu đã bị hủy hoặc quá thời gian."),
+            OperationCanceledException
+                when context.RequestAborted.IsCancellationRequested => 
+                (499, "CLIENT_DISCONNECTED", "Client đã ngắt kết nối."),
             
+            OperationCanceledException =>
+                (StatusCodes.Status408RequestTimeout, "REQUEST_TIMEOUT", "Yêu cầu đã hết thời gian chờ."),
+
             DbUpdateException => 
                 (StatusCodes.Status500InternalServerError, "DATABASE_ERROR", "Lỗi thao tác dữ liệu."),
             
@@ -49,19 +57,23 @@ public class GlobalExceptionHandler : IExceptionHandler
         // Ghi log lỗi chi tiết
         if(statusCode >= 500)
         {
-            _logger.LogError(exception, "Unhandled Exception: {Message}. TraceId: {TraceId}", 
-                exception.Message, context.TraceIdentifier);
+            var logEx = exception is DbUpdateException dbEx ? (dbEx.InnerException ?? dbEx) : exception;
+            _logger.LogError(logEx,
+                "Unhandled Exception [{ErrorCode}]: {Message}. TraceId: {TraceId}",
+                errorCode, logEx.Message, context.TraceIdentifier);
         }
         else
         {
-            _logger.LogWarning("Handled Exception: {Message}", message);
+            _logger.LogWarning(
+                "Handled Exception [{ErrorCode}]: {Message}. TraceId: {TraceId}",
+                errorCode, message, context.TraceIdentifier);
         }
         // Trả về response lỗi chuẩn
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = statusCode;
+        
         var errorResponse = Result.Failure(errorCode, message);
-        var jsonResponse = new JsonSerializerOptions {PropertyNamingPolicy = JsonNamingPolicy.CamelCase};
-        await context.Response.WriteAsJsonAsync(errorResponse, jsonResponse, cancellationToken);
+        await context.Response.WriteAsJsonAsync(errorResponse, JsonOptions, cancellationToken);
         return true; // Trả về true để kết thúc pipeline xử lý lỗi
     }
 }

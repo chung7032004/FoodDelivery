@@ -26,7 +26,7 @@ public class CartService : ICartService
         var cart = await _cartRepository.GetCartWithItemsByCustomerIdAsync(customerId, page, pageSize);
         if(cart == null)
         {
-            return Result<PagedResponse<CartItemDto>>.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
+            return HttpErrors.NotFound<PagedResponse<CartItemDto>>("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
         }
         var items = cart.CartItems.Select(ci => new CartItemDto
         {
@@ -58,18 +58,18 @@ public class CartService : ICartService
     {   
         if(cartItemRequest.Quantity <= 0)
         {
-            return Result.Failure("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
+            return HttpErrors.BadRequest("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
         }
         var product = await _productRepository.GetByIdAsync(cartItemRequest.ProductId);
 
         if (product == null)
         {
-            return Result.Failure("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại");
+            return HttpErrors.NotFound("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại");
         }
 
         if (!product.IsAvailable)
         {
-            return Result.Failure("PRODUCT_UNAVAILABLE", "Món ăn hiện không khả dụng");
+            return HttpErrors.BadRequest("PRODUCT_UNAVAILABLE", "Món ăn hiện không khả dụng");
         }
 
         var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
@@ -108,29 +108,29 @@ public class CartService : ICartService
     {
         if(quantity <= 0)
         {
-            return Result.Failure("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
+            return HttpErrors.BadRequest("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
         }
 
         var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
         if(cart == null)
         {
-            return Result.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
+            return HttpErrors.NotFound("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
         }
 
         var product = await _productRepository.GetByIdAsync(productId);
         if (product == null)
         {
-            return Result.Failure("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại");
+            return HttpErrors.NotFound("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại");
         }
         if (!product.IsAvailable)
         {
-            return Result.Failure("PRODUCT_UNAVAILABLE", "Món ăn hiện không khả dụng");
+            return HttpErrors.BadRequest("PRODUCT_UNAVAILABLE", "Món ăn hiện không khả dụng");
         }   
 
         var cartItem = await _cartItemRepository.GetByCartIdAndProductIdAsync(cart.Id,productId);
         if(cartItem == null)
         {
-            return Result.Failure("CART_ITEM_NOT_FOUND","Món ăn không tồn tại trong giỏ hàng");
+            return HttpErrors.NotFound("CART_ITEM_NOT_FOUND","Món ăn không tồn tại trong giỏ hàng");
         }
         
         cartItem.Quantity = quantity;
@@ -144,13 +144,13 @@ public class CartService : ICartService
         var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
         if(cart == null)
         {
-            return Result.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
+            return HttpErrors.NotFound("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
         }
 
         var cartItem = await _cartItemRepository.GetByCartIdAndProductIdAsync(cart.Id,productId);
         if(cartItem == null)
         {
-            return Result.Failure("CART_ITEM_NOT_FOUND","Món ăn không tồn tại trong giỏ hàng");
+            return HttpErrors.NotFound("CART_ITEM_NOT_FOUND","Món ăn không tồn tại trong giỏ hàng");
         }
         await _cartItemRepository.DeleteAsync(cartItem);
         await _context.SaveChangesAsync();
@@ -160,7 +160,7 @@ public class CartService : ICartService
     {
         if (productIds == null || !productIds.Any())
         {
-            return Result.Failure(
+            return HttpErrors.BadRequest(
                 "EMPTY_PRODUCT_IDS",
                 "Danh sách sản phẩm cần xóa trống"
             );
@@ -169,7 +169,7 @@ public class CartService : ICartService
         var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
         if (cart == null)
         {
-            return Result.Failure(
+            return HttpErrors.NotFound(
                 "CART_NOT_FOUND",
                 "Không tìm thấy giỏ hàng"
             );
@@ -182,7 +182,7 @@ public class CartService : ICartService
 
         if (!itemsToDelete.Any())
         {
-            return Result.Failure(
+            return HttpErrors.NotFound(
                 "CART_ITEM_NOT_FOUND",
                 "Không có món nào hợp lệ để xóa"
             );

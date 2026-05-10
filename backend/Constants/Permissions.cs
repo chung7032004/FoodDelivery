@@ -41,6 +41,7 @@ namespace FoodDelivery.Constants
         // 3. Quản lý Quán (Multi-tenant)
         public static class Restaurants
         {
+            public const string View = "Permissions.Restaurants.View";
             public const string UpdateProfile = "Permissions.Restaurants.UpdateProfile";
             public const string ManageSettings = "Permissions.Restaurants.ManageSettings"; // Cài đặt giờ đóng/mở cửa, phí dịch vụ
             public const string ViewRevenue = "Permissions.Restaurants.ViewRevenue"; // Xem báo cáo doanh thu quán
@@ -111,6 +112,20 @@ namespace FoodDelivery.Constants
             public const string Edit = "Permissions.Review.Edit";
             public const string View = "Permissions.Review.View";
             public const string Manage = "Permissions.Review.Manage"; // Ẩn/Xóa review không phù hợp
+            public const string Delete = "Permissions.Review.Delete";
+        }
+        public static class Notifications
+        {
+            public const string View = "Permissions.Notifications.View";
+            public const string MarkAsRead = "Permissions.Notifications.MarkAsRead";
+            public const string Delete = "Permissions.Notifications.Delete";
+            public const string Send = "Permissions.Notifications.Send"; // Admin gửi thông báo hệ thống
+        }
+
+        public static class Dashboard
+        {
+            public const string ViewOwn = "Permissions.Dashboard.ViewOwn";       // Owner xem dashboard quán mình
+            public const string ViewSystem = "Permissions.Dashboard.ViewSystem"; // Admin xem toàn hệ thống
         }
     }
 }

@@ -13,6 +13,7 @@ public class RestaurantController : ControllerBase
     {
         _restaurantService = restaurantService;
     }
+    [HasPermission(PermissionConstants.Restaurants.View)]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
@@ -28,6 +29,7 @@ public class RestaurantController : ControllerBase
         return Ok(result);
     }
     // xem trạng thái quán
+    [HasPermission(PermissionConstants.Restaurants.ManageSettings)]
     [HttpGet("status")]
     public async Task<ActionResult> GetStatus()
     {

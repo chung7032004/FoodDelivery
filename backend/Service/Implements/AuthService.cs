@@ -40,16 +40,16 @@ namespace FoodDelivery.Service.Implementations
         {
             if(string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone))
             {
-                return Result.Failure("INVALID_INPUT","Thông tin không hợp lệ");
+                return HttpErrors.BadRequest("INVALID_INPUT","Thông tin không hợp lệ");
             }
             // Validate phone number: phải bắt đầu 0 và đủ 10 chữ số
             if(!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0\d{9}$"))
             {
-                return Result.Failure("INVALID_PHONE", "Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số");
+                return HttpErrors.BadRequest("INVALID_PHONE", "Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số");
             }
             if(await _userRepository.IsEmailExistsAsync(email.Trim()))
             {
-                return Result.Failure("EMAIL_EXITS", "Email đã tồn tại");
+                return HttpErrors.BadRequest("EMAIL_EXITS", "Email đã tồn tại");
             }
             var hmac = new HMACSHA512();
             var passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
@@ -66,7 +66,7 @@ namespace FoodDelivery.Service.Implementations
             var defaultRole = await _roleRepository.GetByNameAsync("Customer");
             if(defaultRole == null)
             {
-                return Result.Failure("ROLE_INVALID", "Role Customer không tồn tại");
+                return HttpErrors.BadRequest("ROLE_INVALID", "Role Customer không tồn tại");
             }
             else
             {
@@ -84,7 +84,7 @@ namespace FoodDelivery.Service.Implementations
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
-                return Result<LoginResponse>.Failure("INVALID_INPUT","Email hoặc mật khẩu trống");
+                return HttpErrors.BadRequest<LoginResponse>("INVALID_INPUT","Email hoặc mật khẩu trống");
             }
             
             var user = await _userRepository.GetByEmailAsync(email);
@@ -95,16 +95,16 @@ namespace FoodDelivery.Service.Implementations
             if (user == null)
             {
                 VerifyPasswordHash(password, fakeHash, fakeSalt); // GIẢ
-                return Result<LoginResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
+                return HttpErrors.NotFound<LoginResponse>("USER_NOT_FOUND", "User không tồn tại");
             }
 
             if (!user.IsActive)
             {
-                return Result<LoginResponse>.Failure("USER_INACTIVE","Tài khoảng bị khóa");
+                return HttpErrors.BadRequest<LoginResponse>("USER_INACTIVE","Tài khoảng bị khóa");
             }
             if(!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
             {
-                return Result<LoginResponse>.Failure("INVALID_PASSWORD","Sai email hoặc mật khẩu");
+                return HttpErrors.BadRequest<LoginResponse>("INVALID_PASSWORD","Sai email hoặc mật khẩu");
             }
             var accessToken = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
@@ -216,13 +216,13 @@ namespace FoodDelivery.Service.Implementations
             var refresh = await _refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
             if(refresh == null || refresh.IsRevoked || refresh.ExpiresAt < DateTime.UtcNow)
             {
-                return Result<RefreshTokenResponse>.Failure("REFRESH_INVALID","Refresh token không hợp lệ");
+                return HttpErrors.BadRequest<RefreshTokenResponse>("REFRESH_INVALID","Refresh token không hợp lệ");
             }
 
             var user = await _userRepository.GetUserByIdWithRoleAsync(refresh.UserId);
             if(user == null)
             {
-                return Result<RefreshTokenResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
+                return HttpErrors.BadRequest<RefreshTokenResponse>("USER_NOT_FOUND", "User không tồn tại");
             }
             refresh.IsRevoked = true;
             refresh.RevokedAt = DateTime.UtcNow;
@@ -249,7 +249,7 @@ namespace FoodDelivery.Service.Implementations
             var refresh = await _refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
             if(refresh == null || refresh.UserId != userId)
             {
-                return Result.Failure("REFRESH_NOT_FOUND", "Refresh token không hợp lệ");
+                return HttpErrors.BadRequest("REFRESH_NOT_FOUND", "Refresh token không hợp lệ");
             }
             if(refresh.ExpiresAt < DateTime.UtcNow ||refresh.IsRevoked)
             {
@@ -266,11 +266,11 @@ namespace FoodDelivery.Service.Implementations
         {
             if(changePasswordRequest.NewPassword != changePasswordRequest.ConfirmNewPassword)
             {
-                return Result.Failure("PASSWORD_MISMATCH", "Mật khẩu xác nhận không khớp");
+                return HttpErrors.BadRequest("PASSWORD_MISMATCH", "Mật khẩu xác nhận không khớp");
             }
             if(changePasswordRequest.NewPassword == changePasswordRequest.OldPassword)
             {
-                return Result.Failure(
+                return HttpErrors.BadRequest(
                     "PASSWORD_SAME_AS_OLD",
                     "Mật khẩu mới không được trùng mật khẩu cũ"
                 );
@@ -278,11 +278,11 @@ namespace FoodDelivery.Service.Implementations
             var user = await _userRepository.GetByIdAsync(userId);
             if(user == null)
             {
-                return Result.Failure("USER_NOT_FOUND", "Không tìm thấy người dùng");
+                return HttpErrors.NotFound("USER_NOT_FOUND", "Không tìm thấy người dùng");
             }
             if(!VerifyPasswordHash(changePasswordRequest.OldPassword,user.PasswordHash, user.PasswordSalt))
             {
-                return Result.Failure("INVALID_PASSWORD", "Mật khẩu cũ không đúng");
+                return HttpErrors.BadRequest("INVALID_PASSWORD", "Mật khẩu cũ không đúng");
             }
             var hmac = new HMACSHA512();
             await _refreshTokenRepository.RevokeAllAsync(userId);
@@ -298,7 +298,7 @@ namespace FoodDelivery.Service.Implementations
                 var user = await _userRepository.GetByEmailAsync(request.Email);
                 if(user == null)
                 {
-                    return Result.Failure("EMAIL_INVALID","Không tồn tại tài khoảng.");
+                    return HttpErrors.BadRequest("EMAIL_INVALID","Không tồn tại tài khoảng.");
                 }
                 var oldOpts = await _passwordResetOtpRepository.GetAllByUserId(user.Id);
                 await _passwordResetOtpRepository.DeleteRangeAsync(oldOpts);
@@ -316,12 +316,12 @@ namespace FoodDelivery.Service.Implementations
                 await _passwordResetOtpRepository.AddAsync(reset);
                 await _context.SaveChangesAsync();
                 try{
-                await _emailService.SendOtpEmailAsync(request.Email,otp);
+                    await _emailService.SendOtpEmailAsync(request.Email,otp);
                 }
                 catch(Exception ex)
                 {
                     _logger.LogError(ex, "Lỗi gửi email OTP cho {Email}", request.Email);
-                    return Result.Failure("EMAIL_SERVICE_ERROR", "Không thể gửi email lúc này. Vui lòng thử lại sau.");
+                    return HttpErrors.ServiceUnavailable("EMAIL_SERVICE_ERROR", "Không thể gửi email lúc này. Vui lòng thử lại sau.");
                 }
                 return Result.Success();
             }
@@ -342,24 +342,24 @@ namespace FoodDelivery.Service.Implementations
                 var record = await _passwordResetOtpRepository.GetByEmailAsync(email);
                 if(record == null)
                 {
-                    return Result.Failure("OTP_INVALID","Yêu cầu khôi phục không tồn tại");
+                    return HttpErrors.BadRequest("OTP_INVALID","Yêu cầu khôi phục không tồn tại");
                 }
                 if (record.RetryCount >= 5)
                 {
                     //Nếu sai quá nhiều, xóa luôn OTP để bắt người dùng tạo yêu cầu mới
                     await _passwordResetOtpRepository.DeleteAsync(record);
                     await _context.SaveChangesAsync();
-                    return Result.Failure("OTP_LOCKED", "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.");
+                    return HttpErrors.BadRequest("OTP_LOCKED", "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.");
                 }
                 if(record.ExpiresAt  < DateTime.UtcNow)
                 {
-                    return Result.Failure("OTP_EXPIRED", "Mã OTP đã hết hạn.");
+                    return HttpErrors.BadRequest("OTP_EXPIRED", "Mã OTP đã hết hạn.");
                 }
                 if(!VerifyPasswordHash(otp, record.OtpHash, record.OtpSalt))
                 {
                     record.RetryCount++;
                     await _context.SaveChangesAsync();
-                    return Result.Failure("OTP_INVALID","OTP không đúng.");
+                    return HttpErrors.BadRequest("OTP_INVALID","OTP không đúng.");
                 }
                 var hmac = new HMACSHA512();
                 await _refreshTokenRepository.RevokeAllAsync(record.UserId);

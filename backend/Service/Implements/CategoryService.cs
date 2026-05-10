@@ -1,7 +1,7 @@
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Category;
 using FoodDelivery.Entities;
-using FoodDelivery.Repositories.Interfaces;
+
 
 namespace FoodDelivery.Service.Implementations
 {
@@ -24,18 +24,17 @@ namespace FoodDelivery.Service.Implementations
             var categories = await _repo.GetAllAsync();
             if (categories == null)
             {
-                return Result<IEnumerable<CategoryResponseDto>>.Failure("CATEGORY_NOT_FOUND","Không tìm thấy danh mục.");
+                return HttpErrors.NotFound<IEnumerable<CategoryResponseDto>>("CATEGORY_NOT_FOUND","Không tìm thấy danh mục.");
             }
             return Result<IEnumerable<CategoryResponseDto>>.Success(categories.Select(MapToDto));
         }
-
 
         public async Task<Result<CategoryResponseDto?>> GetByIdAsync(Guid id)
         {
             var category = await _repo.GetByIdAsync(id);
             if (category == null)
             {
-                return Result<CategoryResponseDto?>.Failure("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
+                return HttpErrors.NotFound<CategoryResponseDto?>("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
             }
             return Result<CategoryResponseDto?>.Success(MapToDto(category));
         }
@@ -59,7 +58,7 @@ namespace FoodDelivery.Service.Implementations
         public async Task<Result> UpdateAsync(Guid id, CategoryUpdateDto dto)
         {
             var category = await _repo.GetByIdAsync(id);
-            if (category == null) return Result.Failure("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
+            if (category == null) return HttpErrors.NotFound("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
 
             category.Name = dto.Name;
             category.Description = dto.Description;
@@ -74,7 +73,7 @@ namespace FoodDelivery.Service.Implementations
         public async Task<Result> DeleteAsync(Guid id)
         {
             var category = await _repo.GetByIdAsync(id);
-            if (category == null) return Result.Failure("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
+            if (category == null) return HttpErrors.NotFound("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
 
             _repo.Delete(category);
             await _context.SaveChangesAsync();

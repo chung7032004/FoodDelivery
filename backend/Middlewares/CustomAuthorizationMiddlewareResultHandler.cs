@@ -11,7 +11,8 @@ public class CustomAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewa
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(Result.Failure("FORBIDDEN", "Bạn không có quyền truy cập tài nguyên này."));
+            
+            await context.Response.WriteAsJsonAsync(Result.Failure("FORBIDDEN", "Bạn không có quyền truy cập tài nguyên này.", StatusCodes.Status403Forbidden));
             return;
         }
         await _defaultHandler.HandleAsync(next, context, policy, authorizationResult);

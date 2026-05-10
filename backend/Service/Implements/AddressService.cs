@@ -36,7 +36,7 @@ public class AddressService : IAddressService
         var address = await _addressRepository.GetByIdAndUserIdAsync(addressId, userId);
         if(address == null)
         {
-            return Result<AddressResponse>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound<AddressResponse>("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
         var response = new AddressResponse
         {
@@ -55,7 +55,7 @@ public class AddressService : IAddressService
     {
         if(addressRequest == null)
         {
-            return Result<AddAddressResponse>.Failure("ADDRESS_INVALID","Địa chỉ thêm vào không hợp lệ");
+            return HttpErrors.BadRequest<AddAddressResponse>("ADDRESS_INVALID","Địa chỉ thêm vào không hợp lệ");
         }
         var address = new Address
         {
@@ -106,7 +106,7 @@ public class AddressService : IAddressService
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
         {
-            return Result.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
         address.FullAddress = addressRequest.FullAddress;
         address.Label = addressRequest.Label;
@@ -135,7 +135,7 @@ public class AddressService : IAddressService
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
         {
-            return Result.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
         bool wasDefault = address.IsDefault;
         Guid userId = address.UserId;
@@ -160,7 +160,7 @@ public class AddressService : IAddressService
         var address = await _addressRepository.GetByIdAndUserIdAsync(addressId,userId);
         if(address == null)
         {
-            return Result.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
         var addressDefault = await _addressRepository.GetDefaultByUserIdAsync(userId);
         if (addressDefault == null || address.Id != addressDefault.Id)

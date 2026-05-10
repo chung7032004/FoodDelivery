@@ -27,11 +27,7 @@ public class AccountController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _service.GetAccountAsync(userId);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HasPermission(PermissionConstants.Accounts.UpdateOwn)]
@@ -41,11 +37,7 @@ public class AccountController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _service.UpdateAccountAsync(userId, accountRequest);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet]
@@ -53,7 +45,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> GetAllUsers([FromQuery] UserFilterModel filter)
     {
         var result = await _userService.GetAllUsersAsync(filter);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("{id}")]
@@ -61,11 +53,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> GetUserDetail(Guid id)
     {
         var result = await _userService.GetUserDetailAsync(id);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPatch("{id}/block")]
@@ -73,11 +61,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> BlockUser(Guid id)
     {
         var result = await _userService.BlockUserAsync(id);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPatch("{id}/unblock")]
@@ -85,11 +69,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> UnblockUser(Guid id)
     {
         var result = await _userService.UnblockUserAsync(id);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPut("{id}")]
@@ -98,11 +78,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> UpdateUser(Guid id, [FromForm] AccountRequest accountRequest)
     {
         var result = await _service.UpdateAccountAsync(id, accountRequest);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpDelete("{id}")]
@@ -110,11 +86,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> DeleteAsync(Guid id)
     {
         var result = await _service.DeleteAccountAsync(id);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok();
+        return result.ToActionResult();
     }
     
 }
