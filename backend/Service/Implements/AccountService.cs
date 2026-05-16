@@ -20,7 +20,7 @@ public class AccountService : IAccountService
         var user = await _userRepository.GetUserByIdWithRoleAsync(userId);
         if(user == null)
         {
-            return Result<AccountResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
+            return HttpErrors.NotFound<AccountResponse>("USER_NOT_FOUND", "User không tồn tại");
         }
         var avatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
             ? "/uploads/avatars/default.png"
@@ -80,7 +80,7 @@ public class AccountService : IAccountService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            return Result<AccountResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
+            return HttpErrors.NotFound<AccountResponse>("USER_NOT_FOUND", "User không tồn tại");
         }
 
         user.FullName = request.FullName.Trim();
@@ -108,7 +108,6 @@ public class AccountService : IAccountService
         {
             return HttpErrors.NotFound("USER_NOT_FOUND", "User không tồn tại");
         }
-
         _fileService.DeleteFile(user.AvatarUrl);
         await _userRepository.DeleteSoftAsync(userId);
         await _context.SaveChangesAsync();

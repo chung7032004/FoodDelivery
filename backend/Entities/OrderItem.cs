@@ -12,6 +12,6 @@ namespace FoodDelivery.Entities
         public decimal UnitPrice {get; set;}
         public bool IsRemoved { get; set; } = false;        //món bị bỏ
         public string? RemoveReason { get; set; }  //"Out of stock"
-        public Review Review { get; set; } = null!;
+        public Review? Review { get; set; }
     }
 }

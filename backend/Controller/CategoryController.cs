@@ -1,6 +1,7 @@
 using FoodDelivery.DTOs.Category;
 using PermissionConstants = FoodDelivery.Constants.Permissions;
 using Microsoft.AspNetCore.Mvc;
+using FoodDelivery.Extensions;
 
 namespace FoodDelivery.Controllers
 {
@@ -20,11 +21,7 @@ namespace FoodDelivery.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _service.GetAllCategoriesAsync();
-            if(!result.IsSuccess)
-            {
-                return NotFound(result);
-            }
-            return Ok(result);
+            return result.ToActionResult();
         }
 
         [HttpGet("{id}")]
@@ -32,8 +29,7 @@ namespace FoodDelivery.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
-            if (result == null) return NotFound();
-            return Ok(result);
+            return result.ToActionResult();
         }
 
         [HttpPost]
@@ -41,26 +37,23 @@ namespace FoodDelivery.Controllers
         public async Task<IActionResult> Create(CategoryCreateDto dto)
         {
             var result = await _service.CreateAsync(dto);
-            if (!result.IsSuccess) return BadRequest(result);
-            return CreatedAtAction(nameof(GetById), new { id = result.Data?.Id }, result);
+            return result.ToActionResult();
         }
 
         [HttpPut("{id}")]
         [HasPermission(PermissionConstants.Categories.Manage)]
         public async Task<IActionResult> Update(Guid id, CategoryUpdateDto dto)
         {
-            var success = await _service.UpdateAsync(id, dto);
-            if (!success.IsSuccess) return NotFound();
-            return NoContent();
+            var result = await _service.UpdateAsync(id, dto);
+            return result.ToActionResult();
         }
 
         [HttpDelete("{id}")]
         [HasPermission(PermissionConstants.Categories.Manage)]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var success = await _service.DeleteAsync(id);
-            if (!success.IsSuccess) return NotFound();
-            return NoContent();
+            var result = await _service.DeleteAsync(id);
+            return result.ToActionResult();
         }
     }
 }

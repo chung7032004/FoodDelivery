@@ -25,4 +25,8 @@ public static class HttpErrors
         => Result<T>.Failure(code, message, 403);
     public static Result ServiceUnavailable(string code, string message)
         => Result.Failure(code, message, 503);
+    public static Result<T> ServiceUnavailable<T>(string code, string message)
+        => Result<T>.Failure(code, message, 503);
+    public static Result InternalServerError(string code, string message)        => Result.Failure(code, message, 500);
+    public static Result<T> InternalServerError<T>(string code, string message)        => Result<T>.Failure(code, message, 500);
 }

@@ -31,11 +31,7 @@ public class AddressController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _addressService.GetAddressById(id, userId);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result); 
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost]
     [HasPermission(PermissionConstants.Address.Create)]
@@ -47,7 +43,7 @@ public class AddressController : ControllerBase
         {
             return CreatedAtAction(nameof(GetById),new {id = result.Data.Id},result);
         }
-        return BadRequest(result);
+        return result.ToActionResult();
     }
     [HttpPut("{id}")]
     [HasPermission(PermissionConstants.Address.Edit)]
@@ -55,22 +51,14 @@ public class AddressController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _addressService.UpdateAddress(userId,id, addressRequest);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpDelete("{id}")]
     [HasPermission(PermissionConstants.Address.Delete)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _addressService.DeleteAddress(id);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPatch("{id}/default")]
     [HasPermission(PermissionConstants.Address.SetDefault)]
@@ -78,10 +66,6 @@ public class AddressController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _addressService.SetDefault(userId,id);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

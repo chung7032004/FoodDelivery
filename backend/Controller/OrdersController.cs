@@ -47,39 +47,17 @@ public class OrdersController : ControllerBase
         var result = await _orderService.CheckoutAsync(customerId,request);
         if (!result.IsSuccess)
         {
-            return result.ErrorCode switch
-            {
-                  
-                "CART_EMPTY" => BadRequest(result),
-                "ADDRESS_NOT_FOUND" => NotFound(result),
-                "INVALID_QUANTITY" => BadRequest(result),
-                "FORBIDDEN" => Forbid(),
-                "PRODUCT_UNAVAILABLE" => BadRequest(result),
-                "TOO_FAR" => BadRequest(result),
-                "RESTAURANT_NOT_CONFIGURED" =>Conflict(result),
-                _ => BadRequest(result),
-            };
+            return result.ToActionResult();
         }
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
     [HttpGet("orders/shipping-fee")]
     [HasPermission(PermissionConstants.Orders.View)]
-    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] int itemCount = 1)
+    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] Guid restaurantId)
     {
-        var result = await _orderService.CalculateShippingFeeAsync(addressId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ADDRESS_NOT_FOUND" => NotFound(result),
-                "RESTAURANT_NOT_CONFIGURED" => Conflict(result),
-                "TOO_FAR" => BadRequest(result),
-                _ => BadRequest(result),
-            };
-        }
-        
-        return Ok(result);
+        var result = await _orderService.CalculateShippingFeeAsync(addressId,restaurantId);
+        return result.ToActionResult();
     }
 
     [HttpGet("orders/history")]
@@ -88,9 +66,7 @@ public class OrdersController : ControllerBase
     {
         var customerId = User.GetUserId();
          var result = await _orderService.GetMyOrderAsync(customerId, page, pageSize);
-        if (!result.IsSuccess)
-            return BadRequest(result); 
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpGet("orders/{orderId}")]
     [HasPermission(PermissionConstants.Orders.View)]
@@ -102,14 +78,7 @@ public class OrdersController : ControllerBase
         
         var result = await _orderService.GetOrderDetailAsync(customerId,roles,orderId);
         Console.WriteLine($"[GetOrderDetail] Service result - Success: {result.IsSuccess}, Error: {result.ErrorCode}");
-        if (!result.IsSuccess)
-            return result.ErrorCode switch
-            {
-                "ORDER__NOT_FOUND" => NotFound(result),
-                "ORDER__FORBIDDEN" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("orders/{orderId}/cancel")]
     [HasPermission(PermissionConstants.Orders.Cancel)]
@@ -117,11 +86,7 @@ public class OrdersController : ControllerBase
     {
         var customerId = User.GetUserId();
         var result = await _orderService.CancelOrderByCustomerAsync(customerId,orderId,request);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
+        return result.ToActionResult();
     }
     [HttpPost("orders/{orderId}/respond-proposal")]
     [HasPermission(PermissionConstants.Orders.RespondToProposal)]
@@ -129,18 +94,7 @@ public class OrdersController : ControllerBase
     {
         var customerId = User.GetUserId();
         var result = await _orderService.RespondToProposalAsync(customerId,orderId,request);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return result.ErrorCode switch
-        {
-            "ORDER_NOT_FOUND" => NotFound(result),
-            "INVALID_STATUS" => BadRequest(result),
-            "DATA_ERROR" => BadRequest(result),
-            "EMPTY_ORDER" =>BadRequest(result),
-            _ => BadRequest(result)
-        };
+        return result.ToActionResult();
     }
     
     [HttpGet("admin/orders")]
@@ -148,7 +102,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetAdminOrder([FromQuery] OrderFilterModel filter)
     {
         var result = await _orderService.GetOrderAdminAsync(filter);
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/confirm")]
     [HasPermission(PermissionConstants.Orders.ConfirmOrder)]
@@ -156,16 +110,7 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.ConfirmOrderAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(),
-                _=> BadRequest(result),
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/out-of-stock")]
     [HasPermission(PermissionConstants.Orders.OutOfStock)]
@@ -173,17 +118,7 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.OutOfStockAsync(adminId,orderId,request);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "NO_ITEMS_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/start-preparing")]
     [HasPermission(PermissionConstants.Orders.StartPreparing)]
@@ -191,16 +126,7 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.StartPreparingAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/final-preparing")]
     [HasPermission(PermissionConstants.Orders.MarkAsReady)]
@@ -208,16 +134,7 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.MarkAsReadyAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -229,16 +146,7 @@ public class OrdersController : ControllerBase
     {
         var shipperId = User.GetUserId();
         var result = await _orderService.MarkAsDeliveredAsync(shipperId, orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     
     [HttpPut("orders/{orderId}/payment-complete")]
@@ -246,15 +154,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> MarkPaymentComplete(Guid orderId)
     {
         var result = await _orderService.MarkPaymentCompleteAsync(orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("admin/orders/{orderId}/cancel")]
@@ -264,16 +164,7 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.CancelOrderByAdminAsync(adminId,orderId,request);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("admin/orders/{orderId}/assign-shipper")]
@@ -282,16 +173,6 @@ public class OrdersController : ControllerBase
     {
         var adminId = User.GetUserId();
         var result = await _orderService.AssignShipperAsync(adminId, orderId, request.ShipperId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                "INVALID_SHIPPER" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

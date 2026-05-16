@@ -77,16 +77,7 @@ public class CartController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _cartService.DeleteCartItemAsync(userId,productId);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return result.ErrorCode switch
-        {
-            "CART_NOT_FOUND" => NotFound(result),
-            "CART_ITEM_NOT_FOUND" => NotFound(result),
-            _ => BadRequest(result)
-        };
+        return result.ToActionResult();
     }
 
     [HttpDelete("items")]
@@ -95,17 +86,7 @@ public class CartController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _cartService.DeleteCartItemRangeAsync(userId,request.ProductIds);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return result.ErrorCode switch
-        {
-            "EMPTY_PRODUCT_IDS" => BadRequest(result),
-            "CART_NOT_FOUND" => NotFound(result),
-            "CART_ITEM_NOT_FOUND" => NotFound(result),
-            _ => BadRequest(result)
-        };
+        return result.ToActionResult();
     }
     [HttpDelete()]
     [HasPermission(PermissionConstants.Cart.ClearCart)]
@@ -113,10 +94,6 @@ public class CartController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _cartService.DeleteCartAsync(userId);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return NotFound(result);
+        return result.ToActionResult();
     }
 }
