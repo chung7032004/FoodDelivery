@@ -58,10 +58,7 @@ var builder = WebApplication.CreateBuilder(args);
 //Cấu hình kết nối Database Postgresql
 var configuration = builder.Configuration;
 builder.Services.AddDbContext<FoodContext>(options =>
-    options.UseNpgsql(
-        configuration.GetConnectionString("Default"),
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
-    )
+    options.UseNpgsql(configuration.GetConnectionString("Default"))
 );
 
 //Định nghĩa chính sách CORS

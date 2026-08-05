@@ -1,3 +1,4 @@
+using FoodDelivery.Common;
 using FoodDelivery.DTOs.Product;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
@@ -9,80 +10,135 @@ namespace FoodDelivery.Service.Implements
     {
         private readonly IProductRepository _productRepo;
         private readonly FoodContext _context;
-
+        private readonly IFileService _fileService;
         public ProductService(
             IProductRepository productRepo,
-            FoodContext context)
+            FoodContext context,
+            IFileService fileService)
         {
             _productRepo = productRepo;
             _context = context;
+            _fileService = fileService;
+            _context = context;
         }
 
-        public async Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync(Guid? categoryId = null, string? searchQuery = null)
+        public async Task<Result<PagedResponse<ProductResponseDto>>> GetALlProductsAsync(Guid? categoryId = null, string? searchQuery = null, int page = 1, int pageSize = 10)
         {
-            var products = await _productRepo.GetAllAsync();
-            
-            // Filter by category if provided
-            if (categoryId.HasValue)
+            pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
+            page = page < 1 ? 1 : page;
+            var (totalCount,products) = await _productRepo.GetAllAsync(categoryId,searchQuery,page,pageSize);
+            var productsResponse = products.Select(p => new ProductResponseDto
             {
-                products = products.Where(p => p.CategoryId == categoryId.Value).ToList();
-            }
-            
-            // Filter by search query if provided
-            if (!string.IsNullOrWhiteSpace(searchQuery))
-            {
-                var lowerQuery = searchQuery.ToLower();
-                products = products.Where(p => 
-                    p.Name.ToLower().Contains(lowerQuery) || 
-                    (p.Category != null && p.Category.Name.ToLower().Contains(lowerQuery))
-                ).ToList();
-            }
-            
-            return products
-                .OrderBy(p => p.DisplayOrder)
-                .Select(MapToDto);
+                Id = p.Id,                  
+                Name = p.Name,
+                Price = p.Price, 
+                MainImageUrl = p.ProductImages.Where(i=>i.IsMain).Select(i=>i.ImageUrl).FirstOrDefault() 
+                            ?? p.ProductImages.Select(i=>i.ImageUrl).FirstOrDefault(),       
+                IsAvailable = p.IsAvailable,
+                IsFeatured = p.IsFeatured,
+                DisplayOrder = p.DisplayOrder,
+                CreatedAt = p.CreatedAt,
+                CategoryId = p.Category.Id,
+                CategoryName = p.Category.Name,
+                RestaurantId = p.RestaurantId
+            }).ToList();
+            var responseMeta = new PaginationMeta(
+                Page : page,
+                PageSize : productsResponse.Count,
+                TotalCount : totalCount,
+                TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
+            );
+            var response = new PagedResponse<ProductResponseDto>(
+                Meta : responseMeta,
+                Data : productsResponse
+            );
+            return Result<PagedResponse<ProductResponseDto>>.Success(response);
         }
 
-        public async Task<IEnumerable<ProductResponeDto>> GetFeaturedProductsAsync()
-        {
-            var products = await _productRepo.GetAllAsync();
-            return products
-                .Where(p => p.IsFeatured && p.IsAvailable)
-                .OrderBy(p => p.DisplayOrder)
-                .Select(MapToDto);
-        }
+        // public async Task<IEnumerable<ProductResponseDto>> GetFeaturedProductsAsync()
+        // {
+        //     var products = await _productRepo.GetAllAsync();
+        //     return products
+        //         .Where(p => p.IsFeatured && p.IsAvailable)
+        //         .OrderBy(p => p.DisplayOrder)
+        //         .Select(MapToDto);
+        // }
 
-        public async Task<ProductResponeDto?> GetProductByIdAsync(Guid productId)
+        public async Task<ProductResponseDto?> GetProductByIdAsync(Guid productId)
         {
             var product = await _productRepo.GetByIdAsync(productId);
             return product == null ? null : MapToDto(product);
         }
 
-        public async Task<ProductResponeDto> CreateProductAsync(ProductCreateDto dto)
+
+
+        public async Task<Result<ProductResponseDto>> CreateProductAsync(ProductCreateDto request)
         {
-            // Get all products to calculate next display order
-            var allProducts = await _productRepo.GetAllAsync();
-            
-            // If displayOrder is not provided or is 0, calculate it automatically
-            // Use count * 10 to allow room for insertions between products
-            int displayOrder = dto.DisplayOrder > 0 ? dto.DisplayOrder : (allProducts.Count() * 10);
-            
+            int count = await _productRepo.CountAsync(p => p.CategoryId == request.CategoryId);
+            int displayOrder = request.DisplayOrder > 0 ? request.DisplayOrder : (count + 1) * 10;
+
             var product = new Product
             {
-                CategoryId = dto.CategoryId,
-                Name = dto.Name,
-                Price = dto.Price,
-                // ImageUrl = dto.ImageUrl ?? string.Empty,
-                IsAvailable = dto.IsAvailable,
-                IsFeatured = dto.IsFeatured,
+                RestaurantId = request.RestaurantId,
+                CategoryId = request.CategoryId,
+                Name = request.Name,
+                Price = request.Price,
+                Description = request.Description ?? string.Empty,
+                IsAvailable = request.IsAvailable,
+                IsFeatured = request.IsFeatured,
                 DisplayOrder = displayOrder,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ProductImages = new List<ProductImage>()
             };
 
-            await _productRepo.AddAsync(product);
-            await _context.SaveChangesAsync();
+            var uploadedUrls = new List<string>();
 
-            return MapToDto(product);
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (request.Images != null && request.Images.Count > 0)
+                {
+                    foreach (var image in request.Images)
+                    {
+                        var uploadResult = await _fileService.SaveFileAsync(image.ImageFile, "products");
+                        if (!uploadResult.IsSuccess || string.IsNullOrEmpty(uploadResult.Data))
+                        {
+                            // Rollback ảnh đã upload trước đó
+                            foreach (var url in uploadedUrls)
+                                _fileService.DeleteFile(url);
+
+                            return HttpErrors.BadRequest<ProductResponseDto>(
+                                "IMAGE_UPLOAD_FAILED",
+                                "Upload ảnh thất bại cho sản phẩm với tên " + image.ImageFile.FileName);
+                        }
+
+                        uploadedUrls.Add(uploadResult.Data); // track để rollback nếu cần
+                        product.ProductImages.Add(new ProductImage
+                        {
+                            ImageUrl = uploadResult.Data,
+                            IsMain = image.IsMain,
+                            DisplayOrder = image.DisplayOrder,
+                            CreatedAt = DateTime.UtcNow,
+                        });
+                    }
+                }
+
+                await _productRepo.AddAsync(product);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Result<ProductResponseDto>.Success(MapToDto(product));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                foreach (var url in uploadedUrls)
+                    _fileService.DeleteFile(url);
+
+                return HttpErrors.BadRequest<ProductResponseDto>(
+                    "CREATE_PRODUCT_FAILED",
+                    "Tạo sản phẩm thất bại: " + ex.Message);
+            }
         }
 
         public async Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto dto)
@@ -139,21 +195,26 @@ namespace FoodDelivery.Service.Implements
             return true;
         }
 
-        private static ProductResponeDto MapToDto(Product p)
+       private static ProductResponseDto MapToDto(Product p)
         {
-            return new ProductResponeDto
+            // Lấy ảnh chính (IsMain = true) hoặc ảnh đầu tiên nếu không có ảnh chính
+            var mainImage = p.ProductImages?
+                .FirstOrDefault(img => img.IsMain) ?? p.ProductImages?.FirstOrDefault();
+            
+            return new ProductResponseDto
             {
                 Id = p.Id,
                 CategoryId = p.CategoryId,
-                CategoryName = p.Category?.Name ?? "",
+                CategoryName = p.Category?.Name ?? string.Empty,
+                RestaurantId = p.RestaurantId,  // Thêm RestaurantId
                 Name = p.Name,
                 Price = p.Price,
-                // ImageUrl = p.ImageUrl,
+                MainImageUrl = mainImage?.ImageUrl,  // Lấy URL ảnh chính
                 IsAvailable = p.IsAvailable,
                 IsFeatured = p.IsFeatured,
                 DisplayOrder = p.DisplayOrder,
-                CreatedAt = p.CreatedAt,
-                UpdatedAt = p.UpdatedAt
+                CreatedAt = p.CreatedAt
+                // Không có UpdatedAt trong DTO mới
             };
         }
     }

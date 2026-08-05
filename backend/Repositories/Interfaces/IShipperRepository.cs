@@ -8,7 +8,8 @@ namespace FoodDelivery.Repositories.Interfaces
         void UpdateOrderDetail(OrderDetail orderDetail);
         Task AddStatusHistoryAsync(OrderStatusHistory history);
         Task<bool> SaveChangesAsync();
-        Task<List<User>> GetAllShippersAsync();
+        Task<(List<Shipper> Items, int TotalCount)> GetAllShippersAsync(int page, int pageSize);
+        Task<(List<Shipper> Items, int TotalCount)> GetPendingApplicationsAsync(int page, int pageSize);
         Task<Shipper?> GetShipperByIdAsync(Guid userId);
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId);
         Task<List<OrderDetail>> GetShipperCompletedOrdersAsync(Guid shipperId);
@@ -16,8 +17,9 @@ namespace FoodDelivery.Repositories.Interfaces
         Task AddShipperAsync(Shipper shipper);
         Task<decimal> GetTodayEarningsAsync(Guid shipperId);
         Task<decimal> GetTotalEarningsAsync(Guid shipperId);
-        Task<Role?> GetRoleByNameAsync(string roleName);
         Task AddUserRoleAsync(UserRole userRole);
+        Task<List<OrderDetail>> GetOrdersByShipperAsync(Guid shipperId);
+        Task<bool> HasShipperRecordAsync(Guid userId);
     }
 }
         

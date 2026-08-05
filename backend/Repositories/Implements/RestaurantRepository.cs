@@ -21,10 +21,8 @@ public class RestaurantRepository : IRestaurantRepository
     // Lấy quán mà user đang quản lý (qua bảng Staff)
     public async Task<Restaurant?> GetRestaurantByUserIdAsync(Guid userId)
     {
-        return await _context.Staff
-            .Where(s => s.UserId == userId && s.IsActive)
-            .Select(s => s.Restaurant)
-            .FirstOrDefaultAsync();
+        return await _context.Restaurants
+            .FirstOrDefaultAsync(r => r.OwnerId == userId);
     }
 
     public async Task<Restaurant?> GetStatusByIdAsync(Guid restaurantId)

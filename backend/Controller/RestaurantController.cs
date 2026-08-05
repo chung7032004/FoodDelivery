@@ -92,4 +92,13 @@ public class RestaurantController : ControllerBase
             };
         return Ok(result);
     }
+
+    [Authorize]
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterRestaurant([FromBody] RegisterRestaurantRequest request)
+    {
+        var userId = User.GetUserId();
+        var result = await _restaurantService.RegisterRestaurantAsync(userId, request);
+        return result.ToActionResult();
+    }
 }

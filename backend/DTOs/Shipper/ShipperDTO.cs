@@ -1,4 +1,4 @@
-namespace FoodDelivery.DTOs
+namespace FoodDelivery.DTOs.Shipper
 {
     public class ShipperActionDTO
     {
@@ -65,4 +65,39 @@ namespace FoodDelivery.DTOs
         public bool? IsAvailable { get; set; }
     }
     
+    public class ApplyShipperDto
+    {
+        public string IdentityCard { get; set; } = string.Empty;
+        public string VehicleType { get; set; } = string.Empty;
+        public string VehiclePlate { get; set; } = string.Empty;
+    }
+
+    public class ReviewShipperDto
+    {
+        public bool IsApproved { get; set; }
+        public string? RejectReason { get; set; }
+    }
+
+    public class ShipperApplicationDto
+    {
+        public Guid ShipperId { get; set; }
+        public Guid UserId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string IdentityCard { get; set; } = string.Empty;
+        public string VehicleType { get; set; } = string.Empty;
+        public string VehiclePlate { get; set; } = string.Empty;
+        public ShipperStatus Status { get; set; }
+        public DateTime AppliedAt { get; set; }
+    }
+
+    public class ShipperStatsDto
+    {
+        public int TotalAssignedOrders { get; set; }
+        public int TotalCompletedOrders { get; set; }
+        public int TotalFailedOrders { get; set; }
+        public decimal TotalEarnings { get; set; }
+        public double AverageRating { get; set; }
+    }
 }

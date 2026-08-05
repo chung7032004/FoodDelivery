@@ -72,7 +72,7 @@ public class GlobalExceptionHandler : IExceptionHandler
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = statusCode;
         
-        var errorResponse = Result.Failure(errorCode, message);
+        var errorResponse = Result.Failure(errorCode, message, statusCode);
         await context.Response.WriteAsJsonAsync(errorResponse, JsonOptions, cancellationToken);
         return true; // Trả về true để kết thúc pipeline xử lý lỗi
     }

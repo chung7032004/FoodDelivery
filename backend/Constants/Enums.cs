@@ -28,3 +28,10 @@ public enum OrderActionBy
     Admin = 2,
     Shipper = 3
 }
+
+public enum ShipperStatus
+{
+    Pending,
+    Approved,
+    Rejected
+}

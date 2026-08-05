@@ -60,9 +60,28 @@ namespace FoodDelivery.Constants
         public static class Shippers
         {
             public const string View = "Permissions.Shippers.View";
-            public const string Verify = "Permissions.Shippers.Verify"; // Duyệt hồ sơ tài xế mới
             public const string Block = "Permissions.Shippers.Block"; // Khóa tài xế vi phạm
+            public const string ViewApplications = "Permissions.Shippers.ViewApplications"; // Xem danh sách hồ sơ đăng ký làm shipper
+            public const string ViewAll = "Permissions.Shippers.ViewAll"; // Xem tất cả shipper (Admin/Dispatcher)
+            public const string ReviewApplications = "Permissions.Shippers.ReviewApplications"; // Duyệt hoặc từ chối hồ sơ đăng ký làm shipper
+
+
+            public const string ViewDashboard = "Permissions.Shippers.ViewDashboard"; // Xem dashboard thống kê hiệu suất cá nhân
+            public const string ApplyAsShipper = "Permissions.Shippers.ApplyAsShipper"; // Đăng ký làm shipper (dành cho user)
+
+
             public const string AcceptOrder = "Permissions.Shippers.AcceptOrder"; // Quyền riêng cho app Shipper
+            public const string ViewAssignedOrders = "Permissions.Shippers.ViewAssignedOrders"; // Xem đơn được phân công
+            public const string ViewOrderDetails = "Permissions.Shippers.ViewOrderDetails"; // Xem chi tiết đơn hàng được phân công
+            public const string ConfirmPickup = "Permissions.Shippers.ConfirmPickup"; // Xác nhận đã lấy hàng từ quán
+            public const string MarkDeliverySuccess = "Permissions.Shippers.MarkDeliverySuccess"; 
+            public const string ViewDashboardStats = "Permissions.Shippers.ViewDashboardStats"; // Xem thống kê hiệu suất cá nhân trên dashboard
+            public const string ViewDeliveryHistory = "Permissions.Shippers.ViewDeliveryHistory"; // Xem lịch sử giao hàng đã hoàn thành
+            public const string ProposeOrderChange = "Permissions.Shippers.ProposeOrderChange"; // Đề xuất thay đổi đơn hàng (ví dụ: không thể giao đúng giờ)
+            public const string ViewProposals = "Permissions.Shippers.ViewProposals"; // Xem đề xuất thay đổi đơn hàng đã gửi đi
+            public const string CancelAssignedOrder = "Permissions.Shippers.CancelAssignedOrder"; // Hủy đơn đã nhận (trong trường hợp bất khả kháng)
+            public const string ViewEarnings = "Permissions.Shippers.ViewEarnings"; // Xem báo cáo thu nhập cá nhân
+            public const string UpdateAvailability = "Permissions.Shippers.UpdateAvailability"; // Cập nhật trạng thái sẵn sàng nhận đơn (Online/Offline)
         }
 
         // 6. Quản lý Khách hàng & Phản hồi

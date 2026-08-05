@@ -1,6 +1,9 @@
+using System.Text.RegularExpressions;
 using FoodDelivery.Common;
+using FoodDelivery.Constants;
 using FoodDelivery.DTOs.Restaurant;
 using FoodDelivery.Entities;
+using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
 
@@ -8,11 +11,15 @@ namespace FoodDelivery.Service.Implementations;
 public class RestaurantService : IRestaurantService
 {
     private readonly IRestaurantRepository _restaurantRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly FoodContext _context;
 
-    public RestaurantService(IRestaurantRepository restaurantRepository, FoodContext context)
+    public RestaurantService(IRestaurantRepository restaurantRepository, IUserRepository userRepository, IRoleRepository roleRepository, FoodContext context)
     {
         _restaurantRepository = restaurantRepository;
+        _userRepository = userRepository;
+        _roleRepository = roleRepository;
         _context = context;
     }
 
@@ -118,5 +125,63 @@ public class RestaurantService : IRestaurantService
         await _restaurantRepository.UpdateAsync(restaurant);
         await _context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result> RegisterRestaurantAsync(Guid userId, RegisterRestaurantRequest request)
+    {
+        if (request == null
+            || string.IsNullOrWhiteSpace(request.Name)
+            || string.IsNullOrWhiteSpace(request.Address)
+            || string.IsNullOrWhiteSpace(request.Phone))
+            return HttpErrors.BadRequest("INVALID_INPUT", "Thông tin quán không hợp lệ.");
+
+        if (!Regex.IsMatch(request.Phone, @"^0\d{9}$"))
+            return HttpErrors.BadRequest("INVALID_PHONE", "Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số.");
+
+        if (request.OpenTime >= request.CloseTime)
+            return HttpErrors.BadRequest("INVALID_TIME", "Giờ mở cửa phải nhỏ hơn giờ đóng cửa.");
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if(user == null){
+            return HttpErrors.NotFound("USER_NOT_FOUND", "Người dùng không tồn tại.");
+        }
+
+        var existingRestaurant = await GetRestaurantOfUser(userId);
+        if (existingRestaurant != null)
+            return HttpErrors.BadRequest("ALREADY_HAS_RESTAURANT", "Bạn đã có một quán được gán, không thể đăng ký thêm.");
+        
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try{
+            // Tạo restaurant
+            var restaurant = new Restaurant
+            {
+                OwnerId        = userId,
+                Name            = request.Name,
+                Address         = request.Address,
+                Phone           = request.Phone,
+                OpenTime        = request.OpenTime,
+                CloseTime       = request.CloseTime,
+                Latitude        = request.Latitude, 
+                Longitude       = request.Longitude,
+                IsOpen          = false,
+                ClosingMessage  = null,
+                CreatedAt       = DateTime.UtcNow,
+                UpdatedAt       = DateTime.UtcNow
+            };
+            await _context.Restaurants.AddAsync(restaurant);
+            if(!user.UserRoles.Any(ur=> ur.RoleId == RoleIds.RestaurantOwner)){
+                await _userRepository.AddUserRoleAsync(new UserRole{
+                    UserId = userId,
+                    RoleId = RoleIds.RestaurantOwner
+                });
+            }
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return Result.Success();
+        } 
+        catch(Exception ex){
+            await transaction.RollbackAsync();
+            return HttpErrors.InternalServerError("REGISTRATION_FAILED", "Đăng ký quán thất bại: " + ex.Message);
+        }
     }
 }

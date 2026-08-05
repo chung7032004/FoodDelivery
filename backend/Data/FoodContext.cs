@@ -344,8 +344,8 @@ public class FoodContext : DbContext
                 PermissionConstants.Orders.Cancel,            // Nhân viên hủy khi hết hàng
             },
 
-            // Shipper: Tài xế giao hàng
-            [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new List<string>
+                // Shipper: Tài xế giao hàng
+                [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new List<string>
             {
                 // Quản lý đơn hàng
                 PermissionConstants.Orders.View,
@@ -355,6 +355,7 @@ public class FoodContext : DbContext
 
                 // Quản lý tài xế
                 PermissionConstants.Shippers.AcceptOrder,
+                PermissionConstants.Shippers.ViewDashboard,
 
                 // Quản lý tài khoản
                 PermissionConstants.Accounts.View,
@@ -364,6 +365,20 @@ public class FoodContext : DbContext
 
                 // Xem địa chỉ giao hàng
                 PermissionConstants.Address.View,
+                PermissionConstants.Dashboard.ViewOwn,
+                
+                PermissionConstants.Shippers.AcceptOrder,             
+                PermissionConstants.Shippers.ViewAssignedOrders,
+                PermissionConstants.Shippers.ViewOrderDetails,
+                PermissionConstants.Shippers.ConfirmPickup,
+                PermissionConstants.Shippers.MarkDeliverySuccess,
+                PermissionConstants.Shippers.ViewDashboardStats,
+                PermissionConstants.Shippers.ViewDeliveryHistory,
+                PermissionConstants.Shippers.ProposeOrderChange,
+                PermissionConstants.Shippers.ViewProposals,
+                PermissionConstants.Shippers.CancelAssignedOrder,
+                PermissionConstants.Shippers.ViewEarnings,
+                PermissionConstants.Shippers.UpdateAvailability,
 
             },
 
@@ -406,6 +421,8 @@ public class FoodContext : DbContext
                 PermissionConstants.Accounts.ChangePassword,
 
                 PermissionConstants.Orders.Cancel,            // Khách tự hủy đơn chưa xác nhận
+
+                PermissionConstants.Shippers.ApplyAsShipper, // Khách hàng đăng ký làm shipper
             }
         };
         var rolePermissionData = new List<RolePermission>();

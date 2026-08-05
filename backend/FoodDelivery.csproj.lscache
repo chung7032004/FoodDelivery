@@ -58,8 +58,10 @@ Common/
  PagedResponse.cs
  Result.cs
 Constants/
+ Enums.cs
  PermissionIdGenerator.cs
  Permissions.cs
+ RoleIds.cs
 Controller/
  AccountController.cs
  AddressController.cs
@@ -118,6 +120,7 @@ DTOs/Product/
  UpdateDisplayOrderDto.cs
 DTOs/Restaurant/
  CloseRestaurantRequest.cs
+ RegisterRestaurantRequest.cs
  RestaurantProfileDto.cs
  RestaurantStatusResponse.cs
  UpdateRestaurantProfileRequest.cs
@@ -141,7 +144,6 @@ Entities/
  Cart.cs
  CartItem.cs
  Category.cs
- Enums.cs
  Notification.cs
  Order.cs
  OrderDetail.cs
@@ -188,6 +190,8 @@ Migrations/
  20260510164206_AddMissingPermissions.Designer.cs
  20260510173131_AddFullPermissionInContext.cs
  20260510173131_AddFullPermissionInContext.Designer.cs
+ 20260516151547_AddOwnerIdToRestaurant.cs
+ 20260516151547_AddOwnerIdToRestaurant.Designer.cs
  FoodContextModelSnapshot.cs
 obj/Debug/net8.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs

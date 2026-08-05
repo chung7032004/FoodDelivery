@@ -24,14 +24,6 @@ public class LoginRequest
     [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
     public string Password {get; set;} = string.Empty;
 }
-public class LogoutRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
-}
-public class RefreshTokenRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
-}
 public class ChangePasswordRequest
 {
     public string OldPassword { get; set; } = string.Empty;

@@ -9,7 +9,7 @@ namespace FoodDelivery.Entities
         public int DisplayOrder { get; set; }
         public DateTime CreatedAt { get; set; } 
         public DateTime? UpdatedAt { get; set; }
-        public Guid RestaurantId { get; set; }
+        public Guid? RestaurantId { get; set; }
         public virtual Restaurant Restaurant { get; set; } = null!;
         public ICollection<Product> Products { get; set; }= new List<Product>();
     }

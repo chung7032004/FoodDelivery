@@ -202,7 +202,7 @@ namespace FoodDelivery.Service.Implementations
                 issuer : "foodApi",
                 audience: "foodApi",
                 claims : claims,
-                expires : DateTime.UtcNow.AddMinutes(15),
+                expires : DateTime.UtcNow.AddSeconds(30),
                 signingCredentials : creds
             );
             return new JwtSecurityTokenHandler().WriteToken(token);

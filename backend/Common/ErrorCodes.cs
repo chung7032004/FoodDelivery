@@ -3,7 +3,8 @@ public static class HttpErrors
 {
     public static Result NotFound(string code, string message) 
         => Result.Failure(code, message, 404);
-    
+    public static Result Unauthorized(string code, string message) 
+        => Result.Failure(code, message, 401);
     public static Result<T> NotFound<T>(string code, string message) 
         => Result<T>.Failure(code, message, 404);
 
@@ -27,6 +28,8 @@ public static class HttpErrors
         => Result.Failure(code, message, 503);
     public static Result<T> ServiceUnavailable<T>(string code, string message)
         => Result<T>.Failure(code, message, 503);
-    public static Result InternalServerError(string code, string message)        => Result.Failure(code, message, 500);
-    public static Result<T> InternalServerError<T>(string code, string message)        => Result<T>.Failure(code, message, 500);
+    public static Result InternalServerError(string code, string message)        
+        => Result.Failure(code, message, 500);
+    public static Result<T> InternalServerError<T>(string code, string message)        
+        => Result<T>.Failure(code, message, 500);
 }
