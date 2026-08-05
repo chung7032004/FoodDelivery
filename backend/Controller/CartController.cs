@@ -20,7 +20,7 @@ public class CartController : ControllerBase
     
     [HttpGet]
     [HasPermission(PermissionConstants.Cart.View)]
-    public async Task<IActionResult> GetCart([FromQuery] int page = 1, int pageSize = 10)
+    public async Task<IActionResult> GetCart([FromQuery] int page = 1,[FromQuery] int pageSize = 10)
     {
         var userId = User.GetUserId();
         var result = await _cartService.GetCartAsync(userId, page, pageSize);

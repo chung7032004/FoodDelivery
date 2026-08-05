@@ -1,7 +1,10 @@
 using FoodDelivery.Entities;
-using FoodDelivery.DTOs;
 using FoodDelivery.Service.Interfaces;
 using FoodDelivery.Repositories.Interfaces;
+using FoodDelivery.Common;
+using FoodDelivery.DTOs.Shipper;
+using FoodDelivery.Repositories;
+using FoodDelivery.Constants;
 
 namespace FoodDelivery.Service.Implements
 {
@@ -9,7 +12,172 @@ namespace FoodDelivery.Service.Implements
     {
 
         private readonly IShipperRepository _shipperRepository;
-        public ShipperService(IShipperRepository shipperRepository) { _shipperRepository = shipperRepository; }
+        private readonly IRoleRepository _roleRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly FoodContext _context;
+
+        public ShipperService(IShipperRepository shipperRepository, IRoleRepository roleRepository, IUserRepository userRepository, FoodContext context)
+        {
+            _shipperRepository = shipperRepository;
+            _roleRepository = roleRepository;
+            _userRepository = userRepository;
+            _context = context;
+        }
+        public async Task<Result<PagedResponse<ShipperApplicationDto>>> GetAllShippersAsync(int page, int pageSize)
+        {
+            pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
+            page = page < 1 ? 1 : page;
+            var (items, totalCount) = await _shipperRepository.GetAllShippersAsync(page, pageSize);
+            var data = items.Select(s=> new ShipperApplicationDto
+            {
+                ShipperId = s.Id,
+                UserId = s.UserId,
+                FullName = s.User.FullName, 
+                Email = s.User.Email, 
+                Phone = s.User.Phone,
+                IdentityCard = s.IdentityCard,
+                VehicleType = s.VehicleType,
+                VehiclePlate = s.VehiclePlate,
+                Status = s.Status,
+                AppliedAt = s.CreatedAt,
+            }).ToList();
+            var responseMeta = new PaginationMeta(
+                Page:page,
+                PageSize : items.Count,
+                TotalCount : totalCount,
+                TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
+            );
+            var response = new PagedResponse<ShipperApplicationDto>(
+                Meta : responseMeta,
+                Data : data
+            );
+            return Result<PagedResponse<ShipperApplicationDto>>.Success(response);
+        }
+        public async Task<Result<ShipperStatsDto>> GetShipperStatsAsync(Guid userId)
+        {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null) 
+                return HttpErrors.NotFound<ShipperStatsDto>("SHIPPER_NOTFOUND","Shipper không tồn tại");
+            
+            var orders = await _shipperRepository.GetOrdersByShipperAsync(shipper.Id);
+            var completeCount = orders.Count(o => o.Status == OrderStatus.Completed);
+            var failedCount = orders.Count(o => o.Status == OrderStatus.Cancelled);
+            var totalEarnings = orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Order?.TotalAmount ?? 0);
+            
+            var result = new ShipperStatsDto
+            {
+                TotalAssignedOrders = orders.Count(),
+                TotalCompletedOrders = completeCount,
+                TotalFailedOrders = failedCount,
+                TotalEarnings = totalEarnings,
+                AverageRating = 0.0
+            };
+            return Result<ShipperStatsDto>.Success(result);
+        }
+        public async Task<Result<string>> ApplyShipperAsync(Guid userId, ApplyShipperDto dto)
+        {
+            var existing = await _shipperRepository.HasShipperRecordAsync(userId);
+            if (existing)
+                return HttpErrors.BadRequest<string>("ALREADY_APPLIED", "Bạn đã đăng ký làm shipper rồi");
+
+            var shipper = new Shipper
+            {
+                UserId       = userId,
+                IdentityCard = dto.IdentityCard,
+                VehicleType  = dto.VehicleType,
+                VehiclePlate = dto.VehiclePlate,
+                Status       = ShipperStatus.Pending,
+                IsActive     = false,
+                IsAvailable  = false
+            };
+
+            await _shipperRepository.AddShipperAsync(shipper);
+            await _context.SaveChangesAsync();
+
+            return Result<string>.Success("Đăng ký thành công, vui lòng chờ admin duyệt");
+        }
+        public async Task<Result<string>> ReviewApplicationAsync(Guid shipperId, Guid adminId, ReviewShipperDto dto)
+        {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
+            if (shipper == null)
+                return HttpErrors.NotFound<string>("SHIPPER_NOTFOUND", "Không tìm thấy đơn đăng ký");
+
+            if (shipper.Status != ShipperStatus.Pending)
+                return HttpErrors.BadRequest<string>("ALREADY_REVIEWED", "Đơn này đã được xử lý rồi");
+
+            if (dto.IsApproved)
+            {
+                shipper.Status      = ShipperStatus.Approved;
+                shipper.IsActive    = true;
+                shipper.IsAvailable = true;
+
+                // Gán role Shipper cho User
+                var user = await _userRepository.GetUserByIdWithRoleAsync(shipper.UserId);
+                if (user == null) 
+                    return HttpErrors.NotFound<string>("USER_NOTFOUND", "User không tồn tại");
+                if (user.UserRoles.Any(ur => ur.RoleId == RoleIds.Shipper)) 
+                    return HttpErrors.BadRequest<string>("USER_ALREADY_SHIPPER", "User đã là shipper");
+                var role = await _roleRepository.GetByIdAsync(RoleIds.Shipper);
+                if (role == null) 
+                    return HttpErrors.NotFound<string>("ROLE_NOTFOUND", "Role 'Shipper' không tồn tại");
+                await _shipperRepository.AddUserRoleAsync(new UserRole { UserId = shipper.UserId, RoleId = role.Id });
+            }
+            else
+            {
+                shipper.Status       = ShipperStatus.Rejected;
+                shipper.RejectReason = dto.RejectReason;
+            }
+
+            shipper.ReviewedAt        = DateTime.UtcNow;
+            shipper.ReviewedByAdminId = adminId;
+            shipper.UpdatedAt         = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Result<string>.Success(dto.IsApproved ? "Đã duyệt shipper" : "Đã từ chối đơn");
+        }
+
+        public async Task<Result<PagedResponse<ShipperApplicationDto>>> GetPendingApplicationsAsync(int page, int pageSize)
+        {
+            pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
+            page = page < 1 ? 1 : page;
+            var (items, totalCount) = await _shipperRepository.GetPendingApplicationsAsync(page, pageSize);
+            var data = items.Select(s=> new ShipperApplicationDto
+            {
+                ShipperId = s.Id,
+                UserId = s.UserId,
+                FullName = s.User.FullName, 
+                Email = s.User.Email, 
+                Phone = s.User.Phone,
+                IdentityCard = s.IdentityCard,
+                VehicleType = s.VehicleType,
+                VehiclePlate = s.VehiclePlate,
+                Status = s.Status,
+                AppliedAt = s.CreatedAt,
+            }).ToList();
+            var responseMeta = new PaginationMeta(
+                Page:page,
+                PageSize : items.Count,
+                TotalCount : totalCount,
+                TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
+            );
+            var response = new PagedResponse<ShipperApplicationDto>(
+                Meta : responseMeta,
+                Data : data
+            );
+            return Result<PagedResponse<ShipperApplicationDto>>.Success(response);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
         public async Task<bool> ConfirmPickUpAsync(Guid orderId, Guid userId)
         {
@@ -17,7 +185,8 @@ namespace FoodDelivery.Service.Implements
             if (orderDetail == null || orderDetail.Status != OrderStatus.ReadyForPickup) return false;
 
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null || orderDetail.ShipperId != shipper.Id) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
+            if (orderDetail.ShipperId != shipper.Id) return false;
 
             orderDetail.Status = OrderStatus.Shipping;
             
@@ -27,47 +196,6 @@ namespace FoodDelivery.Service.Implements
             });
             return await _shipperRepository.SaveChangesAsync();
         }
-
-        public async Task<object> GetShipperStatsAsync(Guid userId)
-        {
-            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null) 
-                return new { totalDeliveries = 0, completedDeliveries = 0, pendingDeliveries = 0, deliveryInProgress = 0, earningToday = 0, averageRating = 5.0 };
-
-            var history = await _shipperRepository.GetShipperHistoryAsync(userId);
-            var completedCount = history.Count(h => h.Status == OrderStatus.Completed);
-            
-            // Tính đơn đang giao: đơn có status Shipping mà chưa Completed
-            var shippingOrderIds = history
-                .Where(h => h.Status == OrderStatus.Shipping && h.ChangeByUserId == userId)
-                .Select(h => h.OrderId)
-                .Distinct()
-                .ToList();
-            
-            var completedOrderIds = history
-                .Where(h => h.Status == OrderStatus.Completed)
-                .Select(h => h.OrderId)
-                .ToHashSet();
-            
-            var shippingCount = shippingOrderIds.Count(id => !completedOrderIds.Contains(id));
-            
-            // pendingDeliveries should show total available orders in system
-            var availableOrders = await _shipperRepository.GetAvailableOrdersAsync();
-            var readyForPickupCount = availableOrders.Count;
-            
-            var totalEarnings = await _shipperRepository.GetTotalEarningsAsync(shipper.Id);
-            
-            return new 
-            {
-                totalDeliveries = completedCount,
-                completedDeliveries = completedCount,
-                pendingDeliveries = readyForPickupCount,
-                deliveryInProgress = shippingCount,
-                earningToday = totalEarnings,
-                averageRating = 5.0
-            };
-        }
-
        public async Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId)
         {
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
@@ -125,33 +253,18 @@ namespace FoodDelivery.Service.Implements
         public async Task<bool> AcceptOrderAsync(Guid orderId, Guid shipperId)
         {
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
-                if (orderDetail == null)
-                    throw new InvalidOperationException("Không tìm thấy đơn hàng");
+            if (orderDetail == null)
+                return false;
 
-                if (orderDetail.Status != OrderStatus.ReadyForPickup)
-                    throw new InvalidOperationException("Đơn hàng không ở trạng thái sẵn sàng để nhận");
-            
-            // Ensure the order is not yet assigned to anyone
-                if (orderDetail.ShipperId != null && orderDetail.ShipperId != Guid.Empty)
-                    throw new InvalidOperationException("Đơn hàng đã được nhận bởi shipper khác");
+            if (orderDetail.Status != OrderStatus.ReadyForPickup)
+                return false;
 
-            // Get Shipper entity by UserId to get the correct Shipper.Id for FK
+            if (orderDetail.ShipperId != null && orderDetail.ShipperId != Guid.Empty)
+                return false;
+
             var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
-            if (shipper == null)
-            {
-                // If a Shipper record does not exist yet, create one for this user
-                shipper = new Shipper
-                {
-                    UserId = shipperId,
-                    IsActive = true,
-                    IsAvailable = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _shipperRepository.AddShipperAsync(shipper);
-            }
-
-            orderDetail.ShipperId = shipper.Id;
-            _shipperRepository.UpdateOrderDetail(orderDetail);
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable)
+                return false;
             
             await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
             { 
@@ -220,7 +333,8 @@ namespace FoodDelivery.Service.Implements
             if (orderDetail == null) return false;
             
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null || orderDetail.ShipperId != shipper.Id) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
+            if (orderDetail.ShipperId != shipper.Id) return false;
 
             // Allow from both ReadyForPickup and Shipping statuses
             if (orderDetail.Status != OrderStatus.ReadyForPickup && orderDetail.Status != OrderStatus.Shipping) 
@@ -263,7 +377,8 @@ namespace FoodDelivery.Service.Implements
             if (orderDetail == null || !cancelledBy.HasValue) return false;
             
             var shipper = await _shipperRepository.GetShipperByIdAsync(cancelledBy.Value);
-            if (shipper == null || orderDetail.ShipperId != shipper.Id) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
+            if (orderDetail.ShipperId != shipper.Id) return false;
 
             // Allow from both ReadyForPickup and Shipping statuses
             if (orderDetail.Status != OrderStatus.ReadyForPickup && orderDetail.Status != OrderStatus.Shipping)
@@ -301,28 +416,24 @@ namespace FoodDelivery.Service.Implements
             return await _shipperRepository.SaveChangesAsync();
         }
 
-        public async Task<List<User>> GetAllShippersAsync() => await _shipperRepository.GetAllShippersAsync();
+        
         public async Task<Shipper?> GetShipperByIdAsync(Guid userId) => await _shipperRepository.GetShipperByIdAsync(userId);
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => await _shipperRepository.GetShipperHistoryAsync(userId);
 
         public async Task<bool> ToggleShipperStatusAsync(Guid userId, bool isActive)
         {
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null || shipper.User == null) return false;
+            if (shipper == null) return false;
 
-           
-            shipper.User.IsActive = isActive; 
+            shipper.IsActive = isActive;
+            if (!isActive)
+                shipper.IsAvailable = false;
+            shipper.UpdatedAt = DateTime.UtcNow;
 
             return await _shipperRepository.SaveChangesAsync();
         }
 
-        public async Task<bool> AssignShipperRoleAsync(Guid userId)
-        {
-            var role = await _shipperRepository.GetRoleByNameAsync("Shipper");
-            if (role == null) return false;
-            await _shipperRepository.AddUserRoleAsync(new UserRole { UserId = userId, RoleId = role.Id });
-            return await _shipperRepository.SaveChangesAsync();
-        }
+    
 
         public async Task<bool> UpdateShipperProfileAsync(Guid userId, UpdateShipperProfileDto request)
         {

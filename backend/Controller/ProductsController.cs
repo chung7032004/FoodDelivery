@@ -2,6 +2,7 @@ using FoodDelivery.DTOs.Product;
 using FoodDelivery.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using PermissionConstants = FoodDelivery.Constants.Permissions;
 
     namespace FoodDelivery.Controllers
@@ -16,15 +17,14 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
             _productService = productService;
         }
 
-        [HasPermission(PermissionConstants.Products.View)]
         [HttpGet]
-        public async Task<IActionResult> GetAllProducts([FromQuery] Guid? categoryId, [FromQuery] string? q)
-            => Ok(await _productService.GetAllProductsAsync(categoryId, q));
+        public async Task<IActionResult> GetAllProducts([FromQuery] Guid? categoryId, [FromQuery] string? q, [FromQuery] int page =1 , [FromQuery] int pageSize = 10)
+            => Ok(await _productService.GetALlProductsAsync(categoryId, q, page, pageSize));
         
-        [HasPermission(PermissionConstants.Products.View)]
-        [HttpGet("featured")]
-        public async Task<IActionResult> GetFeaturedProducts()
-            => Ok(await _productService.GetFeaturedProductsAsync());
+        // [HasPermission(PermissionConstants.Products.View)]
+        // [HttpGet("featured")]
+        // public async Task<IActionResult> GetFeaturedProducts()
+        //     => Ok(await _productService.GetFeaturedProductsAsync());
         
         [HasPermission(PermissionConstants.Products.View)]
         [HttpGet("{productId}")]
@@ -36,7 +36,8 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
         
         [HasPermission(PermissionConstants.Products.Create)]
         [HttpPost]
-        public async Task<IActionResult> Create(ProductCreateDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm]ProductCreateDto dto)
             => Ok(await _productService.CreateProductAsync(dto));
 
         [HasPermission(PermissionConstants.Products.Edit)]

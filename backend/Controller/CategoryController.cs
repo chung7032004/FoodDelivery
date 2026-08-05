@@ -16,7 +16,6 @@ namespace FoodDelivery.Controllers
             _service = service;
         }
 
-        [HasPermission(PermissionConstants.Categories.View)]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
