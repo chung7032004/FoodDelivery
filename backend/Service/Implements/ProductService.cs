@@ -8,14 +8,14 @@ namespace FoodDelivery.Service.Implements
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepo;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly FoodContext _context;
 
         public ProductService(
             IProductRepository productRepo,
-            IUnitOfWork unitOfWork)
+            FoodContext context)
         {
             _productRepo = productRepo;
-            _unitOfWork = unitOfWork;
+            _context = context;
         }
 
         public async Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync(Guid? categoryId = null, string? searchQuery = null)
@@ -80,7 +80,7 @@ namespace FoodDelivery.Service.Implements
             };
 
             await _productRepo.AddAsync(product);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return MapToDto(product);
         }
@@ -99,7 +99,7 @@ namespace FoodDelivery.Service.Implements
             product.UpdatedAt = DateTime.UtcNow;
 
             await _productRepo.UpdateAsync(product);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return true;
         }
 
@@ -112,7 +112,7 @@ namespace FoodDelivery.Service.Implements
             product.UpdatedAt = DateTime.UtcNow;
 
             await _productRepo.UpdateAsync(product);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return true;
         }
 
@@ -125,7 +125,7 @@ namespace FoodDelivery.Service.Implements
             product.UpdatedAt = DateTime.UtcNow;
 
             await _productRepo.UpdateAsync(product);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return true;
         }
 
@@ -135,7 +135,7 @@ namespace FoodDelivery.Service.Implements
             if (product == null) return false;
 
             await _productRepo.DeleteAsync(product);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return true;
         }
 

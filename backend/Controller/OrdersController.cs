@@ -1,11 +1,10 @@
 using System.Security.Claims;
-using FoodDelivery.Common;
 using FoodDelivery.DTOs.Order;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 namespace FoodDelivery.Controllers;
 
 [ApiController]
@@ -18,13 +17,10 @@ public class OrdersController : ControllerBase
         _orderService = orderService;
     }
     [HttpPost("orders/buy-now")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.Create)]
     public async Task<IActionResult> CreateOrderBuyNow([FromBody] BuyNowRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.BuyNowAsync(customerId,request);
         if (!result.IsSuccess)
         {
@@ -44,303 +40,139 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("orders/checkout")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.Create)]
     public async Task<IActionResult> CheckoutCartItems([FromBody] CheckoutRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.CheckoutAsync(customerId,request);
         if (!result.IsSuccess)
         {
-            return result.ErrorCode switch
-            {
-                  
-                "CART_EMPTY" => BadRequest(result),
-                "ADDRESS_NOT_FOUND" => NotFound(result),
-                "INVALID_QUANTITY" => BadRequest(result),
-                "FORBIDDEN" => Forbid(),
-                "PRODUCT_UNAVAILABLE" => BadRequest(result),
-                "TOO_FAR" => BadRequest(result),
-                "RESTAURANT_NOT_CONFIGURED" =>Conflict(result),
-                _ => BadRequest(result),
-            };
+            return result.ToActionResult();
         }
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
     [HttpGet("orders/shipping-fee")]
-    [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] int itemCount = 1)
+    [HasPermission(PermissionConstants.Orders.View)]
+    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] Guid restaurantId)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<ShippingFeeResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
-        
-        var result = await _orderService.CalculateShippingFeeAsync(addressId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ADDRESS_NOT_FOUND" => NotFound(result),
-                "RESTAURANT_NOT_CONFIGURED" => Conflict(result),
-                "TOO_FAR" => BadRequest(result),
-                _ => BadRequest(result),
-            };
-        }
-        
-        return Ok(result);
+        var result = await _orderService.CalculateShippingFeeAsync(addressId,restaurantId);
+        return result.ToActionResult();
     }
 
     [HttpGet("orders/history")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.ViewHistory)]
     public async Task<IActionResult> GetMyOrderHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result<CreateOrderResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
          var result = await _orderService.GetMyOrderAsync(customerId, page, pageSize);
-        if (!result.IsSuccess)
-            return BadRequest(result); 
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpGet("orders/{orderId}")]
-    [Authorize(Roles = "Admin,Customer")]
+    [HasPermission(PermissionConstants.Orders.View)]
     public async Task<IActionResult> GetOrderDetail(Guid orderId)
     {
-        Console.WriteLine($"[GetOrderDetail] Called with orderId: {orderId}");
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            Console.WriteLine($"[GetOrderDetail] Failed to get userId from claims");
-            return Unauthorized(Result<OrderDetailResponse>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
         Console.WriteLine($"[GetOrderDetail] UserId: {customerId}, Roles: {string.Join(",", roles)}");
         
         var result = await _orderService.GetOrderDetailAsync(customerId,roles,orderId);
         Console.WriteLine($"[GetOrderDetail] Service result - Success: {result.IsSuccess}, Error: {result.ErrorCode}");
-        if (!result.IsSuccess)
-            return result.ErrorCode switch
-            {
-                "ORDER__NOT_FOUND" => NotFound(result),
-                "ORDER__FORBIDDEN" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("orders/{orderId}/cancel")]
-    [Authorize(Roles ="Customer")]
+    [HasPermission(PermissionConstants.Orders.Cancel)]
     public async Task<IActionResult> CancelOrderByCustomer(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.CancelOrderByCustomerAsync(customerId,orderId,request);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
+        return result.ToActionResult();
     }
     [HttpPost("orders/{orderId}/respond-proposal")]
-    [Authorize(Roles = "Customer")]
+    [HasPermission(PermissionConstants.Orders.RespondToProposal)]
     public async Task<IActionResult> RespondToProposal(Guid orderId , [FromBody] OrderProposalResponseDto request)
     {
-        if(!User.TryGetUserId(out Guid customerId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var customerId = User.GetUserId();
         var result = await _orderService.RespondToProposalAsync(customerId,orderId,request);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        return result.ErrorCode switch
-        {
-            "ORDER_NOT_FOUND" => NotFound(result),
-            "INVALID_STATUS" => BadRequest(result),
-            "DATA_ERROR" => BadRequest(result),
-            "EMPTY_ORDER" =>BadRequest(result),
-            _ => BadRequest(result)
-        };
+        return result.ToActionResult();
     }
     
     [HttpGet("admin/orders")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.ViewAll)]
     public async Task<IActionResult> GetAdminOrder([FromQuery] OrderFilterModel filter)
     {
         var result = await _orderService.GetOrderAdminAsync(filter);
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/confirm")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.ConfirmOrder)]
     public async Task<IActionResult> ConfirmOrder(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.ConfirmOrderAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(),
-                _=> BadRequest(result),
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/out-of-stock")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.OutOfStock)]
     public async Task<IActionResult> OutOfStock(Guid orderId, [FromBody] OutOfStockRequest request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.OutOfStockAsync(adminId,orderId,request);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "NO_ITEMS_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/start-preparing")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.StartPreparing)]
     public async Task<IActionResult> StartPreparing(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.StartPreparingAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/final-preparing")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.MarkAsReady)]
     public async Task<IActionResult> MarkAsReady(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.MarkAsReadyAsync(adminId,orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     /// <summary>
     /// Mark order as delivered (Shipper)
     /// </summary>
     [HttpPut("shipper/orders/{orderId}/delivered")]
-    [Authorize(Roles = "Shipper")]
+    [HasPermission(PermissionConstants.Orders.MarkAsDelivered)]
     public async Task<IActionResult> MarkAsDelivered(Guid orderId)
     {
-        if(!User.TryGetUserId(out Guid shipperId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var shipperId = User.GetUserId();
         var result = await _orderService.MarkAsDeliveredAsync(shipperId, orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
-
-    /// <summary>
-    /// Mark payment as complete (called after payment success)
-    /// </summary>
+    
     [HttpPut("orders/{orderId}/payment-complete")]
-    [Authorize]
+    [HasPermission(PermissionConstants.Orders.MarkPaymentComplete)]
     public async Task<IActionResult> MarkPaymentComplete(Guid orderId)
     {
         var result = await _orderService.MarkPaymentCompleteAsync(orderId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("admin/orders/{orderId}/cancel")]
+    [HasPermission(PermissionConstants.Orders.Cancel)]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelByAdmin(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.CancelOrderByAdminAsync(adminId,orderId,request);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("admin/orders/{orderId}/assign-shipper")]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(PermissionConstants.Orders.AssignShipper)]
     public async Task<IActionResult> AssignShipper(Guid orderId, [FromBody] AssignShipperRequestDto request)
     {
-        if(!User.TryGetUserId(out Guid adminId))
-        {
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
-        }
+        var adminId = User.GetUserId();
         var result = await _orderService.AssignShipperAsync(adminId, orderId, request.ShipperId);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "ORDER_NOT_FOUND" => NotFound(result),
-                "INVALID_STATUS" => BadRequest(result),
-                "INVALID_SHIPPER" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

@@ -9,12 +9,12 @@ namespace FoodDelivery.Service.Implements;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly FoodContext _context;
 
-    public NotificationService(INotificationRepository notificationRepository, IUnitOfWork unitOfWork)
+    public NotificationService(INotificationRepository notificationRepository, FoodContext context)
     {
         _notificationRepository = notificationRepository;
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task<Result<NotificationResponse>> CreateNotificationAsync(Guid userId, NotificationRequest request)
@@ -34,7 +34,7 @@ public class NotificationService : INotificationService
             };
 
             await _notificationRepository.CreateAsync(notification);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<NotificationResponse>.Success(MapToResponse(notification));
         }
@@ -119,7 +119,7 @@ public class NotificationService : INotificationService
 
             notification.IsRead = true;
             await _notificationRepository.UpdateAsync(notification);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<NotificationResponse>.Success(MapToResponse(notification));
         }
@@ -134,7 +134,7 @@ public class NotificationService : INotificationService
         try
         {
             var count = await _notificationRepository.MarkAllAsReadAsync(userId);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<int>.Success(count);
         }
@@ -149,7 +149,7 @@ public class NotificationService : INotificationService
         try
         {
             await _notificationRepository.DeleteAsync(notificationId);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Success(true);
         }

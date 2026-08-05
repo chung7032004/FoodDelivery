@@ -1,5 +1,5 @@
 using System.Reflection;
-using FoodDelivery.Constants;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 using FoodDelivery.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +26,7 @@ public class FoodContext : DbContext
     public DbSet<UserRole> UserRoles{get;set;}
     public DbSet<PasswordResetOtp> PasswordResetOtp{get; set;}
     public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }
     public override async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
@@ -36,36 +37,29 @@ public class FoodContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<Restaurant>().HasData(
-            new Restaurant
-            {
-                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                Name = "Food Delivery Shop",
-                Address = "319 Hùng Vương, P. Vĩnh Trung, Q. Thanh Khê, Đà Nẵng",
-                Phone = "0909123456",
-                IsOpen = true,
-                ClosingMessage = null,
-                OpenTime = new TimeSpan(8, 0, 0),
-                CloseTime = new TimeSpan(22, 0, 0),
-                Latitude = 16.067771,
-                Longitude = 108.214287,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            }
-        );
 
-        var permissions = typeof(Permissions)
+        modelBuilder.Entity<Role>().HasData(
+            new Role { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "Admin"},
+            new Role { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Name = "RestaurantOwner" },
+            new Role { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Name = "RestaurantStaff" },
+            new Role { Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), Name = "Shipper" },
+            new Role { Id = Guid.Parse("55555555-5555-5555-5555-555555555555"), Name = "Customer" }
+        );
+        
+        var permissions = typeof(PermissionConstants)
         .GetNestedTypes()
         .SelectMany(c => c.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
         .Where(f => f.IsLiteral && !f.IsInitOnly)
         .Select(f => new Permission
         {
-            Id = Guid.NewGuid(), // Lưu ý: Trong thực tế nên dùng ID cố định cho Permission để tránh duplicate khi Re-migration
+            Id = PermissionIdGenerator.Generate(f.GetRawConstantValue()?.ToString() ?? string.Empty),
             Name = f.GetRawConstantValue()?.ToString() ?? string.Empty,
             Description = $"Quyền cho {f.ReflectedType?.Name ?? "UnknownClass"} - {f.Name}",
             CreatedAt = DateTime.UtcNow
         })
+        .DistinctBy(p=> p.Name) // loại bỏ trùng lặp nếu có
         .ToList();
+
         modelBuilder.Entity<Permission>().HasData(permissions);
         modelBuilder.Entity<User>()
             .HasIndex(u=>u.Email)
@@ -256,5 +250,177 @@ public class FoodContext : DbContext
             .WithMany(p=>p.ProductImages)
             .HasForeignKey(pi=>pi.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<RolePermission>()
+            .HasKey(rp =>new {rp.RoleId, rp.PermissionId});
+        
+        //seed role-permission
+        var rolePermissions = new Dictionary<Guid, List<string>>
+        {
+            // Admin: Toàn quyền trên hệ thống
+            [Guid.Parse("11111111-1111-1111-1111-111111111111")] = permissions.Select(p => p.Name).ToList(),
+            
+            // RestaurantOwner: Chủ quán
+            [Guid.Parse("22222222-2222-2222-2222-222222222222")] = new List<string>
+            {
+                // Quản lý thực đơn
+                PermissionConstants.Products.View,
+                PermissionConstants.Products.Create,
+                PermissionConstants.Products.Edit,
+                PermissionConstants.Products.Delete,
+                PermissionConstants.Products.ToggleAvailability,
+
+                PermissionConstants.Categories.View,
+                PermissionConstants.Categories.Manage,
+
+                // Quản lý đơn hàng
+                PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewAll,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.Create,
+                PermissionConstants.Orders.Confirm,
+                PermissionConstants.Orders.Cancel,
+                PermissionConstants.Orders.UpdateStatus,
+                PermissionConstants.Orders.AssignShipper,
+                PermissionConstants.Orders.RespondToProposal,
+                PermissionConstants.Orders.ConfirmOrder,
+                PermissionConstants.Orders.OutOfStock,
+                PermissionConstants.Orders.StartPreparing,
+                PermissionConstants.Orders.MarkAsReady,
+                PermissionConstants.Orders.MarkAsDelivered,
+                PermissionConstants.Orders.MarkPaymentComplete,
+
+                // Quản lý quán
+                PermissionConstants.Restaurants.View,
+                PermissionConstants.Restaurants.UpdateProfile,
+                PermissionConstants.Restaurants.ManageSettings,
+                PermissionConstants.Restaurants.ViewRevenue,
+
+                // Quản lý nhân viên
+                PermissionConstants.Staffs.View,
+                PermissionConstants.Staffs.Create,
+                PermissionConstants.Staffs.Edit,
+                PermissionConstants.Staffs.Delete,
+
+                // Quản lý khách hàng & đánh giá
+                PermissionConstants.Users.View,
+                PermissionConstants.Users.ManageReviews,
+                PermissionConstants.Review.Manage,
+
+                // Quản lý tài khoản
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                // Xem địa chỉ giao hàng
+                PermissionConstants.Address.View,
+
+                PermissionConstants.Orders.Cancel,            // Chủ quán phải được hủy đơn
+                PermissionConstants.Dashboard.ViewOwn,
+            },
+
+            // RestaurantStaff: Nhân viên quán
+            [Guid.Parse("33333333-3333-3333-3333-333333333333")] = new List<string>
+            {
+                // Quản lý thực đơn
+                PermissionConstants.Products.View,
+                PermissionConstants.Products.ToggleAvailability,
+                PermissionConstants.Categories.View,
+
+                // Quản lý đơn hàng
+                PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.Confirm,
+                PermissionConstants.Orders.UpdateStatus,
+                PermissionConstants.Orders.StartPreparing,
+                PermissionConstants.Orders.MarkAsReady,
+
+                // Quản lý tài khoản
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                PermissionConstants.Orders.Cancel,            // Nhân viên hủy khi hết hàng
+            },
+
+            // Shipper: Tài xế giao hàng
+            [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new List<string>
+            {
+                // Quản lý đơn hàng
+                PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.UpdateStatus,
+                PermissionConstants.Orders.MarkAsDelivered,
+
+                // Quản lý tài xế
+                PermissionConstants.Shippers.AcceptOrder,
+
+                // Quản lý tài khoản
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                // Xem địa chỉ giao hàng
+                PermissionConstants.Address.View,
+
+            },
+
+            // Customer: Khách hàng
+            [Guid.Parse("55555555-5555-5555-5555-555555555555")] = new List<string>
+            {
+                // Xem sản phẩm & danh mục
+                PermissionConstants.Products.View,
+                PermissionConstants.Categories.View,
+
+                // Quản lý giỏ hàng
+                PermissionConstants.Cart.View,
+                PermissionConstants.Cart.AddItem,
+                PermissionConstants.Cart.UpdateItem,
+                PermissionConstants.Cart.RemoveItem,
+                PermissionConstants.Cart.ClearCart,
+
+                // Quản lý đơn hàng
+                PermissionConstants.Orders.Create,
+                PermissionConstants.Orders.View,
+                PermissionConstants.Orders.ViewHistory,
+                PermissionConstants.Orders.RespondToProposal,
+
+                // Quản lý địa chỉ
+                PermissionConstants.Address.View,
+                PermissionConstants.Address.Create,
+                PermissionConstants.Address.Edit,
+                PermissionConstants.Address.Delete,
+                PermissionConstants.Address.SetDefault,
+
+                // Quản lý đánh giá
+                PermissionConstants.Review.Create,
+                PermissionConstants.Review.Edit,
+                PermissionConstants.Review.View,
+
+                // Quản lý tài khoản
+                PermissionConstants.Accounts.View,
+                PermissionConstants.Accounts.ViewOwn,
+                PermissionConstants.Accounts.UpdateOwn,
+                PermissionConstants.Accounts.ChangePassword,
+
+                PermissionConstants.Orders.Cancel,            // Khách tự hủy đơn chưa xác nhận
+            }
+        };
+        var rolePermissionData = new List<RolePermission>();
+        foreach (var role in rolePermissions)
+        {
+            foreach(var permissionName in role.Value.Distinct()) // đảm bảo không có quyền trùng lặp trong cùng 1 role
+            {
+                rolePermissionData.Add(new RolePermission
+                {
+                    RoleId = role.Key,
+                    PermissionId = PermissionIdGenerator.Generate(permissionName)
+                });
+            }
+        }
+        modelBuilder.Entity<RolePermission>().HasData(rolePermissionData);
     }
+
 }

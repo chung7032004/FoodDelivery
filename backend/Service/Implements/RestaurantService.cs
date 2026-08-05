@@ -1,68 +1,65 @@
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Restaurant;
+using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
 
 namespace FoodDelivery.Service.Implementations;
-public class RestaurantService :IRestaurantService
+public class RestaurantService : IRestaurantService
 {
     private readonly IRestaurantRepository _restaurantRepository;
     private readonly FoodContext _context;
-    public RestaurantService(IRestaurantRepository restaurantRepository,FoodContext context)
+
+    public RestaurantService(IRestaurantRepository restaurantRepository, FoodContext context)
     {
         _restaurantRepository = restaurantRepository;
         _context = context;
     }
-    public async Task<Result<RestaurantProfileDto>> GetMyRestaurantAsync()
+
+    // Helper: lấy quán của user đang đăng nhập
+    private async Task<Restaurant?> GetRestaurantOfUser(Guid userId)
     {
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
-        if(restaurant == null)
-        {
-            return Result<RestaurantProfileDto>.Failure("RESTAURANT_NOT_FOUND","Thông tin nhà hàng chưa được thiết lập");
-        }
+        return await _restaurantRepository.GetRestaurantByUserIdAsync(userId);
+    }
+
+    private bool ComputeIsOperating(Restaurant restaurant)
+    {
         var now = DateTime.Now.TimeOfDay;
-        bool isOperating ;
-        if(restaurant.OpenTime <= restaurant.CloseTime)
-        {
-            isOperating = now >= restaurant.OpenTime && now <= restaurant.CloseTime;
-        }
-        else
-        {
-            isOperating = now >= restaurant.OpenTime || now <= restaurant.CloseTime;
-        }
-        var finalStatus = restaurant.IsOpen && isOperating;
+        if (restaurant.OpenTime <= restaurant.CloseTime)
+            return now >= restaurant.OpenTime && now <= restaurant.CloseTime;
+        return now >= restaurant.OpenTime || now <= restaurant.CloseTime;
+    }
+
+    public async Task<Result<RestaurantProfileDto>> GetMyRestaurantAsync(Guid userId)
+    {
+        var restaurant = await GetRestaurantOfUser(userId);
+        if (restaurant == null)
+            return HttpErrors.NotFound<RestaurantProfileDto>("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
+
+        var finalStatus = restaurant.IsOpen && ComputeIsOperating(restaurant);
         var response = new RestaurantProfileDto
         {
+            Id = restaurant.Id,
             Name = restaurant.Name,
             Address = restaurant.Address,
             Phone = restaurant.Phone,
             OpenTime = restaurant.OpenTime,
             CloseTime = restaurant.CloseTime,
-            IsOpen = finalStatus, // Trạng thái thực tế
+            IsOpen = finalStatus,
             ClosingMessage = restaurant.ClosingMessage,
             Latitude = restaurant.Latitude,
             Longitude = restaurant.Longitude
         };
-        return Result<RestaurantProfileDto>.Success(response); 
+        return Result<RestaurantProfileDto>.Success(response);
     }
-    public async Task<Result<RestaurantStatusResponse>> GetStatusRestaurantAsync()
+
+    public async Task<Result<RestaurantStatusResponse>> GetStatusRestaurantAsync(Guid userId)
     {
-        var restaurant = await _restaurantRepository.GetStatusRestaurantAsync();
-        if(restaurant == null)
-        {
-            return Result<RestaurantStatusResponse>.Failure("RESTAURANT_NOT_FOUND","Thông tin nhà hàng chưa được thiết lập");
-        }
-        var now = DateTime.Now.TimeOfDay;
-        bool isOperating ;
-        if(restaurant.OpenTime <= restaurant.CloseTime)
-        {
-            isOperating = now >= restaurant.OpenTime && now <= restaurant.CloseTime;
-        }
-        else
-        {
-            isOperating = now >= restaurant.OpenTime || now <= restaurant.CloseTime;
-        }
-        var finalStatus = restaurant.IsOpen && isOperating;
+        var restaurant = await GetRestaurantOfUser(userId);
+        if (restaurant == null)
+            return HttpErrors.NotFound<RestaurantStatusResponse>("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
+
+        var finalStatus = restaurant.IsOpen && ComputeIsOperating(restaurant);
         var response = new RestaurantStatusResponse
         {
             IsOpen = finalStatus,
@@ -71,17 +68,15 @@ public class RestaurantService :IRestaurantService
         };
         return Result<RestaurantStatusResponse>.Success(response);
     }
-    public async Task<Result> OpenRestaurantAsync()
+
+    public async Task<Result> OpenRestaurantAsync(Guid userId)
     {
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
-        if(restaurant == null)
-        {
-            return Result.Failure("RESTAURANT_NOT_FOUND","Thông tin nhà hàng chưa được thiết lập");
-        }
+        var restaurant = await GetRestaurantOfUser(userId);
+        if (restaurant == null)
+            return HttpErrors.NotFound("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
         if (restaurant.IsOpen)
-        {
-            return Result.Failure("RESTAURANT_ALREADY_OPEN","Quán đang mở");
-        }
+            return HttpErrors.BadRequest("RESTAURANT_ALREADY_OPEN", "Quán đang mở.");
+
         restaurant.IsOpen = true;
         restaurant.ClosingMessage = null;
         restaurant.UpdatedAt = DateTime.UtcNow;
@@ -89,31 +84,29 @@ public class RestaurantService :IRestaurantService
         await _context.SaveChangesAsync();
         return Result.Success();
     }
-    public async Task<Result> CloseRestaurantAsync(CloseRestaurantRequest request)
+
+    public async Task<Result> CloseRestaurantAsync(Guid userId, CloseRestaurantRequest request)
     {
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
-        if(restaurant == null)
-        {
-            return Result.Failure("RESTAURANT_NOT_FOUND","Thông tin nhà hàng chưa được thiết lập");
-        }
+        var restaurant = await GetRestaurantOfUser(userId);
+        if (restaurant == null)
+            return HttpErrors.NotFound("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
         if (!restaurant.IsOpen)
-        {
-            return Result.Failure("RESTAURANT_ALREADY_CLOSE","Quán đang đóng");
-        }
+            return HttpErrors.BadRequest("RESTAURANT_ALREADY_CLOSE", "Quán đang đóng.");
+
         restaurant.IsOpen = false;
         restaurant.ClosingMessage = request.ClosingMessage;
         restaurant.UpdatedAt = DateTime.UtcNow;
         await _restaurantRepository.UpdateAsync(restaurant);
         await _context.SaveChangesAsync();
-        return Result.Success();    
+        return Result.Success();
     }
-    public async Task<Result> UpdateRestaurantAsync(UpdateRestaurantProfileRequest request)
+
+    public async Task<Result> UpdateRestaurantAsync(Guid userId, UpdateRestaurantProfileRequest request)
     {
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
-        if(restaurant == null)
-        {
-            return Result.Failure("RESTAURANT_NOT_FOUND","Thông tin nhà hàng chưa được thiết lập");
-        }
+        var restaurant = await GetRestaurantOfUser(userId);
+        if (restaurant == null)
+            return HttpErrors.NotFound("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
+
         restaurant.Name = request.Name;
         restaurant.Address = request.Address;
         restaurant.Phone = request.Phone;

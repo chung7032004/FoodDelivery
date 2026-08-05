@@ -4,27 +4,31 @@ public class Result
     public bool IsSuccess {get;}
     public string? ErrorCode {get;}
     public string? Message {get;}
-    protected Result(bool success, string? errorCode, string? message)
+    public int StatusCode {get;}
+    protected Result(bool success, string? errorCode, string? message, int statusCode)
     {   
         IsSuccess = success;
         ErrorCode = errorCode;
         Message = message;
+        StatusCode = statusCode;
     }
     public static Result Success()
     {
         return new Result( 
             success: true,
             errorCode: null,
-            message: null
+            message: null,
+            statusCode: 200
         );
     }
 
-    public static Result Failure(string errorCode,string message)
+    public static Result Failure(string errorCode,string message, int statusCode = 400)
     {
         return new Result(
             success: false,
             errorCode: errorCode,
-            message:message
+            message:message,
+            statusCode: statusCode
         );
     }  
 }
@@ -32,8 +36,8 @@ public class Result
 public class Result<T> : Result
 {
     public T? Data {get;}
-    private Result (bool success, T? data, string? errorCode, string? message)
-        : base(success, errorCode, message)
+    private Result (bool success, T? data, string? errorCode, string? message, int statusCode)
+        : base(success, errorCode, message, statusCode)
     {
         Data = data;
     }
@@ -43,15 +47,17 @@ public class Result<T> : Result
         success: true,
         data: data,
         errorCode: null,
-        message: null);
+        message: null,
+        statusCode: 200);
     } 
-    public static new Result<T> Failure(string errorCode, string message)
+    public static new Result<T> Failure(string errorCode, string message, int statusCode = 400)
     {
         return new Result<T>(
         success: false,
         data: default,
         errorCode: errorCode,
-        message: message
+        message: message,
+        statusCode: statusCode
     );
     }
 } 

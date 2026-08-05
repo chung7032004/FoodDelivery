@@ -22,6 +22,8 @@ namespace FoodDelivery.Repositories.Implementations
                 .AsNoTracking()
                 .Include(u=>u.UserRoles)
                 .ThenInclude(ur=>ur.Role)
+                .ThenInclude(r => r.RolePermissions)
+                .ThenInclude(rp => rp.Permission)
                 .Include(u => u.Shipper)
                 .FirstOrDefaultAsync(u=>u.Email == email);
         }
@@ -35,6 +37,8 @@ namespace FoodDelivery.Repositories.Implementations
                 .AsNoTracking()
                 .Include(u=>u.UserRoles)
                 .ThenInclude(ur =>ur.Role)
+                .ThenInclude(r => r.RolePermissions)
+                .ThenInclude(rp => rp.Permission)
                 .Include(u => u.Shipper)
                 .Include(u => u.Orders.Take(1))
                 .FirstOrDefaultAsync(u=>u.Id == userId);
@@ -76,6 +80,7 @@ namespace FoodDelivery.Repositories.Implementations
                 string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
                 user.Email = $"deleted_{timestamp}_{user.Email}";
                 user.UpdatedAt = DateTime.UtcNow;
+                user.AvatarUrl = null!;
             }
         }
         public async Task UpdateLastLoginAsync(Guid userId)
