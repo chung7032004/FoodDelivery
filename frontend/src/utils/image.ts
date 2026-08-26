@@ -1,4 +1,6 @@
-const BACKEND_BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
+const BACKEND_BASE_URL = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") 
+  : "";
 // "https://localhost:7147/api" -> "https://localhost:7147"
 
 export function getImageUrl(path?: string | null): string {
