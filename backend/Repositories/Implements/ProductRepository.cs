@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using FoodDelivery.DTOs.Product;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,43 @@ namespace FoodDelivery.Repositories.Implementations
             return await _context.Products
                 .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
+        }
+        public async Task<ProductDetailResponseDto?> GetByIdDetailAsync(Guid id)
+        {
+             return await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Id == id)
+                .Select(p => new ProductDetailResponseDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    IsAvailable = p.IsAvailable,
+                    IsFeatured = p.IsFeatured,
+                    DisplayOrder = p.DisplayOrder,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category.Name,
+                    RestaurantId = p.RestaurantId,
+                    RestaurantName = p.Restaurant.Name,
+                    Images = p.ProductImages
+                        .OrderByDescending(i => i.IsMain)
+                        .ThenBy(i => i.DisplayOrder)
+                        .Select(i => new ProductImageDto
+                        {
+                            Id = i.Id,
+                            ImageUrl = i.ImageUrl,
+                            IsMain = i.IsMain,
+                            DisplayOrder = i.DisplayOrder
+                        }).ToList(),
+                    ReviewCount = p.Reviews.Count(r => !r.IsHidden),
+                    AverageRating = p.Reviews.Any(r => !r.IsHidden)
+                        ? p.Reviews.Where(r => !r.IsHidden).Average(r => r.Rating)
+                        : 0
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<List<Product>> GetByCategoryAsync(Guid categoryId)

@@ -2,7 +2,7 @@ using FoodDelivery.Entities;
 
 public interface ICategoryRepository
 {
-    Task<List<Category>> GetAllAsync();
+    Task<(int,List<Category>)> GetAllAsync(string? search, int page, int pageSize);
     Task<Category?> GetByIdAsync(Guid id);
     Task AddAsync(Category category);
     void Update(Category category);

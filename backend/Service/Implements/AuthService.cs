@@ -165,36 +165,6 @@ namespace FoodDelivery.Service.Implementations
                 claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
                 Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
             }
-
-
-            // // Add explicit roles from UserRoles
-            // var permissionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            // if (user.UserRoles != null && user.UserRoles.Count > 0)
-            // {
-            //     foreach (var userRole in user.UserRoles)
-            //     {
-            //         if (userRole.Role != null)
-            //         {
-            //             if (!string.IsNullOrEmpty(userRole.Role.Name))
-            //             {
-            //                 claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
-            //                 Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
-            //             }
-
-            //             if (userRole.Role.RolePermissions != null)
-            //             {
-            //                 foreach (var rolePermission in userRole.Role.RolePermissions)
-            //                 {
-            //                     var permissionName = rolePermission.Permission?.Name;
-            //                     if (!string.IsNullOrWhiteSpace(permissionName) && permissionNames.Add(permissionName))
-            //                     {
-            //                         claims.Add(new Claim("permission", permissionName));
-            //                     }
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
             
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -202,7 +172,7 @@ namespace FoodDelivery.Service.Implementations
                 issuer : "foodApi",
                 audience: "foodApi",
                 claims : claims,
-                expires : DateTime.UtcNow.AddSeconds(30),
+                expires : DateTime.UtcNow.AddMinutes(15),
                 signingCredentials : creds
             );
             return new JwtSecurityTokenHandler().WriteToken(token);

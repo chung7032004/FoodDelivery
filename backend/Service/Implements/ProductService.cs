@@ -64,10 +64,10 @@ namespace FoodDelivery.Service.Implements
         //         .Select(MapToDto);
         // }
 
-        public async Task<ProductResponseDto?> GetProductByIdAsync(Guid productId)
+        public async Task<Result<ProductDetailResponseDto?>> GetProductDetailByIdAsync(Guid productId)
         {
-            var product = await _productRepo.GetByIdAsync(productId);
-            return product == null ? null : MapToDto(product);
+            var product = await _productRepo.GetByIdDetailAsync(productId);
+            return product == null ? HttpErrors.NotFound<ProductDetailResponseDto?>("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại") : Result<ProductDetailResponseDto?>.Success(product);
         }
 
 

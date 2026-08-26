@@ -1,4 +1,5 @@
 using FoodDelivery.DTOs.Product;
+using FoodDelivery.Extensions;
 using FoodDelivery.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,12 +27,11 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
         // public async Task<IActionResult> GetFeaturedProducts()
         //     => Ok(await _productService.GetFeaturedProductsAsync());
         
-        [HasPermission(PermissionConstants.Products.View)]
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductById(Guid productId)
         {
-            var product = await _productService.GetProductByIdAsync(productId);
-            return  product == null ? NotFound() : Ok(product);
+            var result = await _productService.GetProductDetailByIdAsync(productId);
+            return result.ToActionResult();
         }
         
         [HasPermission(PermissionConstants.Products.Create)]

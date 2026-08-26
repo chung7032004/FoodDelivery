@@ -19,14 +19,26 @@ namespace FoodDelivery.Service.Implementations
             _context = context;
         }
 
-        public async Task<Result<IEnumerable<CategoryResponseDto>>> GetAllCategoriesAsync()
+        public async Task<Result<PagedResponse<CategoryResponseDto>>> GetAllCategoriesAsync(string? search, int page, int pageSize)
         {
-            var categories = await _repo.GetAllAsync();
+            var (totalCount, categories) = await _repo.GetAllAsync(search, page, pageSize);
             if (categories == null)
             {
-                return HttpErrors.NotFound<IEnumerable<CategoryResponseDto>>("CATEGORY_NOT_FOUND","Không tìm thấy danh mục.");
+                return HttpErrors.NotFound<PagedResponse<CategoryResponseDto>>("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
             }
-            return Result<IEnumerable<CategoryResponseDto>>.Success(categories.Select(MapToDto));
+            var responseMeta = new PaginationMeta(
+                Page : page,
+                PageSize : categories.Count,
+                TotalCount : totalCount,
+                TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
+            );
+            var data = categories.Select(MapToDto).ToList();
+            var pagedResponse = new PagedResponse<CategoryResponseDto>
+            (
+                Data : data,
+                Meta : responseMeta
+            );
+            return Result<PagedResponse<CategoryResponseDto>>.Success(pagedResponse);
         }
 
         public async Task<Result<CategoryResponseDto?>> GetByIdAsync(Guid id)
@@ -86,7 +98,9 @@ namespace FoodDelivery.Service.Implementations
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                DisplayOrder = c.DisplayOrder
+                DisplayOrder = c.DisplayOrder,
+                ImageUrl = c.ImageUrl,
+                CreatedAt = c.CreatedAt
             };
     }
 }

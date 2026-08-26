@@ -32,7 +32,8 @@ public class AuthController : ControllerBase
         {
             HttpOnly = true,
             Secure = true, // để false khi test http local nếu cần, nhớ bật lại khi deploy
-            SameSite = SameSiteMode.Strict,
+            // SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None, // để None khi FE và BE khác domain, nhớ bật lại Strict khi cùng domain
             Expires = DateTime.UtcNow.AddDays(7),
             Path = "/api/auth"
         });

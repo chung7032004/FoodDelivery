@@ -10,10 +10,23 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<List<Category>> GetAllAsync()
-        => await _context.Categories
-            .OrderBy(c => c.DisplayOrder)
+    public async Task<(int, List<Category>)> GetAllAsync( string? search, int page, int pageSize)
+    {
+        var query = _context.Categories.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search}%";
+            query = query.Where(c => EF.Functions.Like(c.Name, pattern));
+        }
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+        return (totalCount, items);
+    }
+        
 
     public async Task<Category?> GetByIdAsync(Guid id)
         => await _context.Categories.FindAsync(id);

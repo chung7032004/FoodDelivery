@@ -17,9 +17,9 @@ namespace FoodDelivery.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _service.GetAllCategoriesAsync();
+            var result = await _service.GetAllCategoriesAsync(search, page, pageSize);
             return result.ToActionResult();
         }
 
