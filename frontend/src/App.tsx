@@ -1,12 +1,12 @@
 // src/App.tsx
+import { useAuth } from './contexts/AuthContext';
 import { AppRoutes } from './routes/AppRoutes';
-import { useAuthInit } from '@/hooks/useAuthInit';
 import  Spinner  from '@/components/ui/Spinner';
 
 function App() {
-  const { isLoading } = useAuthInit();
+  const { isAuthReady } = useAuth();
 
-  if (isLoading) return <Spinner />; // hoặc splash screen
+  if (!isAuthReady) return <Spinner />; // hoặc splash screen
 
   return <AppRoutes />;
 }

@@ -1,29 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ButtonPrimary } from '../ui';
-import { Search, ShoppingCart } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, Package } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { AccountDropdown } from './AccountDropdown';
 
 const NAV_LINKS = [
   { label: 'Trang chủ', to: '/' },
-  { label: 'Thực đơn', to: '/menu' },
+  { label: 'Thực đơn', to: '/list-category' },
   { label: 'Nhà hàng', to: '/restaurants' },
   { label: 'Khuyến mãi', to: '/promotions' },
 ];
 
 interface HeaderNavProps {
   cartCount?: number;
-  isAuthenticated?: boolean;
-  userName?: string;
-  onLogout?: () => void;
 }
 
-export function HeaderNav({
-  cartCount = 3,
-  isAuthenticated = false,
-  userName,
-  onLogout,
-}: HeaderNavProps) {
+export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -33,10 +29,11 @@ export function HeaderNav({
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const handleLogoutClick = useCallback(() => {
-    onLogout?.();
+  const handleLogoutClick = async () => {
+    await logout();
     setMobileOpen(false);
-  }, [onLogout]);
+    navigate('/login');
+  };
 
   return (
     <header className={`
@@ -100,43 +97,22 @@ export function HeaderNav({
           {/* Auth — desktop */}
           <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
-              <>
-                <Link
-                  to="/account"
-                  className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium text-muted hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs">
-                    👤
-                  </span>
-                  {userName ?? 'Tài khoản'}
-                </Link>
-                <button
-                  onClick={handleLogoutClick}
-                  className="px-3 py-2 text-sm font-medium text-muted hover:text-red-700 transition-colors cursor-pointer"
-                >
-                  Đăng xuất
-                </button>
-              </>
+              <AccountDropdown />
             ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  {/* Đăng nhập */}
-                  <Link
-                    to="/login"
-                    className="px-4 py-2 text-sm font-semibold text-muted hover:text-[#fb6900] transition-all duration-200 active:scale-95 inline-flex items-center justify-center"
-                  >
-                    Đăng nhập
-                  </Link>
-
-                  {/* Đăng ký */}
-                  <Link
-                    to="/register"
-                    className="px-4 py-2 text-sm font-semibold text-[#fb6900] border border-[#fb6900]/30 bg-[#fb6900]/10 hover:bg-[#fb6900] hover:text-white rounded-full transition-all duration-200 active:scale-95 inline-flex items-center justify-center"
-                  >
-                    Đăng ký
-                  </Link>
-                </div>
-              </>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-semibold text-muted hover:text-[#fb6900] transition-all duration-200 active:scale-95 inline-flex items-center justify-center"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 text-sm font-semibold text-[#fb6900] border border-[#fb6900]/30 bg-[#fb6900]/10 hover:bg-[#fb6900] hover:text-white rounded-full transition-all duration-200 active:scale-95 inline-flex items-center justify-center"
+                >
+                  Đăng ký
+                </Link>
+              </div>
             )}
           </div>
 
@@ -146,7 +122,7 @@ export function HeaderNav({
                 <ShoppingCart size={18} className="text-white transition-transform group-hover:scale-110" />
                 <span className="hidden sm:inline font-medium text-white">Giỏ hàng</span>
               </div>
-              
+
               {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-orange-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 ring-2 ring-white dark:ring-gray-800 animate-pulse">
                   {cartCount > 99 ? '99+' : cartCount}
@@ -191,12 +167,34 @@ export function HeaderNav({
 
           <div className="border-t border-border pt-4 flex flex-col gap-2">
             {isAuthenticated ? (
-              <button
-                onClick={handleLogoutClick}
-                className="w-full px-4 py-2 text-sm font-medium text-muted hover:text-orange-500 text-left"
-              >
-                Đăng xuất ({userName ?? 'Tài khoản'})
-              </button>
+              <>
+                <div className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-white">
+                  <span className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center text-xs font-bold">
+                    {user?.name?.charAt(0).toUpperCase() ?? <User size={14} />}
+                  </span>
+                  {user?.name ?? 'Tài khoản'}
+                </div>
+                <Link
+                  to="/account"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm font-medium text-muted hover:text-orange-500 text-left"
+                >
+                  <User size={16} /> Xem tài khoản
+                </Link>
+                <Link
+                  to="/orders"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm font-medium text-muted hover:text-orange-500 text-left"
+                >
+                  <Package size={16} /> Đơn hàng của tôi
+                </Link>
+                <button
+                  onClick={handleLogoutClick}
+                  className="flex items-center gap-2.5 w-full px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 rounded-lg text-left"
+                >
+                  <LogOut size={16} /> Đăng xuất
+                </button>
+              </>
             ) : (
               <>
                 <Link

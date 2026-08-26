@@ -16,22 +16,48 @@ export interface ApiErrorResponse {
   statusCode: number;
 }
 
+const ACCESS_TOKEN_KEY = 'accessToken';
+
 let accessToken: string | null = null;
+type Listener = (token: string | null) => void;
+const listeners = new Set<Listener>();
+
+function readStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+}
 
 export const tokenStore = {
-  get: () => accessToken,
+  get: () => accessToken ?? readStoredToken(),
   set: (token: string | null) => {
     accessToken = token;
+    if (typeof window !== 'undefined') {
+      if (token) {
+        window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+      } else {
+        window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+      }
+    }
+    listeners.forEach((listener) => listener(token));
   },
   clear: () => {
     accessToken = null;
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    }
+    listeners.forEach((listener) => listener(null));
+  },
+  subscribe: (listener: Listener) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
   }
-}
+};
 
 // ---- Request: gắn access token ----
 api.interceptors.request.use((config) => {
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
+  const token = tokenStore.get();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -93,7 +119,8 @@ api.interceptors.response.use(
       !originalRequest ||
       error.response?.status !== 401 ||
       originalRequest.url?.includes('/auth/refresh') ||
-      originalRequest.url?.includes('/auth/login')
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/logout')
     ) {
       return Promise.reject(toApiError(error));
     }
@@ -143,3 +170,29 @@ api.interceptors.response.use(
     }
   }
 );
+
+let bootstrapPromise: Promise<boolean> | null = null;
+
+export async function bootstrapSession(): Promise<boolean> {
+  if (bootstrapPromise) return bootstrapPromise;
+  
+  bootstrapPromise = (async () => {
+    try {
+      const { data } = await axios.post<{ accessToken: string }>(
+        `${import.meta.env.VITE_API_URL}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      );
+      tokenStore.set(data.accessToken);
+      return true;
+    } catch (error) {
+      console.warn('Bootstrap session failed:', error);
+      tokenStore.clear();
+      return false;
+    }
+    finally {
+      bootstrapPromise = null;
+    }
+  })();
+  return bootstrapPromise;
+}

@@ -14,12 +14,6 @@ export interface Dish {
   isFavorite?: boolean;
 }
 
-export interface Category {
-  id: number;
-  name: string;
-  emoji: string;
-  count: number;
-}
 
 export interface PromoCard {
   id: number;

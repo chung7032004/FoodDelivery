@@ -5,6 +5,9 @@ import Skeleton from '../ui/Skeleton.tsx';
 import { mapProductToDish } from '@/utils/mappers.ts';
 import { productService } from '@/services/product.service.ts';
 import { useQuery } from '@tanstack/react-query';
+import { getImageUrl } from '@/utils/image.ts';
+import { useNavigate } from 'react-router-dom';
+import { Utensils } from 'lucide-react';
 
 // ─── formatPrice ─────────────────────────────────────────────────
 function formatPrice(price: number): string {
@@ -19,9 +22,11 @@ interface DishCardProps {
 
 export function DishCard({ dish, onAddToCart }: DishCardProps) {
   const [favorite, setFavorite] = useState(dish.isFavorite ?? false);
-
+  const navigate = useNavigate();
   return (
-    <article className="bg-white rounded-2xl overflow-hidden cursor-pointer group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl shadow-sm">
+    <article 
+      onClick={() => navigate(`/product/${dish.id}`)}
+      className="bg-white rounded-2xl overflow-hidden cursor-pointer group transition-all duration-200 hover:-translate-y-1 hover:shadow-xl shadow-sm">
 
       {/* Thumbnail */}
       <div
@@ -29,7 +34,17 @@ export function DishCard({ dish, onAddToCart }: DishCardProps) {
         style={{ background: dish.bgGradient ?? 'linear-gradient(135deg,#FFF0E8,#FFE0CC)' }}
       >
         <span className="text-7xl leading-none group-hover:scale-105 transition-transform duration-300">
-          {dish.emoji}
+          {/* {dish.emoji} */}
+          {dish.mainImageUrl ? (
+            <img
+              src={getImageUrl(dish.mainImageUrl)}
+              alt={dish.name}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-food.png'; }}
+            />
+          ) : (
+            <Utensils size={48} className="text-[#fb6900]/30" />
+          )}
         </span>
 
         {/* Tag badge */}
@@ -84,7 +99,7 @@ interface DishGridProps {
 
 export function DishGrid({ onAddToCart }: DishGridProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['products', { page: 1, pageSize: 8 }],
+    queryKey: ['products', { page: 1, pageSize: 10 }],
     queryFn: async () => {
       const res = await productService.getAll({ page: 1, pageSize: 8 });
       var data = res.data.data.map(mapProductToDish);

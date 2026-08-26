@@ -1,5 +1,6 @@
+import { Category } from '@/types/category';
+import { ChartBarStacked } from 'lucide-react';
 import { useState } from 'react';
-import type { Category } from '../../types/index';
 
 interface CategoryListProps {
   categories: Category[];
@@ -9,7 +10,7 @@ interface CategoryListProps {
 interface CategoryItemProps {
   category: Category;
   isActive: boolean;
-  onClick: (id: number) => void;
+  onClick: (id: string) => void;
 }
 
 function CategoryItem({ category, isActive, onClick }: CategoryItemProps) {
@@ -25,16 +26,24 @@ function CategoryItem({ category, isActive, onClick }: CategoryItemProps) {
         }
       `}
     >
-      <span className="text-4xl">{category.emoji}</span>
+      <span className="text-4xl">
+        {category.imageUrl ? (
+          <img src={category.imageUrl} alt={category.name} className="w-10 h-10 object-cover rounded" />
+        ) : (
+             <span className="shrink-0 w-11 h-11 rounded-xl bg-[#fb6900]/10 text-[#fb6900] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+              <ChartBarStacked size={20} />
+             </span>
+        )}
+      </span>
       <span className="text-sm font-medium text-gray-900">{category.name}</span>
-      <span className="text-xs text-gray-400">{category.count} món</span>
+      <span className="text-xs text-gray-400">1 món</span>
     </button>
   );
 }
 
 // ─── CategoryList ─────────────────────────────────────────────────
 export function CategoryList({ categories }: CategoryListProps) {
-  const [activeId, setActiveId] = useState<number | null>(
+  const [activeId, setActiveId] = useState<string | null>(
     categories.length ? categories[0].id : null
   );
 
@@ -47,7 +56,7 @@ export function CategoryList({ categories }: CategoryListProps) {
       {/* Section header */}
       <div className="flex items-baseline justify-between mb-7">
         <h2 className="font-display text-2xl font-bold tracking-tight">Danh mục món</h2>
-        <a href="#" className="text-sm font-medium text-brand hover:underline">
+        <a href="/list-category" className="text-sm font-medium text-brand hover:underline">
           Xem tất cả →
         </a>
       </div>

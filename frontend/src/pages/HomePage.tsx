@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback} from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { Dish, Category } from '../types';
 import { HeaderNav }    from '../components/layout/HeaderNav';
 import { Footer }       from '../components/layout/Footer';
 import { HeroSection }  from '../components/sections/HeroSection';
@@ -9,7 +8,7 @@ import { DishGrid }     from '../components/sections/DishCard';
 import { PromoSection } from '../components/sections/PromoSection';
 import Skeleton from '../components/ui/Skeleton';
 import { categoryService } from '../services/category.service';
-import { productService } from '@/services/product.service';
+import { Category } from '@/types/category';
 
 export function HomePage() {
   const [cartCount, setCartCount] = useState(0);
@@ -20,21 +19,22 @@ export function HomePage() {
   } = useQuery({
     queryKey: ['categories'],
     queryFn: async (): Promise<Category[]> => {
-      const res = await categoryService.getAll();
-      return res.map((c) => ({
-        id: Number(c.id),
+      const res = await categoryService.getAll({ page: 1, pageSize: 10 });
+      return res.data.data.map((c) => ({
+        id: c.id,
         name: c.name,
-        emoji: '🍽️', // BE chưa trả emoji, tạm hardcode
-        count: 0,     // BE chưa trả số lượng món, tạm hardcode
+        description: c.description,
+        displayOrder: c.displayOrder,
+        imageUrl: c.imageUrl,
       }));
     },
     staleTime: 5 * 60 * 1000, // 5 phút — danh mục ít khi đổi
   });
 
-  const handleAddToCart = useCallback((dish: Dish) => {
+  const handleAddToCart = useCallback(() => {
     setCartCount((prev) => prev + 1);
     // TODO: thay bằng context/zustand khi có CartContext
-    console.log('Thêm vào giỏ:', dish.name);
+    console.log('Thêm vào giỏ:');
   }, []);
 
   return (

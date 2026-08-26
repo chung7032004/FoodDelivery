@@ -84,11 +84,15 @@ export function LoginPage() {
       setIsLoading(true);
       setErrors({});
       try {
-        await authService.login({
+        const {user} = await authService.login({
           email: formData.email.trim(),
           password: formData.password,
         });
-        navigate('/');
+         if (user?.roles.includes('Admin')) {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       } catch (err) {
         const axiosError = err as AxiosError<ApiErrorResponse>;
 
