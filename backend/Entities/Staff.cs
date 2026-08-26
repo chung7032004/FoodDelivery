@@ -7,7 +7,7 @@ namespace FoodDelivery.Entities
         public Guid RestaurantId { get; set; }
         
         public User User { get; set; } = null!;
-        public RestaurantProfile Restaurant { get; set; } = null!;
+        public Restaurant Restaurant { get; set; } = null!;
         
         public string Position { get; set; } = "Cook"; // Cook, Manager, etc.
         public bool IsActive { get; set; } = true;

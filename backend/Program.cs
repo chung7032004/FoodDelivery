@@ -9,6 +9,7 @@ using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Implements;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -57,10 +58,7 @@ var builder = WebApplication.CreateBuilder(args);
 //Cấu hình kết nối Database Postgresql
 var configuration = builder.Configuration;
 builder.Services.AddDbContext<FoodContext>(options =>
-    options.UseNpgsql(
-        configuration.GetConnectionString("Default"),
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
-    )
+    options.UseNpgsql(configuration.GetConnectionString("Default"))
 );
 
 //Định nghĩa chính sách CORS
@@ -71,7 +69,6 @@ builder.Services.AddCors(options => {
                         .AllowAnyHeader()
                         .AllowCredentials());
 });
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
@@ -104,9 +101,24 @@ builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 
+builder.Services.AddMemoryCache();
+// Cấu hình Redis Cache
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = configuration["Redis:ConnectionString"];
+});
+
+// Đăng ký các dịch vụ liên quan đến Authorization
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>(); // Đăng ký PermissionHandler để xử lý các yêu cầu về quyền
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>(); // Đăng ký PermissionPolicyProvider để tạo chính sách động dựa trên tên quyền
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, CustomAuthorizationMiddlewareResultHandler>(); // Đăng ký CustomAuthorizationMiddlewareResultHandler để trả về lỗi 403 chuẩn hóa khi bị từ chối truy cập
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // Đăng ký GlobalExceptionHandler để xử lý lỗi toàn cục
+builder.Services.AddProblemDetails(); // Đăng ký ProblemDetails để trả về lỗi chuẩn hóa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
 {
     option.Events = new JwtBearerEvents
@@ -150,12 +162,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         app.UseSwaggerUI();
     }
 
+    app.UseExceptionHandler(); // Sử dụng middleware xử lý lỗi toàn cục
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
     //Kích hoạt CORS (Phải đặt trước UseAuthorization)
     app.UseCors("AllowReactApp");
-    app.UseMiddleware<ExceptionMiddleware>();// Bắt lỗi chung toàn ứng dụng
     app.UseAuthentication(); //Kiểm tra bạn là ai 
     app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
     app.UseMiddleware<RestaurantOpenMiddleware>();// chặn order khi quán đóng 

@@ -14,7 +14,8 @@ namespace FoodDelivery.Entities
         public string? Note {get; set;}
         public DateTime CreatedAt{get; set;} = DateTime.Now;
         public DateTime? UpdatedAt{get; set;}
-    
+        public Guid RestaurantId { get; set; }
+        public virtual Restaurant Restaurant { get; set; } = null!;
         public virtual OrderDetail OrderDetail {get; set;} = null!; 
         public virtual ICollection<OrderItem> OrderItems {get; set;} = new List<OrderItem>();
         public virtual ICollection<OrderStatusHistory> OrderStatusHistories {get; set;} = new List<OrderStatusHistory>();

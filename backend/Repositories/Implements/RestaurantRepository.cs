@@ -1,5 +1,3 @@
-using FoodDelivery.DTOs.Order;
-using FoodDelivery.DTOs.Restaurant;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -8,20 +6,33 @@ namespace FoodDelivery.Repositories.Implementations;
 public class RestaurantRepository : IRestaurantRepository
 {
     private readonly FoodContext _context;
-    public RestaurantRepository (FoodContext context)
+    public RestaurantRepository(FoodContext context)
     {
         _context = context;
     }
-    public async Task<RestaurantProfile?> GetMyRestaurant()
+
+    // Lấy quán theo Id
+    public async Task<Restaurant?> GetByIdAsync(Guid restaurantId)
     {
-        return await _context.RestaurantProfiles.FirstOrDefaultAsync();   
+        return await _context.Restaurants
+            .FirstOrDefaultAsync(r => r.Id == restaurantId);
     }
-    public async Task<RestaurantProfile?> GetStatusRestaurantAsync()
+
+    // Lấy quán mà user đang quản lý (qua bảng Staff)
+    public async Task<Restaurant?> GetRestaurantByUserIdAsync(Guid userId)
     {
-        return await _context.RestaurantProfiles
+        return await _context.Restaurants
+            .FirstOrDefaultAsync(r => r.OwnerId == userId);
+    }
+
+    public async Task<Restaurant?> GetStatusByIdAsync(Guid restaurantId)
+    {
+        return await _context.Restaurants
             .AsNoTracking()
-            .Select(r => new RestaurantProfile
+            .Where(r => r.Id == restaurantId)
+            .Select(r => new Restaurant
             {
+                Id = r.Id,
                 IsOpen = r.IsOpen,
                 OpenTime = r.OpenTime,
                 CloseTime = r.CloseTime,
@@ -30,7 +41,8 @@ public class RestaurantRepository : IRestaurantRepository
             })
             .FirstOrDefaultAsync();
     }
-    public async Task UpdateAsync (RestaurantProfile restaurant)
+
+    public async Task UpdateAsync(Restaurant restaurant)
     {
         _context.Update(restaurant);
         await Task.CompletedTask;

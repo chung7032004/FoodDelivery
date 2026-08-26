@@ -7,4 +7,5 @@ public interface IAccountService
     Task <Result<AccountResponse>> GetAccountAsync(Guid userId);
     Task <Result> UpdateAccountAsync(Guid id, AccountRequest accountRequest);
     Task <Result<AccountResponse>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request);
+    Task <Result> DeleteAccountAsync(Guid id);
 }

@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 
 using FoodDelivery.Service.Interfaces;
-using FoodDelivery.Common;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 using FoodDelivery.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using FoodDelivery.Extensions;
+using FoodDelivery.Common;
 
 namespace FoodDelivery.Controllers;
 
@@ -13,94 +14,106 @@ namespace FoodDelivery.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IEmailService _emailService;
-
-    public AuthController(IAuthService authService, IEmailService emailService)
+    private const string RefreshTokenCookieName = "refreshToken";
+    public AuthController(IAuthService authService)
     {
-        _emailService = emailService;
         _authService = authService;
     }
     [HttpPost("register")]
     public async Task<IActionResult> Register ([FromBody] RegisterRequest request)
     {
         var result = await _authService.RegisterUserAsync(request.Email, request.Password, request.FullName, request.Phone);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 
+    private void SetRefreshTokenCookie(string token)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true, // để false khi test http local nếu cần, nhớ bật lại khi deploy
+            // SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None, // để None khi FE và BE khác domain, nhớ bật lại Strict khi cùng domain
+            Expires = DateTime.UtcNow.AddDays(7),
+            Path = "/api/auth"
+        });
+    }
+    private void DeleteRefreshToken()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            Path = "/api/auth"
+        });
+    }
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.AuthenticateUserAsync(request.Email, request.Password);
-
-        if (!result.IsSuccess)
+        if (!result.IsSuccess || result.Data is null)
         {
-            return result.ErrorCode switch
-            {
-                "INVALID_INPUT"    => BadRequest(result),
-                "USER_NOT_FOUND"   => NotFound(result),
-                "INVALID_PASSWORD" => BadRequest(result),
-                "USER_INACTIVE"    => StatusCode(StatusCodes.Status403Forbidden, result),
-                _                  => StatusCode(StatusCodes.Status500InternalServerError, result)
-            };
+            return result.ToActionResult();
         }
-
-        return Ok(result);
+        // RefreshToken -> cookie, không trả trong body
+            if (!string.IsNullOrEmpty(result.Data.RefreshToken))
+        {
+            SetRefreshTokenCookie(result.Data.RefreshToken);
+        }
+        // Chỉ trả accessToken cho FE
+        return Ok(new { accessToken = result.Data.AccessToken });
     }
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequest logoutRequest)
+    public async Task<IActionResult> Logout()
     {
-        if(!User.TryGetUserId(out Guid userId))
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
-        var result = await _authService.LogoutAsync(userId,logoutRequest.RefreshToken);
-        if (!result.IsSuccess)
+        var userId = User.GetUserId();
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        if (!string.IsNullOrEmpty(refreshToken))
         {
-            return BadRequest(result);
+            await _authService.LogoutAsync(userId, refreshToken);
         }
-        return Ok(result);
+        DeleteRefreshToken();
+        return Ok();
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshToken ([FromBody] RefreshTokenRequest refreshTokenRequest)
+    public async Task<IActionResult> RefreshToken()
     {
-        var result = await _authService.RefreshAccessTokenAsync(refreshTokenRequest.RefreshToken);
-        if (!result.IsSuccess)
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        if (string.IsNullOrEmpty(refreshToken))
         {
-            return BadRequest(result);
+            var error = HttpErrors.Unauthorized("REFRESH_MISSING", "Không tìm thấy refresh token");
+            return error.ToActionResult();
         }
-        return Ok(result);
+        var result = await _authService.RefreshAccessTokenAsync(refreshToken);
+        if(!result.IsSuccess || result.Data is null)
+        {
+            DeleteRefreshToken();
+            return result.ToActionResult();
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(result.Data.RefreshToken))
+            {
+                SetRefreshTokenCookie(result.Data.RefreshToken);
+            }
+        }
+        return Ok(new { accessToken = result.Data.AccessToken });
     }
     [Authorize]
     [HttpPost("change-password")]
+    [HasPermission(PermissionConstants.Accounts.ChangePassword)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
     {
-        if(!User.TryGetUserId(out Guid userId))
-            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+        var userId = User.GetUserId();
         var result = await _authService.ChangePasswordAsync(userId,changePasswordRequest);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
         var result = await _authService.SendOtpAsync(request);
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "EMAIL_INVALID" =>BadRequest(result),
-                _ => StatusCode(500,result),
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
@@ -110,15 +123,6 @@ public class AuthController : ControllerBase
             request.Otp, 
             request.NewPassword
         );
-        if (!result.IsSuccess)
-        {
-            return result.ErrorCode switch
-            {
-                "OTP_LOCKED" => StatusCode(StatusCodes.Status429TooManyRequests, result),
-                "OTP_EXPIRED" => BadRequest(result),
-                _ => BadRequest(result)
-            };
-        }
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

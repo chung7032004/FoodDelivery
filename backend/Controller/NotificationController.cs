@@ -23,11 +23,7 @@ public class NotificationController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _notificationService.GetUserNotificationsAsync(userId, pageNumber, pageSize);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("unread")]
@@ -35,34 +31,22 @@ public class NotificationController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _notificationService.GetUnreadNotificationsAsync(userId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount()
     {
         var userId = User.GetUserId();
-        var result = await _notificationService.GetUnreadCountAsync(userId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result);
+        var result = await _notificationService.GetUnreadCountAsync(userId);    
+        return result.ToActionResult();
     }
 
     [HttpGet("{notificationId}")]
     public async Task<IActionResult> GetNotificationById([FromRoute] Guid notificationId)
     {
         var result = await _notificationService.GetNotificationByIdAsync(notificationId);
-
-        if (!result.IsSuccess)
-            return NotFound(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("")]
@@ -86,11 +70,7 @@ public class NotificationController : ControllerBase
     public async Task<IActionResult> MarkAsRead([FromRoute] Guid notificationId)
     {
         var result = await _notificationService.MarkAsReadAsync(notificationId);
-
-        if (!result.IsSuccess)
-            return NotFound(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPut("mark-all-read")]
@@ -98,11 +78,7 @@ public class NotificationController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _notificationService.MarkAllAsReadAsync(userId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 
 
@@ -110,10 +86,6 @@ public class NotificationController : ControllerBase
     public async Task<IActionResult> DeleteNotification([FromRoute] Guid notificationId)
     {
         var result = await _notificationService.DeleteNotificationAsync(notificationId);
-
-        if (!result.IsSuccess)
-            return NotFound(result);
-
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

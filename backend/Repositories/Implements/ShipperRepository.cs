@@ -25,17 +25,45 @@ namespace FoodDelivery.Repositories.Implements
 
         public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
 
-        public async Task<List<User>> GetAllShippersAsync() => 
-            await _context.Users.Where(u => u.UserRoles.Any(r => r.Role.Name == "Shipper")).ToListAsync();
-
+        public async Task<(List<Shipper> Items, int TotalCount)> GetAllShippersAsync(int page, int pageSize)
+        {
+            var query = _context.Shippers
+                .Where(s => s.User.UserRoles.Any(r => r.Role.Name == "Shipper"))
+                .Include(s => s.User)
+                .AsNoTracking();
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return (items, totalCount);
+        }
+        public async Task<(List<Shipper> Items, int TotalCount)> GetPendingApplicationsAsync(int page, int pageSize)
+        {
+            var query = _context.Shippers
+                .Include(s => s.User)
+                .Where(s=> s.Status == ShipperStatus.Pending)
+                .AsNoTracking();
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return (items, totalCount);
+        }
         public async Task<Shipper?> GetShipperByIdAsync(Guid userId)
         {
             return await _context.Shippers
-                .Include(s => s.User)
-                .Include(s => s.Orders)
-                    .ThenInclude(o => o.Order)
-                        .ThenInclude(o => o.Customer)
                 .FirstOrDefaultAsync(s => s.UserId == userId);
+        }
+        public async Task<List<OrderDetail>> GetOrdersByShipperAsync(Guid shipperId)
+        {
+            return await _context.OrderDetails
+                .Where(od => od.ShipperId == shipperId)
+                .Include(od=> od.Order)
+                .ToListAsync();
         }
             
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => 
@@ -80,12 +108,11 @@ namespace FoodDelivery.Repositories.Implements
                 .Where(od => od.ShipperId == shipperId && od.Status == OrderStatus.Completed)
                 .SumAsync(od => od.Order.TotalAmount);
         }
-
         public async Task AddShipperAsync(Shipper shipper) => await _context.Shippers.AddAsync(shipper);
-
-        public async Task<Role?> GetRoleByNameAsync(string roleName) => 
-            await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-
         public async Task AddUserRoleAsync(UserRole userRole) => await _context.UserRoles.AddAsync(userRole);
+        public async Task<bool> HasShipperRecordAsync(Guid userId)
+        {
+            return await _context.Shippers.AnyAsync(s => s.UserId == userId);
+        }
     }
 }

@@ -81,7 +81,7 @@ namespace FoodDelivery.Service.Implements
                 Id = r.Id,
                 ProductName = r.Product.Name, 
                 productId = r.ProductId,
-                ProductImageUrl = r.Product.ImageUrl, 
+                // ProductImageUrl = r.Product.ImageUrl, 
                 Rating = r.Rating,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,

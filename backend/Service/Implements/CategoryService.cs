@@ -1,7 +1,7 @@
+using FoodDelivery.Common;
 using FoodDelivery.DTOs.Category;
 using FoodDelivery.Entities;
-using FoodDelivery.Repositories.Interfaces;
-using FoodDelivery.Service.Interfaces;
+
 
 namespace FoodDelivery.Service.Implementations
 {
@@ -9,30 +9,49 @@ namespace FoodDelivery.Service.Implementations
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _repo;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly FoodContext _context;
 
         public CategoryService(
             ICategoryRepository repo,
-            IUnitOfWork unitOfWork)
+            FoodContext context)
         {
             _repo = repo;
-            _unitOfWork = unitOfWork;
+            _context = context;
         }
 
-        public async Task<IEnumerable<CategoryResponseDto>> GetAllCategoriesAsync()
+        public async Task<Result<PagedResponse<CategoryResponseDto>>> GetAllCategoriesAsync(string? search, int page, int pageSize)
         {
-        var categories = await _repo.GetAllAsync();
-        return categories.Select(MapToDto);
+            var (totalCount, categories) = await _repo.GetAllAsync(search, page, pageSize);
+            if (categories == null)
+            {
+                return HttpErrors.NotFound<PagedResponse<CategoryResponseDto>>("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
+            }
+            var responseMeta = new PaginationMeta(
+                Page : page,
+                PageSize : categories.Count,
+                TotalCount : totalCount,
+                TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
+            );
+            var data = categories.Select(MapToDto).ToList();
+            var pagedResponse = new PagedResponse<CategoryResponseDto>
+            (
+                Data : data,
+                Meta : responseMeta
+            );
+            return Result<PagedResponse<CategoryResponseDto>>.Success(pagedResponse);
         }
 
-
-        public async Task<CategoryResponseDto?> GetByIdAsync(Guid id)
+        public async Task<Result<CategoryResponseDto?>> GetByIdAsync(Guid id)
         {
             var category = await _repo.GetByIdAsync(id);
-            return category == null ? null : MapToDto(category);
+            if (category == null)
+            {
+                return HttpErrors.NotFound<CategoryResponseDto?>("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
+            }
+            return Result<CategoryResponseDto?>.Success(MapToDto(category));
         }
 
-        public async Task<CategoryResponseDto> CreateAsync(CategoryCreateDto dto)
+        public async Task<Result<CategoryResponseDto>> CreateAsync(CategoryCreateDto dto)
         {
             var category = new Category
             {
@@ -43,15 +62,15 @@ namespace FoodDelivery.Service.Implementations
             };
 
             await _repo.AddAsync(category);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            return MapToDto(category);
+            return Result<CategoryResponseDto>.Success(MapToDto(category));
         }
 
-        public async Task<bool> UpdateAsync(Guid id, CategoryUpdateDto dto)
+        public async Task<Result> UpdateAsync(Guid id, CategoryUpdateDto dto)
         {
             var category = await _repo.GetByIdAsync(id);
-            if (category == null) return false;
+            if (category == null) return HttpErrors.NotFound("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
 
             category.Name = dto.Name;
             category.Description = dto.Description;
@@ -59,18 +78,18 @@ namespace FoodDelivery.Service.Implementations
             category.UpdatedAt = DateTime.UtcNow;
 
             _repo.Update(category);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
+            await _context.SaveChangesAsync();
+            return Result.Success();
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
+        public async Task<Result> DeleteAsync(Guid id)
         {
             var category = await _repo.GetByIdAsync(id);
-            if (category == null) return false;
+            if (category == null) return HttpErrors.NotFound("CATEGORY_NOT_FOUND", "Không tìm thấy danh mục.");
 
             _repo.Delete(category);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
+            await _context.SaveChangesAsync();
+            return Result.Success();
         }
 
         private static CategoryResponseDto MapToDto(Category c)
@@ -79,7 +98,9 @@ namespace FoodDelivery.Service.Implementations
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                DisplayOrder = c.DisplayOrder
+                DisplayOrder = c.DisplayOrder,
+                ImageUrl = c.ImageUrl,
+                CreatedAt = c.CreatedAt
             };
     }
 }

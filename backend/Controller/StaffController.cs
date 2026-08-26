@@ -6,6 +6,7 @@ using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PermissionConstants = FoodDelivery.Constants.Permissions;
 
 namespace FoodDelivery.Controllers;
 
@@ -23,6 +24,7 @@ public class StaffController : ControllerBase
         _context = context;
     }
 
+    [HasPermission(PermissionConstants.Staffs.View)]
     [HttpGet("stats")]
     public async Task<IActionResult> GetDashboardStats()
     {
@@ -35,6 +37,7 @@ public class StaffController : ControllerBase
         return Ok(result);
     }
 
+    [HasPermission(PermissionConstants.Orders.View)]
     [HttpGet("orders")]
     public async Task<IActionResult> GetOrdersForPreparation()
     {
@@ -113,7 +116,7 @@ public class StaffController : ControllerBase
     {
         var userId = User.GetUserId();
         // Get first restaurant (for testing)
-        var restaurant = await _context.RestaurantProfiles.FirstOrDefaultAsync();
+        var restaurant = await _context.Restaurants.FirstOrDefaultAsync();
         if (restaurant == null)
             return BadRequest(new { message = "No restaurant found" });
 

@@ -43,35 +43,35 @@ public class OrderService :IOrderService
     {
         if(request.Quantity <= 0)
         {
-            return Result<CreateOrderResponseDto>.Failure("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("INVALID_QUANTITY", "Số lượng phải lớn hơn 0");
         }
         var product = await _productRepository.GetByIdAsync(request.ProductId);
         if(product == null)
         {
-            return Result<CreateOrderResponseDto>.Failure("PRODUCT_NOT_FOUND","Không tìm thấy sản phẩm.");
+            return HttpErrors.NotFound<CreateOrderResponseDto>("PRODUCT_NOT_FOUND", "Không tìm thấy sản phẩm.");
         }
         if (!product.IsAvailable)
         {
-            return Result<CreateOrderResponseDto>.Failure("PRODUCT_UNAVAILABLE","Đơn hang đang có sản phẩm ngừng bán");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("PRODUCT_UNAVAILABLE", "Đơn hang đang có sản phẩm ngừng bán");
         }
-        var statusRestaurant = await _restaurantRepository.GetStatusRestaurantAsync();
+        var statusRestaurant = await _restaurantRepository.GetByIdAsync(product.RestaurantId);
         if(statusRestaurant != null &&statusRestaurant.IsOpen == false)
         {
-            return Result<CreateOrderResponseDto>.Failure("RESTAURANT_CLOSE",statusRestaurant.ClosingMessage ?? "Quán tạm nghỉ. Bạn có thể quay lại vào hôm sau.");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("RESTAURANT_CLOSE", statusRestaurant.ClosingMessage ?? "Quán tạm nghỉ. Bạn có thể quay lại vào hôm sau.");
         }
         var item = new List<CreateOrderItemDto>
         {
             new CreateOrderItemDto()
             {
                 ProductId = product.Id,
-                ProductImage = product.ImageUrl,
+                // ProductImage = product.ImageUrl,
                 ProductName = product.Name,
                 Quantity  = request.Quantity,
                 UnitPrice = product.Price,
 
             }
         };
-        return await CreateOrderInternalAsync(customerId,request.AddressId,item,request.Note);
+        return await CreateOrderInternalAsync(customerId,request.AddressId, product.RestaurantId,item,request.Note);
 
     }
     public async Task<Result<CreateOrderResponseDto>> CheckoutAsync(Guid customerId,CheckoutRequestDto request)
@@ -79,29 +79,40 @@ public class OrderService :IOrderService
         var cartItems = await _cartItemRepository.GetByIdsAsync(customerId,request.CartItemIds);
         if (cartItems == null || !cartItems.Any())
         {
-            return Result<CreateOrderResponseDto>.Failure("CART_EMPTY","Đơn hàng phải có ít nhất một sản phẩm");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("CART_EMPTY", "Đơn hàng phải có ít nhất một sản phẩm");
         }
         if (cartItems.Any(ci => ci.Quantity <= 0))
         {
-            return Result<CreateOrderResponseDto>.Failure("INVALID_QUANTITY","Số lượng sản phẩm không hợp lệ");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("INVALID_QUANTITY", "Số lượng sản phẩm không hợp lệ");
         }
         if (cartItems.Any(ci=>ci.Cart.CustomerId != customerId))
         {
-            return Result<CreateOrderResponseDto>.Failure("FORBIDDEN","Không có quyền thanh toán giỏ hàng này");
+            return HttpErrors.Forbidden<CreateOrderResponseDto>("FORBIDDEN", "Không có quyền thanh toán giỏ hàng này");
         }
         if(cartItems.Any(ci=>ci.Product.IsAvailable == false))
         {
-            return Result<CreateOrderResponseDto>.Failure("PRODUCT_UNAVAILABLE","Đơn hang đang có sản phẩm ngừng bán");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("PRODUCT_UNAVAILABLE", "Đơn hang đang có sản phẩm ngừng bán");
         }
+
+        var restaurantIds = cartItems.Select(ci => ci.Product.RestaurantId).Distinct().ToList();
+        if (restaurantIds.Count > 1)
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("MIXED_RESTAURANTS", "Không thể đặt hàng từ nhiều quán cùng lúc");
+
+        var restaurantId = restaurantIds.First();
+
+         var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
+        if (restaurant == null)
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("RESTAURANT_NOT_CONFIGURED", "Cửa hàng chưa được cấu hình.");
+        if (!restaurant.IsOpen)
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("RESTAURANT_CLOSE", restaurant.ClosingMessage ?? "Quán tạm nghỉ.");
         var items = cartItems.Select(ci=> new CreateOrderItemDto
         {
                 ProductId = ci.Product.Id,
-                ProductImage = ci.Product.ImageUrl,
                 ProductName = ci.Product.Name,
                 Quantity  = ci.Quantity,
                 UnitPrice = ci.Product.Price,
         }).ToList();
-        var result =  await CreateOrderInternalAsync(customerId,request.AddressId,items,request.Note);
+        var result = await CreateOrderInternalAsync(customerId, request.AddressId, restaurantId, items, request.Note);
         if (result.IsSuccess)
         {
             await _cartItemRepository.DeleteRangeAsync(cartItems);
@@ -110,24 +121,24 @@ public class OrderService :IOrderService
         return result;
     }
 
-    public async Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId)
+    public async Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId, Guid restaurantId)
     {
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
         {
-            return Result<ShippingFeeResponseDto>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound<ShippingFeeResponseDto>("ADDRESS_NOT_FOUND", "Không tìm thấy địa chỉ");
         }
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
+        var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
         if(restaurant == null)
         {
-            return Result<ShippingFeeResponseDto>.Failure("RESTAURANT_NOT_CONFIGURED","Cửa hàng chưa được cấu hình.");
+            return HttpErrors.BadRequest<ShippingFeeResponseDto>("RESTAURANT_NOT_CONFIGURED", "Cửa hàng chưa được cấu hình.");
         }
         
         var distance = CalculateDistance(restaurant.Latitude, restaurant.Longitude, address.Latitude, address.Longitude);
         
         if (distance > 40)
         {
-            return Result<ShippingFeeResponseDto>.Failure("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
+            return HttpErrors.BadRequest<ShippingFeeResponseDto>("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
         }
         
         // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
@@ -163,23 +174,24 @@ public class OrderService :IOrderService
     private string GenerateOrderCode() => $"FD{DateTime.UtcNow.Ticks}";
     private async Task<Result<CreateOrderResponseDto>> CreateOrderInternalAsync(
         Guid customerId, Guid addressId,
+        Guid restaurantId,
         List<CreateOrderItemDto> items, string? note)
     {
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
         {
-            return Result<CreateOrderResponseDto>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+            return HttpErrors.NotFound<CreateOrderResponseDto>("ADDRESS_NOT_FOUND", "Không tìm thấy địa chỉ");
         }
-        var restaurant = await _restaurantRepository.GetMyRestaurant();
+        var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
         if(restaurant== null)
         {
-            return Result<CreateOrderResponseDto>.Failure("RESTAURANT_NOT_CONFIGURED","Cửa hàng chưa được cấu hình.");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("RESTAURANT_NOT_CONFIGURED", "Cửa hàng chưa được cấu hình.");
         }
         var distance = CalculateDistance(restaurant.Latitude,restaurant.Longitude,address.Latitude,address.Longitude);
         Console.WriteLine($"distance: {distance}");
         if (distance > 40)
         {
-            return Result<CreateOrderResponseDto>.Failure("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
         }
         
         // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
@@ -195,6 +207,7 @@ public class OrderService :IOrderService
         {
             CustomerId = customerId,
             Note = note,
+            RestaurantId = restaurantId,
             TotalAmount = items.Sum(i=>i.UnitPrice * i.Quantity),
             ShippingFee = shippingFee,
             CreatedAt = DateTime.UtcNow,
@@ -235,67 +248,37 @@ public class OrderService :IOrderService
         await _orderRepository.AddAsync(order);
         await _context.SaveChangesAsync();
 
-        // 📢 Send notification to all admins about new order
         try
+    {
+        var admins = await _userRepository.GetUsersByRoleAsync("admin");
+        foreach (var admin in admins)
         {
-            var admins = await _userRepository.GetUsersByRoleAsync("admin");
-            Console.WriteLine($"[Notification] Found {admins.Count} admin(s)");
-            
-            if (admins.Count == 0)
+            await _notificationService.CreateNotificationAsync(admin.Id, new NotificationRequest
             {
-                Console.WriteLine("[Notification] WARNING: No admins found in database!");
-            }
-            
-            foreach (var admin in admins)
-            {
-                Console.WriteLine($"[Notification] Sending to admin: {admin.Id} ({admin.Email})");
-                var notificationRequest = new NotificationRequest
-                {
-                    Title = "Đơn hàng mới",
-                    Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
-                    Type = (int)NotificationType.ORDER,
-                    Link = $"/admin/orders/{order.Id}"
-                };
-                var result = await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
-                if (!result.IsSuccess)
-                {
-                    Console.WriteLine($"[Notification] Failed to send: {result.Message}");
-                }
-                else
-                {
-                    Console.WriteLine($"[Notification] Successfully sent to admin {admin.Email}");
-                }
-            }
-
-            // 📢 Send notification to all active staff about new order
-            var staffMembers = await _context.Staff
-                .Include(s => s.User)
-                .Where(s => s.IsActive)
-                .ToListAsync();
-            
-            Console.WriteLine($"[Notification] Found {staffMembers.Count} active staff member(s)");
-            
-            foreach (var staff in staffMembers)
-            {
-                Console.WriteLine($"[Notification] Sending to staff: {staff.UserId} ({staff.User?.Email})");
-                var notificationRequest = new NotificationRequest
-                {
-                    Title = "Đơn hàng mới cần xử lý",
-                    Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
-                    Type = (int)NotificationType.ORDER,
-                    Link = $"/staff/orders?search={order.OrderCode}"
-                };
-                var result = await _notificationService.CreateNotificationAsync(staff.UserId, notificationRequest);
-                if (!result.IsSuccess)
-                {
-                    Console.WriteLine($"[Notification] Failed to send to staff: {result.Message}");
-                }
-                else
-                {
-                    Console.WriteLine($"[Notification] Successfully sent to staff {staff.User?.Email}");
-                }
-            }
+                Title = "Đơn hàng mới",
+                Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                Type = (int)NotificationType.ORDER,
+                Link = $"/admin/orders/{order.Id}"
+            });
         }
+
+        //  Chỉ notify staff của quán đó
+        var staffMembers = await _context.Staff
+            .Include(s => s.User)
+            .Where(s => s.IsActive && s.RestaurantId == restaurantId)
+            .ToListAsync();
+
+        foreach (var staff in staffMembers)
+        {
+            await _notificationService.CreateNotificationAsync(staff.UserId, new NotificationRequest
+            {
+                Title = "Đơn hàng mới cần xử lý",
+                Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                Type = (int)NotificationType.ORDER,
+                Link = $"/staff/orders?search={order.OrderCode}"
+            });
+        }
+    }
         catch (Exception ex)
         {
             Console.WriteLine($"[Notification] Error sending notification: {ex.Message}");
@@ -337,19 +320,19 @@ public class OrderService :IOrderService
             var order = await _orderRepository.GetOrderDetailAsync(orderId);
             if(order == null)
             {
-                return Result<OrderDetailResponse>.Failure("ORDER__NOT_FOUND","Không tìm thấy đơn hàng này");
+                return HttpErrors.NotFound<OrderDetailResponse>("ORDER__NOT_FOUND", "Không tìm thấy đơn hàng này");
             }
             bool isAdmin = roles.Contains("Admin");
             bool isOwner = order.CustomerId == userId;
             if (!isAdmin && !isOwner)
             {
-                return Result<OrderDetailResponse>.Failure("ORDER__FORBIDDEN", "Bạn không có quyền xem đơn hàng này");
+                return HttpErrors.Forbidden<OrderDetailResponse>("ORDER__FORBIDDEN", "Bạn không có quyền xem đơn hàng này");
             }
             
             // Check if OrderDetail exists
             if (order.OrderDetail == null)
             {
-                return Result<OrderDetailResponse>.Failure("ORDER_DETAIL_NOT_FOUND", "Thông tin chi tiết đơn hàng không tồn tại");
+                return HttpErrors.NotFound<OrderDetailResponse>("ORDER_DETAIL_NOT_FOUND", "Thông tin chi tiết đơn hàng không tồn tại");
             }
             
             var response = new OrderDetailResponse
@@ -409,7 +392,7 @@ public class OrderService :IOrderService
             {
                 Console.WriteLine($"[ERROR] InnerException: {ex.InnerException.Message}");
             }
-            return Result<OrderDetailResponse>.Failure("ORDER_ERROR", $"Lỗi: {ex.Message}");
+            return HttpErrors.InternalServerError<OrderDetailResponse>("ORDER_ERROR", $"Lỗi: {ex.Message}");
         }
     }   
     public async Task<Result> CancelOrderByCustomerAsync(Guid userId,Guid orderId, CancelOrderRequestDto request)
@@ -417,17 +400,17 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND","Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if (order.OrderDetail.Status != OrderStatus.Pending && 
             order.OrderDetail.Status != OrderStatus.Confirmed &&
             order.OrderDetail.Status != OrderStatus.WaitingCustomerDecision)
         {
-            return Result.Failure("ORDER_CANNOT_CANCEL", "Đơn hàng đã được chế biến hoặc đang giao, không thể hủy.");
+            return HttpErrors.BadRequest("ORDER_CANNOT_CANCEL", "Đơn hàng đã được chế biến hoặc đang giao, không thể hủy.");
         }
         if (order.CustomerId != userId)
         {
-            return Result.Failure("ORDER_FORBIDDEN","Bạn không có quyền huỷ đơn hàng này");
+            return HttpErrors.Forbidden("ORDER_FORBIDDEN", "Bạn không có quyền huỷ đơn hàng này");
         }
 
         var orderStatusHistory = new OrderStatusHistory
@@ -474,11 +457,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null || order.CustomerId != customerId)
         {
-            return Result.Failure("ORDER_NOT_FOUND","Không tìm thấy đơn hàng");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng");
         }
         if(order.OrderDetail.Status != OrderStatus.WaitingCustomerDecision)
         {
-            return Result.Failure("INVALID_STATUS","Đơn hàng không ở trạng thái chờ xác nhận");
+            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng không ở trạng thái chờ xác nhận");
         }
         // bỏ món
         var orderStatusHistory = new OrderStatusHistory
@@ -526,7 +509,7 @@ public class OrderService :IOrderService
         }
         catch (Exception ex)
         {
-            return Result.Failure("DB_ERROR", "Lỗi lưu dữ liệu: " + ex.Message);
+            return HttpErrors.InternalServerError("DB_ERROR", "Lỗi lưu dữ liệu: " + ex.Message);
         }
     }
     public async Task<Result<PagedResponse<OrderAdminSummaryResponse>>> GetOrderAdminAsync(OrderFilterModel filter)
@@ -589,11 +572,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND","Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if(order.OrderDetail.Status != OrderStatus.Pending)
         {
-            return Result.Failure("INVALID_STATUS",$"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
+            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
         }
         order.OrderDetail.Status = OrderStatus.Confirmed;
         var history = new OrderStatusHistory
@@ -633,17 +616,17 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null)
         { 
-            return Result.Failure("ORDER_NOT_FOUND","Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if(order.OrderDetail.Status != OrderStatus.Pending)
         {
-            return Result.Failure("INVALID_STATUS",$"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
+            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
         }
         order.OrderDetail.Status = OrderStatus.WaitingCustomerDecision;
         var itemsToUpdate = order.OrderItems.Where(oi=> request.RemovedProductIds.Contains(oi.ProductId)).ToList();
         if (!itemsToUpdate.Any())
         {
-            return Result.Failure("NO_ITEMS_FOUND", "Không tìm thấy món ăn nào khớp với danh sách yêu cầu.");
+            return HttpErrors.NotFound("NO_ITEMS_FOUND", "Không tìm thấy món ăn nào khớp với danh sách yêu cầu.");
         }
         foreach (var item in itemsToUpdate)
         {
@@ -688,11 +671,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if (order.OrderDetail.Status != OrderStatus.Confirmed)
         {
-            return Result.Failure("INVALID_STATUS", $"Không thể nấu đơn hàng ở trạng thái {order.OrderDetail.Status}");
+            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể nấu đơn hàng ở trạng thái {order.OrderDetail.Status}");
         }
         order.OrderDetail.Status = OrderStatus.Preparing;
         var history = new OrderStatusHistory
@@ -733,11 +716,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if (order.OrderDetail.Status != OrderStatus.Preparing)
         {
-            return Result.Failure("INVALID_STATUS", "Đơn hàng chưa được nấu xong hoặc đang ở trạng thái khác.");
+            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng chưa được nấu xong hoặc đang ở trạng thái khác.");
         }
         order.OrderDetail.Status = OrderStatus.ReadyForPickup;
         
@@ -810,11 +793,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if (order.OrderDetail.Status == OrderStatus.Completed || order.OrderDetail.Status == OrderStatus.Cancelled)
         {
-            return Result.Failure("INVALID_STATUS", $"Không thể hủy đơn hàng đã {order.OrderDetail.Status}.");
+            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể hủy đơn hàng đã {order.OrderDetail.Status}.");
         }
         var orderStatusHistory = new OrderStatusHistory
         {
@@ -845,11 +828,11 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
         if (order.OrderDetail.Status != OrderStatus.Shipping)
         {
-            return Result.Failure("INVALID_STATUS", "Đơn hàng không ở trạng thái đang giao.");
+            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng không ở trạng thái đang giao.");
         }
 
         order.OrderDetail.Status = OrderStatus.Completed;
@@ -896,7 +879,7 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
 
         order.OrderDetail.PaymentStatus = PaymentStatus.Paid;
@@ -932,12 +915,12 @@ public class OrderService :IOrderService
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
-            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
 
         if (order.OrderDetail.Status != OrderStatus.ReadyForPickup)
         {
-            return Result.Failure("INVALID_STATUS", "Đơn hàng phải ở trạng thái 'Chờ Shipper' mới có thể phân công.");
+            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng phải ở trạng thái 'Chờ Shipper' mới có thể phân công.");
         }
 
         // Verify shipper exists and has appropriate role
@@ -945,14 +928,14 @@ public class OrderService :IOrderService
         var hasShipperRole = shipperUser?.UserRoles.Any(r => r.Role.Name == "Shipper") ?? false;
         if (!hasShipperRole)
         {
-            return Result.Failure("INVALID_SHIPPER", "Người dùng này không phải là Shipper.");
+            return HttpErrors.BadRequest("INVALID_SHIPPER", "Người dùng này không phải là Shipper.");
         }
 
         // Get Shipper entity by UserId to get the correct Shipper.Id for FK
         var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
         if (shipper == null)
         {
-            return Result.Failure("SHIPPER_NOT_FOUND", "Không tìm thấy hồ sơ shipper.");
+            return HttpErrors.NotFound("SHIPPER_NOT_FOUND", "Không tìm thấy hồ sơ shipper.");
         }
 
         order.OrderDetail.ShipperId = shipper.Id;

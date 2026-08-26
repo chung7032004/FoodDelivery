@@ -27,7 +27,7 @@ namespace FoodDelivery.Middlewares
                 await _next(context);
                 return;
             } 
-            var restaurant = await db.RestaurantProfiles.FirstOrDefaultAsync();
+            var restaurant = await db.Restaurants.FirstOrDefaultAsync();
             if(restaurant == null)
             {
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;

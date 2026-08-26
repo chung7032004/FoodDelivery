@@ -10,5 +10,4 @@ public interface ICartService
     Task<Result> DeleteCartItemAsync(Guid customerId,Guid productId);
     Task<Result> DeleteCartItemRangeAsync(Guid customerId, IEnumerable<Guid> productIds);
     Task<Result> DeleteCartAsync(Guid customerId);
-    Task<Result> SaveCartAsync(Guid customerId, SaveCartRequest request);
 }

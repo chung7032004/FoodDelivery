@@ -12,5 +12,7 @@ namespace FoodDelivery.Entities
         public int Quantity {get; set;}
         public DateTime AddedAt {get; set;}
         public DateTime UpdatedAt {get; set;}
+        public Guid RestaurantId { get; set; }
+        public virtual Restaurant Restaurant { get; set; } = null!;
     }
 }
