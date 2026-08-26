@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Star,
   Minus,
@@ -154,7 +154,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState("desc");
   const { productId } = useParams<{ productId: string }>();
   const maxCount = RATING_BREAKDOWN[0].count;
-  const { data: productDetail, isLoading: isProductDetailLoading } = useQuery({
+  const { data: productDetail, isLoading: _isProductDetailLoading } = useQuery({
       queryKey: ['product-detail', productId],
       queryFn: async (): Promise<ApiResult<ProductDetailResponseDto>> => {
         const res = await productService.getDetailById(productId!); // hoặc productId ?? ""

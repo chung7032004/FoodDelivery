@@ -15,9 +15,8 @@ import { useSearchParams } from 'react-router-dom';
 export const ProductListPage = () => {
   const [cartCount, setCartCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('popular');
-  const [page, setPage] = useState(1);
+  const [page, _setPage] = useState(1);
   const pageSize = 10;
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get('categoryId');
@@ -35,7 +34,7 @@ export const ProductListPage = () => {
     },
   });
 
-  const handleAddToCart = (dish: Dish) => {
+  const handleAddToCart = (_dish: Dish) => {
     setCartCount((prev) => prev + 1);
     // Tích hợp logic lưu vào context / Redux / Zustand tại đây nếu cần
   };

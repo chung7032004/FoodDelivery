@@ -10,9 +10,9 @@ import { categoryService } from '@/services/category.service';
 export function ListCategoryPage() {
 
   // const categories = [...CATEGORIES].sort((a, b) => a.displayOrder - b.displayOrder);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartCount, _setCartCount] = useState(0);
 
-  const {data : categories ,isLoading : isCategoriesLoading} = useQuery({
+  const {data : categories ,isLoading : _isCategoriesLoading} = useQuery({
     queryKey: ['categories'],
     queryFn: async () :Promise<Category[]> => {
       const res = await categoryService.getAll({ page: 1, pageSize: 10 });
