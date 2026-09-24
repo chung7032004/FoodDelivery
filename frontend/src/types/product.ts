@@ -1,6 +1,7 @@
 export interface ProductResponseDto {
   id: string;
   name: string;
+  description: string | null;
   price: number;
   mainImageUrl: string | null;
   isAvailable: boolean;

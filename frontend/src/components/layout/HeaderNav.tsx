@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ButtonPrimary } from '../ui';
-import { Search, ShoppingCart, User, LogOut, Package } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, Package, ShieldCheck, Store } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountDropdown } from './AccountDropdown';
 
@@ -20,6 +20,9 @@ export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const isAdmin = user?.roles.includes('Admin') ?? false;
+  const canManageRestaurant = user?.roles.some((role) => role === 'RestaurantOwner' || role === 'RestaurantStaff') ?? false;
+  const isShipper = user?.roles.includes('Shipper') ?? false;
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -116,6 +119,29 @@ export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
             )}
           </div>
 
+          {isAdmin && (
+            <Link
+              to="/admin"
+              title="Mở trang quản trị"
+              className="hidden items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white lg:flex"
+            >
+              <ShieldCheck size={16} />
+              <span>Quản trị</span>
+            </Link>
+          )}
+          {canManageRestaurant && (
+            <Link to="/restaurant" title="Quản lý nhà hàng" className="hidden items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-500 hover:text-white lg:flex">
+              <Store size={16} />
+              <span>Quản lý quán</span>
+            </Link>
+          )}
+          {isShipper && (
+            <Link to="/shipper" title="Mở khu vực giao hàng" className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-600 hover:text-white lg:flex">
+              <Package size={16} />
+              <span>Giao hàng</span>
+            </Link>
+          )}
+
           <Link to="/cart" className="inline-block group">
             <ButtonPrimary size="sm" className="relative px-4 py-2 transition-all duration-300 hover:scale-105 bg-orange-500 hover:bg-orange-600">
               <div className="flex items-center gap-2">
@@ -188,6 +214,25 @@ export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
                 >
                   <Package size={16} /> Đơn hàng của tôi
                 </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2 text-left text-sm font-semibold text-orange-600 hover:bg-orange-500/10"
+                  >
+                    <ShieldCheck size={16} /> Khu vực quản trị
+                  </Link>
+                )}
+                {canManageRestaurant && (
+                  <Link to="/restaurant" onClick={() => setMobileOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2 text-left text-sm font-semibold text-sky-700 hover:bg-sky-500/10">
+                    <Store size={16} /> Quản lý nhà hàng
+                  </Link>
+                )}
+                {isShipper && (
+                  <Link to="/shipper" onClick={() => setMobileOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-500/10">
+                    <Package size={16} /> Khu vực giao hàng
+                  </Link>
+                )}
                 <button
                   onClick={handleLogoutClick}
                   className="flex items-center gap-2.5 w-full px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 rounded-lg text-left"
