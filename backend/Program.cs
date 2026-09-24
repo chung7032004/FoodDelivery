@@ -155,12 +155,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
     var app = builder.Build();
 
-    // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
+    // Cho phép Swagger chạy ở TẤT CẢ môi trường (kể cả Production)
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FoodDelivery API v1");
+        c.RoutePrefix = "swagger"; // Hoặc c.RoutePrefix = string.Empty; nếu muốn vừa truy cập URL chính là mở ngay Swagger
+    });
 
     app.UseExceptionHandler(); // Sử dụng middleware xử lý lỗi toàn cục
     app.UseHttpsRedirection();
