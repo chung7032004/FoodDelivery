@@ -10,7 +10,21 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { ListCategoryPage } from '@/pages/ListCategoryPage';
 import ProductDetailPage from '@/pages/ProductDetailPage';
 import { ProductListPage } from '@/pages/ProductListPage';
-import AdminHomePage from '@/pages/AdminHomePage';
+
+import AdminUsersPage from '@/pages/Admin/AdminUsersPage';
+import AdminOrdersPage from '@/pages/Admin/AdminOrdersPage';
+import AdminReviewsPage from '@/pages/Admin/AdminReviewsPage';
+import AdminShippersPage from '@/pages/Admin/AdminShippersPage';
+import AdminCategoriesPage from '@/pages/Admin/AdminCategoriesPage';
+import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
+import AdminProductsPage from '@/pages/Admin/AdminProductsPage';
+import RestaurantManagementPage from '@/pages/Restaurant/RestaurantManagementPage';
+import RestaurantOrdersPage from '@/pages/Restaurant/RestaurantOrdersPage';
+import ShipperHomePage from '@/pages/Shipper/ShipperHomePage';
+import ShipperOrdersPage from '@/pages/Shipper/ShipperOrdersPage';
+import ShipperAssignedPage from '@/pages/Shipper/ShipperAssignedPage';
+import ShipperProfilePage from '@/pages/Shipper/ShipperProfilePage';
+
 
 
 export function AppRoutes() {
@@ -36,7 +50,26 @@ export function AppRoutes() {
       {/* Admin */}
       <Route
         path="/admin"
-        element={<AdminHomePage/>}/>
+        element={
+          <ProtectedRoute requiredRoles={['Admin']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['Admin']}><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/admin/orders" element={<ProtectedRoute requiredRoles={['Admin']}><AdminOrdersPage /></ProtectedRoute>} />
+      <Route path="/admin/shippers" element={<ProtectedRoute requiredRoles={['Admin']}><AdminShippersPage /></ProtectedRoute>} />
+      <Route path="/admin/reviews" element={<ProtectedRoute requiredRoles={['Admin']}><AdminReviewsPage /></ProtectedRoute>} />
+      <Route path="/admin/categories" element={<ProtectedRoute requiredRoles={['Admin']}><AdminCategoriesPage /></ProtectedRoute>} />
+      <Route path="/admin/products" element={<ProtectedRoute requiredRoles={['Admin']}><AdminProductsPage /></ProtectedRoute>} />
+      <Route path="/restaurant" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantManagementPage /></ProtectedRoute>} />
+      <Route path="/restaurant/orders" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantOrdersPage /></ProtectedRoute>} />
+      <Route path="/restaurant/profile" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantManagementPage /></ProtectedRoute>} />
+      <Route path="/restaurant/menu" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><AdminProductsPage workspace="restaurant" /></ProtectedRoute>} />
+      <Route path="/shipper" element={<ProtectedRoute requiredRoles={['Shipper']}><ShipperHomePage /></ProtectedRoute>} />
+      <Route path="/shipper/orders" element={<ProtectedRoute requiredRoles={['Shipper']}><ShipperOrdersPage /></ProtectedRoute>} />
+      <Route path="/shipper/assigned" element={<ProtectedRoute requiredRoles={['Shipper']}><ShipperAssignedPage /></ProtectedRoute>} />
+      <Route path="/shipper/profile" element={<ProtectedRoute requiredRoles={['Shipper']}><ShipperProfilePage /></ProtectedRoute>} />
       {/* 404 — không khớp route nào thì quay về Home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "food-delivery": {
+      "rootDirectory": "frontend"
+    }
+  }
+}

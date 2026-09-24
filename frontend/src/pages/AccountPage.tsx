@@ -17,6 +17,7 @@ import {
   Plus,
   ChevronRight,
 } from 'lucide-react';
+import { authService } from '@/services/auth.service';
 
 type Tab = 'profile' | 'orders' | 'addresses' | 'security';
 
@@ -300,29 +301,129 @@ function AddressesTab() {
 
 /* ---------- Tab: Bảo mật ---------- */
 function SecurityTab() {
-  
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess(false);
+
+    // Validation
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      setError('Vui lòng điền đầy đủ các trường');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('Mật khẩu mới phải có ít nhất 8 ký tự');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Mật khẩu mới và xác nhận không khớp');
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      setError('Mật khẩu mới phải khác mật khẩu hiện tại');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await authService.changePassword({
+        oldPassword,
+        newPassword,
+        confirmNewPassword
+      });
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setSuccess(true);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err) {
+      setError('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <h2 className="font-display text-lg font-bold text-black">Đổi mật khẩu</h2>
 
       <div className="max-w-sm space-y-4">
-        <PasswordInput label="Mật khẩu hiện tại" />
-        <PasswordInput label="Mật khẩu mới" />
-        <PasswordInput label="Nhập lại mật khẩu mới" />
+        <PasswordInput
+          label="Mật khẩu hiện tại"
+          value={oldPassword}
+          onChange={(e) => setOldPassword(e.target.value)}
+          disabled={isLoading}
+        />
+        <PasswordInput
+          label="Mật khẩu mới"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          disabled={isLoading}
+        />
+        <PasswordInput
+          label="Nhập lại mật khẩu mới"
+          value={confirmNewPassword}
+          onChange={(e) => setConfirmNewPassword(e.target.value)}
+          disabled={isLoading}
+        />
+
+        {error && (
+          <div className="text-sm text-red-500 bg-red-50/10 px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="text-sm text-green-600 bg-green-50/10 px-3 py-2 rounded-lg">
+            Cập nhật mật khẩu thành công!
+          </div>
+        )}
       </div>
 
-      <ButtonPrimary size="sm">Cập nhật mật khẩu</ButtonPrimary>
-    </div>
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl bg-brand text-orange-500 hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
+      </button>
+    </form>
   );
 }
 
-function PasswordInput({ label }: { label: string }) {
+// Updated PasswordInput with proper props
+function PasswordInput({ 
+  label, 
+  value, 
+  onChange, 
+  disabled = false 
+}: { 
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-medium text-muted">{label}</label>
       <input
         type="password"
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-black outline-none transition-colors placeholder:text-muted focus:border-brand/50"
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-black outline-none transition-colors placeholder:text-muted focus:border-brand/50 disabled:opacity-50 disabled:cursor-not-allowed"
         placeholder="••••••••"
       />
     </div>
