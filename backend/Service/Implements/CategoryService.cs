@@ -28,7 +28,7 @@ namespace FoodDelivery.Service.Implementations
             }
             var responseMeta = new PaginationMeta(
                 Page : page,
-                PageSize : categories.Count,
+                PageSize : pageSize,
                 TotalCount : totalCount,
                 TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
             );

@@ -3,25 +3,36 @@ using FoodDelivery.DTOs.Staff;
 using FoodDelivery.DTOs.Review;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
+using FoodDelivery.Repositories.Interfaces;
 
 namespace FoodDelivery.Service.Implements;
 
 public class StaffService : IStaffService
 {
     private readonly IStaffRepository _staffRepository;
+    private readonly IRestaurantRepository _restaurantRepository;
 
-    public StaffService(IStaffRepository staffRepository)
+    public StaffService(IStaffRepository staffRepository, IRestaurantRepository restaurantRepository)
     {
         _staffRepository = staffRepository;
+        _restaurantRepository = restaurantRepository;
+    }
+
+    private async Task<Guid?> GetRestaurantId(Guid userId)
+    {
+        var staff = await _staffRepository.GetStaffByUserId(userId);
+        if (staff != null) return staff.RestaurantId;
+        var restaurant = await _restaurantRepository.GetRestaurantByUserIdAsync(userId);
+        return restaurant?.Id;
     }
 
     public async Task<Result<StaffStatsDto>> GetDashboardStats(Guid userId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<StaffStatsDto>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var todayOrders = await _staffRepository.GetOrdersByRestaurant(staff.RestaurantId);
+        var todayOrders = await _staffRepository.GetOrdersByRestaurant(restaurantId.Value);
         var todaysOrders = todayOrders.Where(o => o.CreatedAt.Date == DateTime.UtcNow.Date).ToList();
         
         var stats = new StaffStatsDto
@@ -37,41 +48,41 @@ public class StaffService : IStaffService
 
     public async Task<Result<List<OrderDto>>> GetOrdersForPreparation(Guid userId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<List<OrderDto>>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var orders = await _staffRepository.GetPendingOrdersByRestaurant(staff.RestaurantId);
+        var orders = await _staffRepository.GetPendingOrdersByRestaurant(restaurantId.Value);
         return Result<List<OrderDto>>.Success(orders);
     }
 
     public async Task<Result<List<OrderDto>>> GetCompletedOrders(Guid userId, int days = 30)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<List<OrderDto>>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var orders = await _staffRepository.GetCompletedOrdersByRestaurant(staff.RestaurantId, days);
+        var orders = await _staffRepository.GetCompletedOrdersByRestaurant(restaurantId.Value, days);
         return Result<List<OrderDto>>.Success(orders);
     }
 
     public async Task<Result<List<ReviewDto>>> GetRestaurantReviews(Guid userId, int? rating = null)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<List<ReviewDto>>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var reviews = await _staffRepository.GetRestaurantReviewsAsync(staff.RestaurantId, rating);
+        var reviews = await _staffRepository.GetRestaurantReviewsAsync(restaurantId.Value, rating);
         return Result<List<ReviewDto>>.Success(reviews);
     }
 
     public async Task<Result<OrderDto>> GetOrderDetails(Guid userId, Guid orderId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<OrderDto>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var order = await _staffRepository.GetOrderDetails(orderId);
+        var order = await _staffRepository.GetOrderDetails(orderId, restaurantId.Value);
         if (order == null)
             return Result<OrderDto>.Failure("ORDER_NOT_FOUND", "Order not found");
 
@@ -80,11 +91,11 @@ public class StaffService : IStaffService
 
     public async Task<Result<string>> UpdateOrderStatus(Guid userId, Guid orderId, int newStatus)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<string>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, newStatus);
+        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, restaurantId.Value, newStatus);
         if (!success)
             return Result<string>.Failure("UPDATE_FAILED", "Failed to update order status");
 
@@ -113,12 +124,12 @@ public class StaffService : IStaffService
 
     public async Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<string>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
         // Status 3 = Confirmed
-        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, 3);
+        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, restaurantId.Value, 3);
         if (!success)
             return Result<string>.Failure("UPDATE_FAILED", "Failed to confirm order");
 
@@ -127,12 +138,12 @@ public class StaffService : IStaffService
 
     public async Task<Result<string>> StartPreparingOrder(Guid userId, Guid orderId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<string>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
         // Status 4 = Preparing
-        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, 4);
+        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, restaurantId.Value, 4);
         if (!success)
             return Result<string>.Failure("UPDATE_FAILED", "Failed to start preparing order");
 
@@ -141,12 +152,12 @@ public class StaffService : IStaffService
 
     public async Task<Result<string>> MarkOrderReady(Guid userId, Guid orderId)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<string>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
         // Status 5 = ReadyForPickup
-        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, 5);
+        var success = await _staffRepository.UpdateOrderStatusAsync(orderId, restaurantId.Value, 5);
         if (!success)
             return Result<string>.Failure("UPDATE_FAILED", "Failed to mark order as ready");
 
@@ -155,11 +166,11 @@ public class StaffService : IStaffService
 
     public async Task<Result<string>> ReportOrderIssue(Guid userId, Guid orderId, string issueDescription, string issueType)
     {
-        var staff = await _staffRepository.GetStaffByUserId(userId);
-        if (staff == null)
+        var restaurantId = await GetRestaurantId(userId);
+        if (restaurantId == null)
             return Result<string>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
 
-        var success = await _staffRepository.ReportOrderIssueAsync(orderId, issueDescription, issueType);
+        var success = await _staffRepository.ReportOrderIssueAsync(orderId, restaurantId.Value, issueDescription, issueType);
         if (!success)
             return Result<string>.Failure("REPORT_FAILED", "Failed to report issue");
 

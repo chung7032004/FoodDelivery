@@ -32,8 +32,9 @@ public class StaffRepository : IStaffRepository
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
             .Include(o => o.Customer)
-            .Where(o => o.OrderDetail != null && 
-                   (o.OrderDetail.Status == OrderStatus.Pending ||
+                 .Where(o => o.OrderDetail != null &&
+                     o.RestaurantId == restaurantId &&
+                     (o.OrderDetail.Status == OrderStatus.Pending ||
                     o.OrderDetail.Status == OrderStatus.Confirmed ||
                     o.OrderDetail.Status == OrderStatus.Preparing ||
                     o.OrderDetail.Status == OrderStatus.ReadyForPickup))
@@ -68,8 +69,9 @@ public class StaffRepository : IStaffRepository
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
             .Include(o => o.Customer)
-            .Where(o => o.OrderDetail != null && 
-                   (o.OrderDetail.Status == OrderStatus.Pending ||
+                 .Where(o => o.OrderDetail != null &&
+                     o.RestaurantId == restaurantId &&
+                     (o.OrderDetail.Status == OrderStatus.Pending ||
                     o.OrderDetail.Status == OrderStatus.Confirmed))
             .AsNoTracking()
             .Select(o => new OrderDto
@@ -92,10 +94,10 @@ public class StaffRepository : IStaffRepository
             .ToListAsync();
     }
 
-    public async Task<OrderDto?> GetOrderDetails(Guid orderId)
+    public async Task<OrderDto?> GetOrderDetails(Guid orderId, Guid restaurantId)
     {
         return await _context.Orders
-            .Where(o => o.Id == orderId)
+                .Where(o => o.Id == orderId && o.RestaurantId == restaurantId)
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
             .Include(o => o.Customer)
@@ -119,11 +121,11 @@ public class StaffRepository : IStaffRepository
             .FirstOrDefaultAsync();
     }
 
-    public async Task<bool> UpdateOrderStatusAsync(Guid orderId, int newStatus)
+    public async Task<bool> UpdateOrderStatusAsync(Guid orderId, Guid restaurantId, int newStatus)
     {
         var order = await _context.Orders
             .Include(o => o.OrderDetail)
-            .FirstOrDefaultAsync(o => o.Id == orderId);
+                .FirstOrDefaultAsync(o => o.Id == orderId && o.RestaurantId == restaurantId);
         
         if (order?.OrderDetail == null) return false;
 
@@ -140,13 +142,13 @@ public class StaffRepository : IStaffRepository
             .FirstOrDefaultAsync(s => s.RestaurantId == restaurantId && s.IsActive);
     }
 
-    public async Task<bool> ReportOrderIssueAsync(Guid orderId, string issueDescription, string issueType)
+    public async Task<bool> ReportOrderIssueAsync(Guid orderId, Guid restaurantId, string issueDescription, string issueType)
     {
         try
         {
             Console.WriteLine($"[ReportIssue] Starting - OrderId: {orderId}, Type: {issueType}");
             
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId && o.RestaurantId == restaurantId);
             if (order == null)
             {
                 Console.WriteLine($"[ReportIssue] Order not found: {orderId}");
@@ -251,8 +253,9 @@ public class StaffRepository : IStaffRepository
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
             .Include(o => o.Customer)
-            .Where(o => o.OrderDetail != null && 
-                   (o.OrderDetail.Status == OrderStatus.Completed ||
+                 .Where(o => o.OrderDetail != null &&
+                     o.RestaurantId == restaurantId &&
+                     (o.OrderDetail.Status == OrderStatus.Completed ||
                     o.OrderDetail.Status == OrderStatus.Cancelled ||
                     o.OrderDetail.Status == OrderStatus.Shipping) &&
                    o.CreatedAt >= startDate)
@@ -276,7 +279,7 @@ public class StaffRepository : IStaffRepository
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
 
-        return orders;
+                        return orders;
     }
 
     public async Task<List<ReviewDto>> GetRestaurantReviewsAsync(Guid restaurantId, int? rating = null)

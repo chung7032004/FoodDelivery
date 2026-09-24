@@ -12,6 +12,7 @@ namespace FoodDelivery.DTOs.Shipper
         public string? OrderCode { get; set; }
         public string? CustomerName { get; set; }
         public decimal TotalAmount { get; set; }
+        public string? ShippingAddress { get; set; }
         public string? Status { get; set; } // Trả về dạng chuỗi để FE dễ đọc
         public DateTime CreatedAt { get; set; }
     }

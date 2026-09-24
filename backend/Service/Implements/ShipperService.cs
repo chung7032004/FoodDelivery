@@ -211,6 +211,7 @@ namespace FoodDelivery.Service.Implements
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
@@ -226,6 +227,7 @@ namespace FoodDelivery.Service.Implements
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
@@ -245,6 +247,7 @@ namespace FoodDelivery.Service.Implements
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
@@ -265,6 +268,9 @@ namespace FoodDelivery.Service.Implements
             var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
             if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable)
                 return false;
+
+            orderDetail.ShipperId = shipper.Id;
+            _shipperRepository.UpdateOrderDetail(orderDetail);
             
             await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
             { 

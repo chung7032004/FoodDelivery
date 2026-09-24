@@ -10,9 +10,9 @@ public interface IStaffRepository
     Task<List<OrderDto>> GetOrdersByRestaurant(Guid restaurantId);
     Task<List<OrderDto>> GetPendingOrdersByRestaurant(Guid restaurantId);
     Task<List<OrderDto>> GetCompletedOrdersByRestaurant(Guid restaurantId, int days = 30);
-    Task<OrderDto?> GetOrderDetails(Guid orderId);
-    Task<bool> UpdateOrderStatusAsync(Guid orderId, int newStatus);
+    Task<OrderDto?> GetOrderDetails(Guid orderId, Guid restaurantId);
+    Task<bool> UpdateOrderStatusAsync(Guid orderId, Guid restaurantId, int newStatus);
     Task<Staff?> GetStaffByRestaurantIdAsync(Guid restaurantId);
-    Task<bool> ReportOrderIssueAsync(Guid orderId, string issueDescription, string issueType);
+    Task<bool> ReportOrderIssueAsync(Guid orderId, Guid restaurantId, string issueDescription, string issueType);
     Task<List<ReviewDto>> GetRestaurantReviewsAsync(Guid restaurantId, int? rating = null);
 }
