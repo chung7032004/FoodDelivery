@@ -64,7 +64,10 @@ builder.Services.AddDbContext<FoodContext>(options =>
 //Định nghĩa chính sách CORS
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:5173") // React dev ports
+        policy => policy.WithOrigins(
+                        "http://localhost:5173",
+                        "https://food-delivery-self-kappa.vercel.app"
+                        ) // React dev ports
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());
