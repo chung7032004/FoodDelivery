@@ -18,8 +18,8 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 
 const sizeClasses: Record<InputSize, string> = {
   sm: 'h-9 text-sm',
-  md: 'h-11 text-sm',
-  lg: 'h-[52px] text-base',
+  md: 'h-10 text-sm',
+  lg: 'h-12 text-base',
 };
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -49,7 +49,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full', containerClassName)}>
         {label && (
-          <label htmlFor={inputId} className="text-sm font-semibold text-slate-800">
+          <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
             {label}
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -57,12 +57,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
         <div
           className={cn(
-            'group flex items-center gap-2 rounded-xl border bg-slate-50/70 shadow-sm transition-all duration-150',
+            'group flex items-center gap-2 rounded-lg border bg-white transition-colors duration-150',
             'border-slate-200 hover:border-slate-300',
-            'focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(255,107,53,0.12)]',
+            'focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/15',
             hasError &&
-              'border-red-400 bg-red-50/40 focus-within:border-red-500 focus-within:shadow-[0_0_0_4px_rgba(239,68,68,0.12)]',
-            disabled && 'cursor-not-allowed bg-slate-100 opacity-70 shadow-none',
+              'border-red-400 bg-red-50/40 focus-within:border-red-500 focus-within:ring-red-500/15',
+            disabled && 'cursor-not-allowed bg-slate-100 opacity-70',
             sizeClasses[size]
           )}
         >
@@ -84,7 +84,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             aria-invalid={hasError}
             className={cn(
-              'h-full w-full flex-1 px-2 bg-transparent text-slate-900 outline-none placeholder:text-slate-400',
+              'h-full w-full flex-1 bg-transparent px-3 text-slate-900 outline-none placeholder:text-slate-400',
               'disabled:cursor-not-allowed disabled:text-slate-400',
               className
             )}

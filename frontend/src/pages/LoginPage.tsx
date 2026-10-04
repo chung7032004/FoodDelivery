@@ -1,5 +1,5 @@
 // src/pages/LoginPage.tsx
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -54,13 +54,39 @@ function mapErrorToFormErrors(errorCode: string | null, message: string | null):
   }
 }
 
+const REMEMBER_EMAIL_KEY = 'rememberedLoginEmail';
+const REMEMBER_ME_KEY = 'rememberLoginFlag';
+
 export function LoginPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
+  const [formData, setFormData] = useState<LoginFormData>(() => {
+    if (typeof window === 'undefined') return { email: '', password: '' };
+    return {
+      email: localStorage.getItem(REMEMBER_EMAIL_KEY) ?? '',
+      password: '',
+    };
+  });
   const [errors, setErrors] = useState<LoginErrors>({});
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  });
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (rememberMe) {
+      const trimmedEmail = formData.email.trim();
+      localStorage.setItem(REMEMBER_EMAIL_KEY, trimmedEmail);
+      localStorage.setItem(REMEMBER_ME_KEY, 'true');
+      return;
+    }
+
+    localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    localStorage.setItem(REMEMBER_ME_KEY, 'false');
+  }, [formData.email, rememberMe]);
 
   const handleChange = useCallback(
     (field: keyof LoginFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,19 +120,22 @@ export function LoginPage() {
           navigate('/', { replace: true });
         }
       } catch (err) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
+        const apiError = err as Partial<AxiosError<ApiErrorResponse>> & Partial<ApiErrorResponse> & {
+          response?: { data?: ApiErrorResponse };
+          errorCode?: string | null;
+          message?: string | null;
+        };
 
-        // Không có response -> lỗi network/timeout/server down, không phải lỗi sai mật khẩu
-        if (!axiosError.response) {
+        const errorPayload = apiError.response?.data ?? apiError;
+        const errorCode = errorPayload?.errorCode ?? null;
+        const message = errorPayload?.message ?? null;
+
+        // Không có response hoặc không có payload -> lỗi network/timeout/server down
+        if (!errorPayload || (!errorCode && !message && !apiError.response)) {
           setErrors({ form: 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.' });
           setFormData((prev) => ({ ...prev, password: '' }));
           return;
         }
-
-        const { errorCode, message } = axiosError.response.data ?? {
-          errorCode: null,
-          message: null,
-        };
 
         setErrors(mapErrorToFormErrors(errorCode, message));
 

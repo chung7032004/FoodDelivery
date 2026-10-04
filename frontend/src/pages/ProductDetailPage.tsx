@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Star,
   Minus,
@@ -8,15 +8,19 @@ import {
   Tag,
   Check,
   ChevronRight,
+  Utensils,
 } from "lucide-react";
 import { HeaderNav } from "@/components/layout/HeaderNav";
 import { Footer } from "@/components/layout/Footer";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product.service";
 import { ProductDetailResponseDto } from "@/types/product";
 import { ApiResult } from "@/types";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getImageUrl } from "@/utils/image";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { cartQueryKey, cartService } from "@/services/cart.service";
 
 // ---------------------------------------------------------------------------
 // MOCK DATA — shaped like ProductDetailResponseDto + a paginated review slice
@@ -153,6 +157,9 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("desc");
   const { productId } = useParams<{ productId: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const maxCount = RATING_BREAKDOWN[0].count;
   const { data: productDetail, isLoading: _isProductDetailLoading } = useQuery({
       queryKey: ['product-detail', productId],
@@ -163,6 +170,27 @@ export default function ProductDetailPage() {
       enabled: !!productId,       //không chạy query khi chưa có productId
       staleTime: 5 * 60 * 1000,
   });
+  const { data: relatedProducts, isLoading: isRelatedLoading } = useQuery({
+    queryKey: ["related-products", productDetail?.data?.categoryId, productId],
+    queryFn: async () => {
+      const result = await productService.getAll({
+        categoryId: productDetail?.data?.categoryId,
+        page: 1,
+        pageSize: 8,
+      });
+      return result.data?.data.filter((product) => product.id !== productId && product.isAvailable).slice(0, 4) ?? [];
+    },
+    enabled: !!productDetail?.data?.categoryId,
+  });
+  const addToCartMutation = useMutation({
+    mutationFn: () => cartService.addItem(productId!, quantity),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: cartQueryKey });
+      toast.success("Đã thêm món vào giỏ hàng.");
+    },
+  });
+
+  useEffect(() => setSelectedImage(0), [productId]);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
@@ -188,7 +216,7 @@ export default function ProductDetailPage() {
           <div>
             <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-square">
               <img
-                src={getImageUrl(productDetail?.data?.images[selectedImage]?.imageUrl)}
+                src={getImageUrl(productDetail?.data?.images[selectedImage]?.imageUrl ?? productDetail?.data?.images[0]?.imageUrl)}
                 alt={productDetail?.data?.name}
                 className="w-full h-full object-cover"
               />
@@ -276,9 +304,19 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
-              <button className="flex-1 h-11 rounded-xl bg-[#fb6900] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#e35f00] transition-colors">
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate("/login");
+                    return;
+                  }
+                  addToCartMutation.mutate();
+                }}
+                disabled={!productDetail?.data?.isAvailable || addToCartMutation.isPending}
+                className="flex-1 h-11 rounded-xl bg-[#fb6900] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#e35f00] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <ShoppingCart size={17} />
-                Thêm vào giỏ · {formatVnd((productDetail?.data?.price ?? 0) * quantity)}
+                {addToCartMutation.isPending ? "Đang thêm..." : `Thêm vào giỏ · ${formatVnd((productDetail?.data?.price ?? 0) * quantity)}`}
               </button>
             </div>
           </div>
@@ -375,6 +413,39 @@ export default function ProductDetailPage() {
             </div>
           </div>
         )}
+
+        <section className="mt-14 border-t border-slate-200 pt-8">
+          <div className="flex items-end justify-between gap-4 mb-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#fb6900]">Có thể bạn thích</p>
+              <h2 className="mt-1 font-serif text-2xl text-slate-900">Món cùng danh mục</h2>
+            </div>
+            <Link to={`/products?categoryId=${productDetail?.data?.categoryId ?? ""}`} className="text-sm font-medium text-[#fb6900] hover:underline">
+              Xem tất cả
+            </Link>
+          </div>
+          {isRelatedLoading ? (
+            <p className="py-8 text-sm text-slate-500">Đang tải món gợi ý...</p>
+          ) : relatedProducts?.length ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {relatedProducts.map((product) => (
+                <Link key={product.id} to={`/product/${product.id}`} className="group min-w-0">
+                  <div className="aspect-square overflow-hidden rounded-lg bg-slate-100">
+                    {product.mainImageUrl ? (
+                      <img src={getImageUrl(product.mainImageUrl)} alt={product.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-300"><Utensils size={32} /></div>
+                    )}
+                  </div>
+                  <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#fb6900]">{product.name}</h3>
+                  <p className="mt-1 text-sm font-semibold text-[#fb6900]">{formatVnd(product.price)}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="py-8 text-sm text-slate-500">Chưa có món gợi ý trong danh mục này.</p>
+          )}
+        </section>
       </section>
       <Footer />
     </div>

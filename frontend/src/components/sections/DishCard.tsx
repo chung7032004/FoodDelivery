@@ -79,7 +79,7 @@ export function DishCard({ dish, onAddToCart }: DishCardProps) {
             <StarRating rating={0} reviewCount={dish.reviewCount} />
             <button
               aria-label="Thêm vào giỏ"
-              onClick={() => onAddToCart?.(dish)}
+              onClick={(event) => { event.stopPropagation(); onAddToCart?.(dish); }}
               className="bg-brand text-white w-7 h-7 rounded-full flex items-center justify-center text-lg font-medium cursor-pointer hover:bg-brand-dark hover:scale-110 active:scale-95 transition-all"
             >
               +

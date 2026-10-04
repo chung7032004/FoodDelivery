@@ -1,19 +1,25 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, ImageIcon, ChartBarStacked } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
+import Input, { type InputProps } from '@/components/ui/Input';
 import { categoryService, CategoryResponse } from '@/services/category.service';
+import { getImageUrl } from '@/utils/image';
 
 type CategoryForm = {
   name: string;
   description: string;
   displayOrder: number;
+  imageFile: File | null;
+  imagePreview: string | null;
 };
 
 const emptyForm: CategoryForm = {
   name: '',
   description: '',
   displayOrder: 0,
+  imageFile: null,
+  imagePreview: null,
 };
 
 export default function AdminCategoriesPage() {
@@ -50,6 +56,8 @@ export default function AdminCategoriesPage() {
             name: category.name,
             description: category.description || '',
             displayOrder: category.displayOrder,
+            imageFile: null,
+            imagePreview: category.imageUrl ? getImageUrl(category.imageUrl) : null,
           }
         : emptyForm
     );
@@ -61,10 +69,19 @@ export default function AdminCategoriesPage() {
     setSubmitting(true);
     setError('');
     try {
+      const formData = new FormData();
+      formData.append('name', form.name.trim());
+      formData.append('description', form.description.trim());
+      formData.append('displayOrder', String(form.displayOrder));
+
+      if (form.imageFile) {
+        formData.append('imageFile', form.imageFile);
+      }
+
       if (editing) {
-        await categoryService.update(editing.id, form);
+        await categoryService.update(editing.id, formData);
       } else {
-        await categoryService.create(form);
+        await categoryService.create(formData);
       }
       setShowForm(false);
       await load();
@@ -114,6 +131,7 @@ export default function AdminCategoriesPage() {
         <table className="w-full min-w-[650px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
+              <th className="px-5 py-4">Ảnh</th>
               <th className="px-5 py-4">Tên danh mục</th>
               <th className="px-5 py-4">Mô tả</th>
               <th className="px-5 py-4">Thứ tự</th>
@@ -139,6 +157,19 @@ export default function AdminCategoriesPage() {
                   key={category.id}
                   className="border-b border-border transition-colors last:border-0 hover:bg-orange-500/[.02]"
                 >
+                  <td className="px-5 py-4">
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-slate-400">
+                      {category.imageUrl ? (
+                        <img
+                          src={getImageUrl(category.imageUrl)}
+                          alt={category.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ChartBarStacked size={18} />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-5 py-4 font-semibold">{category.name}</td>
                   <td className="px-5 py-4 text-muted">
                     {category.description || 'Chưa có mô tả'}
@@ -194,6 +225,37 @@ export default function AdminCategoriesPage() {
               setForm({ ...form, displayOrder: Number(displayOrder) })
             }
           />
+
+          <div className="mt-5">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Ảnh danh mục
+            </label>
+
+            <div className="flex items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-400">
+                {form.imagePreview ? (
+                  <img src={form.imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon size={24} />
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setForm((prev) => ({
+                    ...prev,
+                    imageFile: file,
+                    imagePreview: file ? URL.createObjectURL(file) : prev.imagePreview,
+                  }));
+                }}
+                className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-orange-600"
+              />
+            </div>
+          </div>
+
           <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"
@@ -226,19 +288,18 @@ function Field({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
+  type?: InputProps['type'];
   required?: boolean;
 }) {
   return (
-    <label className="mb-4 block text-sm font-semibold">
-      {label}
-      <input
+    <Input
+        label={label}
         required={required}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 font-normal outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+        fullWidth
+        containerClassName="mb-4"
       />
-    </label>
   );
 }

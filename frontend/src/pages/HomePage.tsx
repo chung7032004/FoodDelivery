@@ -1,5 +1,6 @@
-import { useState, useCallback} from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { HeaderNav }    from '../components/layout/HeaderNav';
 import { Footer }       from '../components/layout/Footer';
 import { HeroSection }  from '../components/sections/HeroSection';
@@ -9,9 +10,21 @@ import { PromoSection } from '../components/sections/PromoSection';
 import Skeleton from '../components/ui/Skeleton';
 import { categoryService } from '../services/category.service';
 import { Category } from '@/types/category';
+import type { Dish } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { cartQueryKey, cartService } from '@/services/cart.service';
 
 export function HomePage() {
-  const [cartCount, setCartCount] = useState(0);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const addToCartMutation = useMutation({
+    mutationFn: (dish: Dish) => cartService.addItem(dish.id, 1),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: cartQueryKey });
+      toast.success('Đã thêm món vào giỏ hàng.');
+    },
+  });
 
   const {
     data: categories,
@@ -31,15 +44,17 @@ export function HomePage() {
     staleTime: 5 * 60 * 1000, // 5 phút — danh mục ít khi đổi
   });
 
-  const handleAddToCart = useCallback(() => {
-    setCartCount((prev) => prev + 1);
-    // TODO: thay bằng context/zustand khi có CartContext
-    console.log('Thêm vào giỏ:');
-  }, []);
+  const handleAddToCart = (dish: Dish) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    addToCartMutation.mutate(dish);
+  };
 
   return (
     <div className="min-h-screen bg-surface font-sans text-slate-900">
-      <HeaderNav cartCount={cartCount} />
+      <HeaderNav />
 
       <main className="pt-6">
         <HeroSection />
