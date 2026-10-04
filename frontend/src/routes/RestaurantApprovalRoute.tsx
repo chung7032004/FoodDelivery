@@ -27,7 +27,7 @@ export function RestaurantApprovalRoute({ children }: { children: ReactNode }) {
   }
 
   const applicationStatus = applicationQuery.data.data?.application?.applicationStatus;
-  if (applicationStatus !== 1 && applicationStatus !== '1' && applicationStatus !== 'Approved') {
+  if (applicationStatus !== 1 && String(applicationStatus) !== '1' && String(applicationStatus) !== 'Approved') {
     return <Navigate to="/restaurant/apply" replace />;
   }
 
