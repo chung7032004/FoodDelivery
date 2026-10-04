@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2, ChartBarStacked } from 'lucide-react';
 import { RestaurantLayout } from '@/pages/Restaurant/RestaurantLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
 import { categoryService, CategoryResponse } from '@/services/category.service';
 import { productService } from '@/services/product.service';
 import { ProductResponseDto } from '@/types/product';
+import { getImageUrl } from '@/utils/image';
 import { AdminLayout } from './AdminLayout';
+import Input, { type InputProps } from '@/components/ui/Input';
 
 type ProductForm = {
   restaurantId: string;
@@ -16,6 +18,9 @@ type ProductForm = {
   isAvailable: boolean;
   isFeatured: boolean;
   displayOrder: string;
+  imageFiles: File[];
+  previews: string[];
+  mainImageIndex: number;
 };
 
 const emptyForm: ProductForm = {
@@ -27,6 +32,9 @@ const emptyForm: ProductForm = {
   isAvailable: true,
   isFeatured: false,
   displayOrder: '0',
+  imageFiles: [],
+  previews: [],
+  mainImageIndex: 0,
 };
 
 const money = new Intl.NumberFormat('vi-VN', {
@@ -79,7 +87,34 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
   }, [search, categoryId]);
 
   // Mở modal thêm mới hoặc sửa
-  function openForm(product?: ProductResponseDto) {
+  async function openForm(product?: ProductResponseDto) {
+    if (product) {
+      try {
+        const detailRes = await productService.getDetailById(product.id);
+        const detail = detailRes.data;
+        const images = detail?.images ?? [];
+        const previews = images.map((img) => getImageUrl(img.imageUrl));
+        setEditing(product);
+        setForm({
+          restaurantId: product.restaurantId || '',
+          categoryId: product.categoryId || '',
+          name: product.name || '',
+          description: detail?.description ?? product.description ?? '',
+          price: String(product.price || 0),
+          isAvailable: product.isAvailable ?? true,
+          isFeatured: product.isFeatured ?? false,
+          displayOrder: String(product.displayOrder || 0),
+          imageFiles: [],
+          previews,
+          mainImageIndex: images.findIndex((img) => img.isMain) >= 0 ? images.findIndex((img) => img.isMain) : 0,
+        });
+        setShowForm(true);
+        return;
+      } catch {
+        // fallback to basic product values below
+      }
+    }
+
     setEditing(product || null);
     setForm(
       product
@@ -92,10 +127,36 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
             isAvailable: product.isAvailable ?? true,
             isFeatured: product.isFeatured ?? false,
             displayOrder: String(product.displayOrder || 0),
+            imageFiles: [],
+            previews: product.mainImageUrl ? [getImageUrl(product.mainImageUrl)] : [],
+            mainImageIndex: 0,
           }
         : emptyForm
     );
     setShowForm(true);
+  }
+
+  function handleImageFilesChange(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      setForm((prev) => ({ ...prev, imageFiles: [], previews: [], mainImageIndex: 0 }));
+      return;
+    }
+
+    const newFiles = Array.from(fileList);
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+
+    setForm((prev) => {
+      const mergedFiles = [...(prev.imageFiles ?? []), ...newFiles];
+      const mergedPreviews = [...(prev.previews ?? []), ...newPreviews];
+
+      return {
+        ...prev,
+        imageFiles: mergedFiles,
+        previews: mergedPreviews,
+        mainImageIndex:
+          prev.mainImageIndex >= mergedFiles.length ? 0 : Math.min(prev.mainImageIndex, mergedFiles.length - 1),
+      };
+    });
   }
 
   // Submit Form
@@ -104,25 +165,27 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
     setSubmitting(true);
     setError('');
     try {
+      const formData = new FormData();
+      formData.append('restaurantId', form.restaurantId);
+      formData.append('categoryId', form.categoryId);
+      formData.append('name', form.name.trim());
+      formData.append('description', form.description.trim());
+      formData.append('price', String(Number(form.price || 0)));
+      formData.append('isAvailable', String(form.isAvailable));
+      formData.append('isFeatured', String(form.isFeatured));
+      formData.append('displayOrder', String(Number(form.displayOrder || 0)));
+
+      if (form.imageFiles.length > 0) {
+        form.imageFiles.forEach((file) => {
+          formData.append('imageFiles', file);
+        });
+        formData.append('mainImageIndex', String(form.mainImageIndex));
+      }
+
       if (editing) {
-        await productService.update(editing.id, {
-          name: form.name,
-          price: Number(form.price),
-          isAvailable: form.isAvailable,
-          isFeatured: form.isFeatured,
-          displayOrder: Number(form.displayOrder),
-        });
+        await productService.update(editing.id, formData);
       } else {
-        await productService.create({
-          restaurantId: form.restaurantId,
-          categoryId: form.categoryId,
-          name: form.name,
-          description: form.description,
-          price: Number(form.price),
-          isAvailable: form.isAvailable,
-          isFeatured: form.isFeatured,
-          displayOrder: Number(form.displayOrder),
-        });
+        await productService.create(formData);
       }
       setShowForm(false);
       await load();
@@ -175,15 +238,15 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
 
       {/* Thanh bộ lọc và tìm kiếm */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <label className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm text-muted shadow-sm focus-within:border-orange-500">
-          <Search size={17} />
-          <input
+        <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm sản phẩm..."
-            className="bg-transparent text-foreground outline-none placeholder:text-muted/60"
+            leftIcon={<Search size={16} />}
+            size="sm"
+            containerClassName="w-full sm:w-56"
+            fullWidth
           />
-        </label>
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
@@ -210,6 +273,7 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
         <table className="w-full min-w-[850px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
+              <th className="px-5 py-4">Ảnh</th>
               <th className="px-5 py-4">Sản phẩm</th>
               <th className="px-5 py-4">Danh mục</th>
               <th className="px-5 py-4">Giá</th>
@@ -236,6 +300,19 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
                   key={product.id}
                   className="border-b border-border transition-colors last:border-0 hover:bg-orange-500/[.02]"
                 >
+                  <td className="px-5 py-4">
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      {product.mainImageUrl ? (
+                        <img
+                          src={getImageUrl(product.mainImageUrl)}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ChartBarStacked size={18} className="text-slate-400" />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-5 py-4">
                     <p className="font-semibold text-foreground">{product.name}</p>
                     <p className="mt-0.5 text-xs text-muted">
@@ -334,13 +411,11 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
             required
           />
 
-          {!editing && (
-            <Field
-              label="Mô tả"
-              value={form.description}
-              onChange={(description) => setForm({ ...form, description })}
-            />
-          )}
+          <Field
+            label="Mô tả"
+            value={form.description}
+            onChange={(description) => setForm({ ...form, description })}
+          />
 
           <Field
             label="Thứ tự hiển thị"
@@ -349,7 +424,50 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
             onChange={(displayOrder) => setForm({ ...form, displayOrder })}
           />
 
-          <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <div className="mt-4">
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+              Ảnh sản phẩm
+            </label>
+
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleImageFilesChange(e.target.files)}
+                className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-orange-600"
+              />
+
+              {form.previews.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {form.previews.map((preview, index) => (
+                    <label
+                      key={`${preview}-${index}`}
+                      className="flex cursor-pointer flex-col items-center gap-1 text-xs"
+                    >
+                      <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                        <img src={preview} alt={`preview-${index}`} className="h-full w-full object-cover" />
+                        {index === form.mainImageIndex && (
+                          <span className="absolute bottom-1 left-1 rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            Main
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="radio"
+                        name="mainImage"
+                        checked={index === form.mainImageIndex}
+                        onChange={() => setForm((prev) => ({ ...prev, mainImageIndex: index }))}
+                        className="h-4 w-4 accent-orange-500"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <label className="mb-3 mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
             <input
               type="checkbox"
               checked={form.isAvailable}
@@ -402,19 +520,18 @@ function Field({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
+  type?: InputProps['type'];
   required?: boolean;
 }) {
   return (
-    <label className="mb-4 block text-sm font-semibold text-slate-700">
-      {label}
-      <input
+    <Input
+        label={label}
         required={required}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal outline-none focus:border-orange-500"
+        fullWidth
+        containerClassName="mb-4"
       />
-    </label>
   );
 }

@@ -16,7 +16,7 @@ export const categoryService = {
         const {data} = await api.get<ApiResult<PagedResponse<CategoryResponse>>>('/categories', { params: { search: params.searchQuery, page: params.page, pageSize: params.pageSize } });
         return data;
     },
-    create: (payload: { name: string; description?: string; displayOrder: number }) => api.post('/categories', payload),
-    update: (id: string, payload: { name: string; description?: string; displayOrder: number }) => api.put(`/categories/${id}`, payload),
+    create: (payload: FormData) => api.post('/categories', payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    update: (id: string, payload: FormData) => api.put(`/categories/${id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
     remove: (id: string) => api.delete(`/categories/${id}`),
 } 

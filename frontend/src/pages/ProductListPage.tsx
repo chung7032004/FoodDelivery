@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Utensils, ChevronDown, RefreshCw } from 'lucide-react';
 
 import { Footer } from "@/components/layout/Footer";
@@ -9,17 +9,30 @@ import { productService } from '@/services/product.service.ts';
 import { Dish } from '@/types';
 import Skeleton from '@/components/ui/Skeleton';
 import { DishCard } from '@/components/sections/DishCard';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { cartQueryKey, cartService } from '@/services/cart.service';
+import Input from '@/components/ui/Input';
 
 // ─── MAIN PRODUCT LIST PAGE ───────────────────────────────────────
 export const ProductListPage = () => {
-  const [cartCount, setCartCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('popular');
   const [page, _setPage] = useState(1);
   const pageSize = 10;
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get('categoryId');
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const addToCartMutation = useMutation({
+    mutationFn: (dish: Dish) => cartService.addItem(dish.id, 1),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: cartQueryKey });
+      toast.success('Đã thêm món vào giỏ hàng.');
+    },
+  });
 
   // React Query Fetch Data
   const { data: productsData, isLoading , error, refetch  } = useQuery({
@@ -34,15 +47,18 @@ export const ProductListPage = () => {
     },
   });
 
-  const handleAddToCart = (_dish: Dish) => {
-    setCartCount((prev) => prev + 1);
-    // Tích hợp logic lưu vào context / Redux / Zustand tại đây nếu cần
+  const handleAddToCart = (dish: Dish) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    addToCartMutation.mutate(dish);
   };
 
   return (
     <div className="min-h-screen bg-surface font-sans text-slate-900 flex flex-col justify-between">
       {/* Header */}
-      <HeaderNav cartCount={cartCount} />
+      <HeaderNav />
 
       <main className="pt-6 pb-16 flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,14 +76,14 @@ export const ProductListPage = () => {
               </div>
 
               {/* Search Box */}
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
+              <div className="w-full md:w-80">
+                <Input
                   type="text"
                   placeholder="Tìm kiếm món ăn, nhà hàng..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all shadow-sm"
+                  leftIcon={<Search size={17} />}
+                  fullWidth
                 />
               </div>
             </div>

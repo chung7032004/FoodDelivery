@@ -92,12 +92,25 @@ export interface ApiError {
 
 function toApiError(error: unknown): ApiError {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
-    return {
+    const normalizedError = {
       errorCode: error.response?.data?.errorCode ?? "UNKNOWN_ERROR",
       message: error.response?.data?.message ?? "Có lỗi xảy ra, vui lòng thử lại.",
       statusCode: error.response?.data?.statusCode ?? error.response?.status ?? 500,
+      response: {
+        ...(error.response ?? {}),
+        data: {
+          ...(error.response?.data ?? {}),
+          isSuccess: false,
+          errorCode: error.response?.data?.errorCode ?? "UNKNOWN_ERROR",
+          message: error.response?.data?.message ?? "Có lỗi xảy ra, vui lòng thử lại.",
+          statusCode: error.response?.data?.statusCode ?? error.response?.status ?? 500,
+        },
+      },
     };
+
+    return normalizedError;
   }
+
   return {
     errorCode: "UNKNOWN_ERROR",
     message: "Có lỗi xảy ra, vui lòng thử lại.",

@@ -4,6 +4,8 @@ import { ButtonPrimary } from '../ui';
 import { Search, ShoppingCart, User, LogOut, Package, ShieldCheck, Store } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountDropdown } from './AccountDropdown';
+import { useQuery } from '@tanstack/react-query';
+import { cartQueryKey, cartService } from '@/services/cart.service';
 
 const NAV_LINKS = [
   { label: 'Trang chủ', to: '/' },
@@ -16,13 +18,19 @@ interface HeaderNavProps {
   cartCount?: number;
 }
 
-export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
+export function HeaderNav({ cartCount }: HeaderNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const canManageRestaurant = user?.roles.some((role) => role === 'RestaurantOwner' || role === 'RestaurantStaff') ?? false;
   const isShipper = user?.roles.includes('Shipper') ?? false;
+  const { data: cartResult } = useQuery({
+    queryKey: cartQueryKey,
+    queryFn: cartService.getCart,
+    enabled: isAuthenticated && cartCount === undefined,
+  });
+  const displayedCartCount = cartCount ?? cartResult?.data?.data.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -149,9 +157,9 @@ export function HeaderNav({ cartCount = 3 }: HeaderNavProps) {
                 <span className="hidden sm:inline font-medium text-white">Giỏ hàng</span>
               </div>
 
-              {cartCount > 0 && (
+              {displayedCartCount > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 bg-orange-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 ring-2 ring-white dark:ring-gray-800 animate-pulse">
-                  {cartCount > 99 ? '99+' : cartCount}
+                  {displayedCartCount > 99 ? '99+' : displayedCartCount}
                 </span>
               )}
             </ButtonPrimary>

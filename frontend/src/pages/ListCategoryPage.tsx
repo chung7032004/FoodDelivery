@@ -2,16 +2,14 @@ import { Link } from 'react-router-dom';
 import { ChartBarStacked } from 'lucide-react';
 import { HeaderNav } from '@/components/layout/HeaderNav';
 import { Footer } from '@/components/layout/Footer';
-import { useState } from 'react';
 import { Category } from '@/types/category';
 import { useQuery } from '@tanstack/react-query';
 import { categoryService } from '@/services/category.service';
+import { getImageUrl } from '@/utils/image';
 
 export function ListCategoryPage() {
 
   // const categories = [...CATEGORIES].sort((a, b) => a.displayOrder - b.displayOrder);
-  const [cartCount, _setCartCount] = useState(0);
-
   const {data : categories ,isLoading : _isCategoriesLoading} = useQuery({
     queryKey: ['categories'],
     queryFn: async () :Promise<Category[]> => {
@@ -29,7 +27,7 @@ export function ListCategoryPage() {
 
   return (
     <div className="min-h-screen bg-surface font-sans text-slate-900">
-      <HeaderNav cartCount={cartCount} />
+      <HeaderNav />
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-10">
         <h1 className="font-display text-2xl font-bold text-black">
           Thực đơn theo <span className="text-orange-500">danh mục</span>
@@ -39,15 +37,20 @@ export function ListCategoryPage() {
           {(categories || []).map((cat) => {
             return (
               <Link
-                key={cat.id} 
+                key={cat.id}
                 to={`/products?categoryId=${cat.id}`}
                 className="group flex items-start gap-3.5 rounded-2xl border border-border bg-surface p-4 transition-all duration-200 hover:border-[#fb6900]/30 hover:bg-[#fb6900]/5"
               >
-                <span className="shrink-0 w-11 h-11 rounded-xl bg-[#fb6900]/10 text-[#fb6900] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                  {
-                    cat.imageUrl ? <img src={cat.imageUrl} alt={cat.name} className="w-6 h-6 object-cover rounded " />
-                    : <ChartBarStacked size={20} />
-                  }
+                <span className="shrink-0 w-11 h-11 rounded-xl bg-[#fb6900]/10 text-[#fb6900] flex items-center justify-center overflow-hidden transition-transform duration-200 group-hover:scale-105">
+                  {cat.imageUrl ? (
+                    <img
+                      src={getImageUrl(cat.imageUrl)}
+                      alt={cat.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ChartBarStacked size={20} />
+                  )}
                 </span>
                 <div className="min-w-0">
                   <h2 className="font-semibold text-sm text-black group-hover:text-orange-500 transition-colors">

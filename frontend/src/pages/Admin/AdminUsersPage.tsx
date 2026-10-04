@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Lock, Search, Unlock } from 'lucide-react';
+import { CalendarDays, Eye, Lock, Mail, Pencil, Phone, Search, Trash2, Unlock, X } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
-import { AdminUser, adminService, PagedResult } from '@/services/admin.service';
+import { AdminModal } from '@/components/admin/AdminModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import { AdminUser, AdminUserDetail, adminService, PagedResult } from '@/services/admin.service';
+import { getImageUrl } from '@/utils/image';
 
 const money = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -12,10 +17,22 @@ const money = new Intl.NumberFormat('vi-VN', {
 export default function AdminUsersPage() {
   const [result, setResult] = useState<PagedResult<AdminUser> | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [confirmingUser, setConfirmingUser] = useState<AdminUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [error, setError] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tải danh sách người dùng
   const loadUsers = async (isMounted = true) => {
@@ -24,6 +41,7 @@ export default function AdminUsersPage() {
     try {
       const data = await adminService.getUsers({
         searchQuery: search.trim() || undefined,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
         page,
         pageSize: 10,
       });
@@ -41,15 +59,34 @@ export default function AdminUsersPage() {
     return () => {
       isSubscribed = false;
     };
-  }, [search, page]);
+  }, [search, statusFilter, page]);
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelectedUser(null);
+      return;
+    }
+    let isSubscribed = true;
+    setDetailLoading(true);
+    setDetailError('');
+    adminService.getUserDetail(selectedUserId)
+      .then((user) => {
+        if (!isSubscribed || !user) return;
+        setSelectedUser(user);
+        setEditFullName(user.fullName);
+        setEditPhone(user.phone);
+      })
+      .catch(() => {
+        if (isSubscribed) setDetailError('Không tải được thông tin tài khoản.');
+      })
+      .finally(() => {
+        if (isSubscribed) setDetailLoading(false);
+      });
+    return () => { isSubscribed = false; };
+  }, [selectedUserId]);
 
   // Xử lý Khóa / Mở khóa tài khoản
   async function handleToggleUser(user: AdminUser) {
-    const actionText = user.isActive ? 'KHÓA' : 'MỞ KHÓA';
-    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của ${user.fullName}?`)) {
-      return;
-    }
-
     setProcessingId(user.id);
     setError('');
 
@@ -59,11 +96,51 @@ export default function AdminUsersPage() {
       } else {
         await adminService.unblockUser(user.id);
       }
+      setConfirmingUser(null);
       await loadUsers();
     } catch {
       setError('Không thể cập nhật trạng thái tài khoản.');
     } finally {
       setProcessingId(null);
+    }
+  }
+
+  async function handleDeleteUser(user: AdminUser) {
+    setProcessingId(user.id);
+    setError('');
+    try {
+      await adminService.deleteUser(user.id);
+      setDeletingUser(null);
+      if (selectedUserId === user.id) setSelectedUserId(null);
+      await loadUsers();
+    } catch {
+      setError('Không thể xóa tài khoản.');
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function handleSaveUser(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedUser) return;
+    setIsSaving(true);
+    setDetailError('');
+    const formData = new FormData();
+    formData.append('FullName', editFullName.trim());
+    formData.append('Phone', editPhone.trim());
+    formData.append('Email', selectedUser.email);
+    if (avatarFile) formData.append('Avatar', avatarFile);
+    try {
+      await adminService.updateUser(selectedUser.id, formData);
+      const updatedUser = await adminService.getUserDetail(selectedUser.id);
+      if (updatedUser) setSelectedUser(updatedUser);
+      setAvatarFile(null);
+      setIsEditing(false);
+      await loadUsers();
+    } catch {
+      setDetailError('Không thể cập nhật tài khoản. Hãy kiểm tra email, số điện thoại và ảnh đại diện.');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -82,14 +159,34 @@ export default function AdminUsersPage() {
         }}
       />
 
+      <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Lọc trạng thái tài khoản">
+        {([
+          ['all', 'Tất cả'],
+          ['active', 'Đang hoạt động'],
+          ['blocked', 'Đã khóa'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={statusFilter === value}
+            onClick={() => { setStatusFilter(value); setPage(1); }}
+            className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${statusFilter === value ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-border bg-surface text-muted hover:bg-black/5'}`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="ml-auto text-sm text-muted">{result?.meta.totalCount ?? 0} tài khoản</span>
+      </div>
+
       {error && <ErrorMessage text={error} />}
 
       {/* Bảng danh sách người dùng */}
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="w-full min-w-[860px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
               <th className="px-5 py-4">Người dùng</th>
+              <th className="px-5 py-4">Liên hệ</th>
               <th className="px-5 py-4">Vai trò</th>
               <th className="px-5 py-4">Đơn hàng</th>
               <th className="px-5 py-4">Đã chi</th>
@@ -100,13 +197,13 @@ export default function AdminUsersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-muted">
+                <td colSpan={7} className="px-5 py-10 text-center text-muted">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : result?.data?.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-muted">
+                <td colSpan={7} className="px-5 py-10 text-center text-muted">
                   Không tìm thấy tài khoản nào.
                 </td>
               </tr>
@@ -120,9 +217,22 @@ export default function AdminUsersPage() {
                   >
                     {/* Tên & Email */}
                     <td className="px-5 py-4">
-                      <p className="font-semibold text-foreground">{user.fullName}</p>
-                      <p className="mt-0.5 text-xs text-muted">{user.email}</p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        {user.avatarUrl ? (
+                          <img src={getImageUrl(user.avatarUrl)} alt="" className="h-10 w-10 shrink-0 rounded-full border border-border object-cover" />
+                        ) : (
+                          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-semibold text-orange-700">
+                            {user.fullName.trim().charAt(0).toUpperCase() || '?'}
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-foreground">{user.fullName}</p>
+                          <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
+                        </div>
+                      </div>
                     </td>
+
+                    <td className="px-5 py-4 text-sm text-muted">{user.phone || 'Chưa cập nhật'}</td>
 
                     {/* Vai trò */}
                     <td className="px-5 py-4">
@@ -164,8 +274,19 @@ export default function AdminUsersPage() {
                     {/* Thao tác */}
                     <td className="px-5 py-4 text-right">
                       <button
+                        type="button"
                         disabled={isProcessing}
-                        onClick={() => void handleToggleUser(user)}
+                        onClick={() => { setSelectedUserId(user.id); setIsEditing(false); setAvatarFile(null); }}
+                        title="Xem chi tiết tài khoản"
+                        aria-label={`Xem tài khoản ${user.fullName}`}
+                        className="rounded-lg p-2 text-muted transition hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
+                      >
+                        <Eye size={17} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => setConfirmingUser(user)}
                         title={user.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                         className={`rounded-xl p-2 transition disabled:opacity-40 ${
                           user.isActive
@@ -174,6 +295,16 @@ export default function AdminUsersPage() {
                         }`}
                       >
                         {user.isActive ? <Lock size={17} /> : <Unlock size={17} />}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => setDeletingUser(user)}
+                        title="Xóa tài khoản"
+                        aria-label={`Xóa tài khoản ${user.fullName}`}
+                        className="rounded-lg p-2 text-muted transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                      >
+                        <Trash2 size={17} />
                       </button>
                     </td>
                   </tr>
@@ -189,7 +320,113 @@ export default function AdminUsersPage() {
         totalPages={result?.meta?.totalPages || 1}
         onChange={setPage}
       />
+
+      <AdminModal
+        open={Boolean(selectedUserId)}
+        onClose={() => { setSelectedUserId(null); setIsEditing(false); setAvatarFile(null); }}
+        title={isEditing ? 'Chỉnh sửa tài khoản' : 'Chi tiết tài khoản'}
+        description={selectedUser?.email ?? 'Thông tin và hoạt động của tài khoản'}
+        size="lg"
+      >
+        {detailLoading ? (
+          <p className="py-8 text-center text-sm text-slate-500">Đang tải thông tin...</p>
+        ) : selectedUser ? (
+          isEditing ? (
+            <form onSubmit={handleSaveUser} className="space-y-4">
+              <Input label="Họ và tên" required minLength={2} maxLength={100} value={editFullName} onChange={(event) => setEditFullName(event.target.value)} fullWidth />
+              <Input label="Email" type="email" required maxLength={254} value={selectedUser.email} disabled helperText="Email đăng nhập không thể thay đổi tại đây." fullWidth />
+              <Input label="Số điện thoại" type="tel" required maxLength={15} value={editPhone} onChange={(event) => setEditPhone(event.target.value)} fullWidth />
+              <label className="block text-sm font-medium text-slate-700">
+                Ảnh đại diện
+                <input type="file" accept="image/*" onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-orange-50 file:px-3 file:py-1.5 file:font-semibold file:text-orange-700" />
+              </label>
+              {detailError && <p role="alert" className="text-sm text-red-600">{detailError}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => { setIsEditing(false); setAvatarFile(null); }} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"><X size={15} /> Hủy</button>
+                <Button type="submit" size="md" isLoading={isSaving}>Lưu thay đổi</Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              {detailError && <p role="alert" className="text-sm text-red-600">{detailError}</p>}
+              <div className="flex flex-wrap items-center gap-4">
+                <img src={getImageUrl(selectedUser.avatarUrl)} alt="" className="h-16 w-16 rounded-full border border-slate-200 object-cover" />
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">{selectedUser.fullName}</h3>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {selectedUser.roles.map((role) => <span key={role} className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">{role}</span>)}
+                  </div>
+                </div>
+                <button type="button" onClick={() => setIsEditing(true)} title="Chỉnh sửa tài khoản" aria-label="Chỉnh sửa tài khoản" className="ml-auto rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"><Pencil size={16} /></button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField icon={<Mail size={15} />} label="Email" value={selectedUser.email} />
+                <DetailField icon={<Phone size={15} />} label="Điện thoại" value={selectedUser.phone || 'Chưa cập nhật'} />
+                <DetailField icon={<CalendarDays size={15} />} label="Ngày tạo" value={formatDate(selectedUser.createdAt)} />
+                <DetailField icon={<CalendarDays size={15} />} label="Đăng nhập gần nhất" value={formatDate(selectedUser.lastLogin)} />
+                <DetailField label="Đơn hàng" value={String(selectedUser.totalOrders)} />
+                <DetailField label="Tổng chi tiêu" value={money.format(selectedUser.totalSpent)} />
+              </div>
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-slate-800">Đơn hàng gần đây</h4>
+                {selectedUser.recentOrders.length ? (
+                  <div className="divide-y divide-slate-100 border-y border-slate-100">
+                    {selectedUser.recentOrders.map((order) => (
+                      <div key={order.orderId} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                        <span className="font-medium text-slate-800">{order.orderCode}</span>
+                        <span className="text-slate-600">{money.format(order.amount)}</span>
+                        <span className="text-xs text-slate-500">{formatDate(order.createdAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="text-sm text-slate-500">Chưa có đơn hàng.</p>}
+              </div>
+            </div>
+          )
+        ) : detailError ? (
+          <p role="alert" className="py-6 text-sm text-red-600">{detailError}</p>
+        ) : null}
+      </AdminModal>
+      <ConfirmationModal
+        open={Boolean(confirmingUser)}
+        title={confirmingUser?.isActive ? 'Khóa tài khoản?' : 'Mở khóa tài khoản?'}
+        description={confirmingUser?.isActive
+          ? `Tài khoản ${confirmingUser.fullName} sẽ không thể đăng nhập cho đến khi được mở khóa.`
+          : `Cho phép ${confirmingUser?.fullName} tiếp tục đăng nhập và sử dụng tài khoản?`}
+        confirmLabel={confirmingUser?.isActive ? 'Khóa tài khoản' : 'Mở khóa'}
+        tone={confirmingUser?.isActive ? 'danger' : 'primary'}
+        isLoading={Boolean(confirmingUser && processingId === confirmingUser.id)}
+        onCancel={() => setConfirmingUser(null)}
+        onConfirm={() => {
+          if (confirmingUser) return handleToggleUser(confirmingUser);
+        }}
+      />
+      <ConfirmationModal
+        open={Boolean(deletingUser)}
+        title="Xóa tài khoản?"
+        description={`Tài khoản ${deletingUser?.fullName ?? ''} sẽ bị vô hiệu hóa và không thể đăng nhập.`}
+        confirmLabel="Xóa tài khoản"
+        tone="danger"
+        isLoading={Boolean(deletingUser && processingId === deletingUser.id)}
+        onCancel={() => setDeletingUser(null)}
+        onConfirm={() => {
+          if (deletingUser) return handleDeleteUser(deletingUser);
+        }}
+      />
     </AdminLayout>
+  );
+}
+
+function formatDate(value: string | null) {
+  return value ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(value)) : 'Chưa đăng nhập';
+}
+
+function DetailField({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-xs text-slate-500">{icon}{label}</p>
+      <p className="mt-1 break-words text-sm font-medium text-slate-800">{value}</p>
+    </div>
   );
 }
 
@@ -206,13 +443,14 @@ function PageHeading({ title, subtitle }: { title: string; subtitle: string }) {
 /* Thanh công cụ / Tìm kiếm */
 function Toolbar({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm text-muted shadow-sm transition focus-within:border-orange-500">
-      <Search size={17} />
-      <input
+    <div className="mb-4 max-w-md">
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Tìm theo tên, email, số điện thoại..."
-        className="w-full bg-transparent text-foreground outline-none placeholder:text-muted/60"
+        leftIcon={<Search size={16} />}
+        size="sm"
+        fullWidth
       />
     </div>
   );

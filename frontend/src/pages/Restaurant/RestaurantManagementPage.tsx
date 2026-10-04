@@ -3,6 +3,7 @@ import { Clock3, MapPin, Pencil, Phone, Power, Store } from 'lucide-react';
 import { AdminModal } from '@/components/admin/AdminModal';
 import { RestaurantLayout } from './RestaurantLayout';
 import { PageHeader, Panel } from '@/components/admin/AdminUI';
+import Input, { type InputProps } from '@/components/ui/Input';
 import { RestaurantProfile, restaurantService } from '@/services/restaurant.service';
 
 const emptyProfile: Omit<RestaurantProfile, 'id' | 'isOpen' | 'closingMessage'> = {
@@ -332,20 +333,18 @@ function Field({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
+  type?: InputProps['type'];
   required?: boolean;
 }) {
   return (
-    <label className="block text-sm font-semibold text-slate-700">
-      {label}
-      <input
+    <Input
+        label={label}
         required={required}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-normal text-slate-800 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+        fullWidth
       />
-    </label>
   );
 }
 

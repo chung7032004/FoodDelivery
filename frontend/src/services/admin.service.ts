@@ -17,11 +17,25 @@ export interface AdminUser {
   fullName: string;
   email: string;
   phone: string;
+  avatarUrl: string | null;
   isActive: boolean;
   lastLogin: string | null;
   totalOrders: number;
   totalSpent: number;
   roles: string[];
+}
+
+export interface AdminUserDetail extends AdminUser {
+  avatarUrl: string;
+  createdAt: string;
+  updatedAt: string | null;
+  recentOrders: {
+    orderId: string;
+    orderCode: string;
+    amount: number;
+    status: number;
+    createdAt: string;
+  }[];
 }
 
 export interface AdminOrder {
@@ -53,6 +67,8 @@ export interface ShipperApplication {
   vehiclePlate: string;
   status: string | number;
   appliedAt: string;
+  userId: string; // Added userId
+  identityCard: string; // Added identityCard
 }
 
 interface ApiResult<T> {
@@ -66,6 +82,16 @@ export const adminService = {
     const { data } = await api.get<ApiResult<PagedResult<AdminUser>>>('/accounts', { params });
     return data.data;
   },
+
+  getUserDetail: async (id: string) => {
+    const { data } = await api.get<ApiResult<AdminUserDetail>>(`/accounts/${id}`);
+    return data.data;
+  },
+
+  updateUser: (id: string, formData: FormData) =>
+    api.put(`/accounts/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+
+  deleteUser: (id: string) => api.delete(`/accounts/${id}`),
 
   blockUser: (id: string) => api.patch(`/accounts/${id}/block`),
   unblockUser: (id: string) => api.patch(`/accounts/${id}/unblock`),

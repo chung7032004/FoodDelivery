@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
+import Input from '@/components/ui/Input';
 import { AdminOrder, adminService, PagedResult } from '@/services/admin.service';
 
 const money = new Intl.NumberFormat('vi-VN', {
@@ -56,18 +57,18 @@ export default function AdminOrdersPage() {
 
       {/* Thanh bộ lọc */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <label className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm text-muted shadow-sm transition-focus focus-within:border-orange-500">
-          <Search size={17} />
-          <input
+        <Input
             value={code}
             onChange={(e) => {
               setCode(e.target.value);
               setPage(1);
             }}
             placeholder="Mã đơn hàng..."
-            className="bg-transparent text-foreground outline-none placeholder:text-muted/60"
+            leftIcon={<Search size={16} />}
+            size="sm"
+            containerClassName="w-full sm:w-56"
+            fullWidth
           />
-        </label>
 
         <select
           value={status}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogOut, Package, ChevronDown, Settings } from 'lucide-react';
+import { User, LogOut, Package, ChevronDown, Settings, Truck, Store } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function AccountDropdown() {
@@ -87,6 +87,24 @@ export function AccountDropdown() {
           >
             <Package size={16} /> Đơn hàng của tôi
           </Link>
+          {!user?.roles.includes('Shipper') && (
+            <Link
+              to="/shipper/apply"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:text-orange-400 hover:bg-orange-500/5 transition-colors"
+            >
+              <Truck size={16} /> Đăng ký làm shipper
+            </Link>
+          )}
+          {!user?.roles.includes('RestaurantOwner') && !user?.roles.includes('RestaurantStaff') && (
+            <Link
+              to="/restaurant/apply"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:text-orange-400 hover:bg-orange-500/5 transition-colors"
+            >
+              <Store size={16} /> Đăng ký kinh doanh nhà hàng
+            </Link>
+          )}
           <Link
             to="/settings"
             onClick={() => setOpen(false)}
