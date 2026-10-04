@@ -11,6 +11,7 @@ namespace FoodDelivery.Repositories.Interfaces
         Task<(List<Shipper> Items, int TotalCount)> GetAllShippersAsync(int page, int pageSize);
         Task<(List<Shipper> Items, int TotalCount)> GetPendingApplicationsAsync(int page, int pageSize);
         Task<Shipper?> GetShipperByIdAsync(Guid userId);
+        Task<Shipper?> GetShipperByRecordIdAsync(Guid shipperId);
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId);
         Task<List<OrderDetail>> GetShipperCompletedOrdersAsync(Guid shipperId);
         Task<List<OrderDetail>> GetAvailableOrdersAsync();

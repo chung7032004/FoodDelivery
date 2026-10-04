@@ -8,6 +8,6 @@ public interface IAddressService
     Task <Result<List<AddressResponse>>> GetMyAddresses(Guid userId);
     Task <Result<AddAddressResponse>> AddAddress (Guid userId, AddAddressRequest addressRequest);
     Task <Result> UpdateAddress (Guid userId,Guid addressId, AddressRequest addressRequest);
-    Task <Result> DeleteAddress (Guid addressId);
+    Task <Result> DeleteAddress (Guid userId, Guid addressId);
     Task <Result> SetDefault (Guid userId, Guid addressId);
 }

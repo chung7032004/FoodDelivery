@@ -33,6 +33,7 @@ public class CartRepository : ICartRepository
                         Id = ci.Id,
                         Quantity = ci.Quantity,
                         ProductId = ci.ProductId,
+                        RestaurantId = ci.RestaurantId,
                         AddedAt = ci.AddedAt,
                         UpdatedAt = ci.UpdatedAt,
                         Product = new Product
@@ -40,13 +41,28 @@ public class CartRepository : ICartRepository
                             Id = ci.Product.Id,
                             Name = ci.Product.Name,
                             Price = ci.Product.Price,
-                            // ImageUrl = ci.Product.ImageUrl,
                             Category = new Category
                             {
                                 Id = ci.Product.Category.Id,
                                 Name = ci.Product.Category.Name
-                            }
-                        }
+                            },
+                            ProductImages = ci.Product.ProductImages
+                                .Where(image => image.IsMain)
+                                .Select(image => new ProductImage
+                                {
+                                    Id = image.Id,
+                                    ImageUrl = image.ImageUrl,
+                                    IsMain = image.IsMain,
+                                })
+                                .ToList()
+                            
+                        },
+                        Restaurant = new Restaurant
+                        {
+                            Id = ci.Restaurant.Id,
+                            Name = ci.Restaurant.Name
+                        },
+                        
                     })
                     .ToList()
             })

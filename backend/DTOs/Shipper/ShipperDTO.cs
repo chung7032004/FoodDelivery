@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FoodDelivery.DTOs.Shipper
 {
     public class ShipperActionDTO
@@ -68,9 +70,31 @@ namespace FoodDelivery.DTOs.Shipper
     
     public class ApplyShipperDto
     {
+        [Required(ErrorMessage = "Vui lòng nhập số CCCD/CMND")]
+        [RegularExpression(@"^(\d{9}|\d{12})$", ErrorMessage = "Số CCCD/CMND phải gồm 9 hoặc 12 chữ số")]
         public string IdentityCard { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng chọn loại phương tiện")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Loại phương tiện phải từ 2 đến 50 ký tự")]
         public string VehicleType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập biển số xe")]
+        [StringLength(15, MinimumLength = 5, ErrorMessage = "Biển số xe phải từ 5 đến 15 ký tự")]
+        [RegularExpression(@"^[0-9A-Za-z .-]+$", ErrorMessage = "Biển số xe chứa ký tự không hợp lệ")]
         public string VehiclePlate { get; set; } = string.Empty;
+    }
+
+    public class MyShipperApplicationDto
+    {
+        public bool HasApplication { get; set; }
+        public Guid? ShipperId { get; set; }
+        public ShipperStatus? Status { get; set; }
+        public string? IdentityCard { get; set; }
+        public string? VehicleType { get; set; }
+        public string? VehiclePlate { get; set; }
+        public string? RejectReason { get; set; }
+        public DateTime? AppliedAt { get; set; }
+        public DateTime? ReviewedAt { get; set; }
     }
 
     public class ReviewShipperDto

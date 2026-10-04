@@ -39,7 +39,10 @@ public class CartService : ICartService
 
             Quantity = ci.Quantity,
             Price = ci.Product.Price,
-            // ImageUrl = ci.Product.ImageUrl
+            ImageUrl = ci.Product.ProductImages.FirstOrDefault(pi => pi.IsMain)?.ImageUrl ?? string.Empty,
+            RestaurantId = ci.RestaurantId,
+            AddedAt = ci.AddedAt,
+            UpdatedAt = ci.UpdatedAt
         }).ToList();
         var totalItems = await _cartItemRepository.CountByCustomerIdAsync(customerId);
         var responseMeta = new PaginationMeta(
@@ -96,7 +99,8 @@ public class CartService : ICartService
                 AddedAt = DateTime.UtcNow,
                 CartId = cart.Id,
                 ProductId = cartItemRequest.ProductId,
-                Quantity = cartItemRequest.Quantity,    
+                Quantity = cartItemRequest.Quantity,
+                RestaurantId = product.RestaurantId,
             };
             await _cartItemRepository.AddAsync(cartItem);
         }

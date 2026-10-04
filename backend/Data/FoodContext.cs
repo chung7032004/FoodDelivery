@@ -244,6 +244,10 @@ public class FoodContext : DbContext
             .WithOne(rv => rv.Restaurant)
             .HasForeignKey(rv => rv.RestaurantId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Restaurant>()
+            .Property(restaurant => restaurant.ApplicationStatus)
+            .HasConversion<int>()
+            .HasDefaultValue(RestaurantApplicationStatus.Approved);
         
         modelBuilder.Entity<ProductImage>()
             .HasOne(pi => pi.Product)

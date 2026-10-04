@@ -35,3 +35,10 @@ public enum ShipperStatus
     Approved,
     Rejected
 }
+
+public enum RestaurantApplicationStatus
+{
+    Pending,
+    Approved,
+    Rejected
+}

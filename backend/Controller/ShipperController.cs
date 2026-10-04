@@ -19,6 +19,16 @@ namespace FoodDelivery.Controllers
             _shipperService = service;
         }
 
+        [HttpGet("application/me")]
+        [HasPermission(PermissionConstants.Shippers.ApplyAsShipper)]
+        [ProducesResponseType(typeof(FoodDelivery.Common.Result<MyShipperApplicationDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMyApplication()
+        {
+            var userId = User.GetUserId();
+            var result = await _shipperService.GetMyApplicationAsync(userId);
+            return result.ToActionResult();
+        }
+
         [HttpPost("apply")]
         [HasPermission(PermissionConstants.Shippers.ApplyAsShipper)]
         public async Task<IActionResult> Apply([FromBody] ApplyShipperDto dto)

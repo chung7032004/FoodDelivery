@@ -32,16 +32,18 @@ namespace FoodDelivery.Controllers
         }
 
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [HasPermission(PermissionConstants.Categories.Manage)]
-        public async Task<IActionResult> Create(CategoryCreateDto dto)
+        public async Task<IActionResult> Create([FromForm] CategoryCreateDto dto)
         {
             var result = await _service.CreateAsync(dto);
             return result.ToActionResult();
         }
 
         [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
         [HasPermission(PermissionConstants.Categories.Manage)]
-        public async Task<IActionResult> Update(Guid id, CategoryUpdateDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromForm] CategoryUpdateDto dto)
         {
             var result = await _service.UpdateAsync(id, dto);
             return result.ToActionResult();

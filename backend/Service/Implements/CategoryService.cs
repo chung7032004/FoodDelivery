@@ -1,6 +1,7 @@
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Category;
 using FoodDelivery.Entities;
+using FoodDelivery.Service.Interfaces;
 
 
 namespace FoodDelivery.Service.Implementations
@@ -10,13 +11,16 @@ namespace FoodDelivery.Service.Implementations
     {
         private readonly ICategoryRepository _repo;
         private readonly FoodContext _context;
+        private readonly IFileService _fileService;
 
         public CategoryService(
             ICategoryRepository repo,
-            FoodContext context)
+            FoodContext context,
+            IFileService fileService)
         {
             _repo = repo;
             _context = context;
+            _fileService = fileService;
         }
 
         public async Task<Result<PagedResponse<CategoryResponseDto>>> GetAllCategoriesAsync(string? search, int page, int pageSize)
@@ -53,11 +57,23 @@ namespace FoodDelivery.Service.Implementations
 
         public async Task<Result<CategoryResponseDto>> CreateAsync(CategoryCreateDto dto)
         {
+            var imageUrl = dto.ImageUrl;
+            if (dto.ImageFile != null)
+            {
+                var uploadResult = await _fileService.SaveFileAsync(dto.ImageFile, "category");
+                if (!uploadResult.IsSuccess || string.IsNullOrEmpty(uploadResult.Data))
+                {
+                    return Result<CategoryResponseDto>.Failure(uploadResult.ErrorCode ?? "FILE_UPLOAD_FAILED", uploadResult.Message ?? "Tải ảnh danh mục thất bại");
+                }
+                imageUrl = uploadResult.Data;
+            }
+
             var category = new Category
             {
                 Name = dto.Name,
                 Description = dto.Description,
                 DisplayOrder = dto.DisplayOrder,
+                ImageUrl = imageUrl ?? string.Empty,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -75,6 +91,27 @@ namespace FoodDelivery.Service.Implementations
             category.Name = dto.Name;
             category.Description = dto.Description;
             category.DisplayOrder = dto.DisplayOrder;
+
+            if (dto.ImageFile != null)
+            {
+                if (!string.IsNullOrWhiteSpace(category.ImageUrl))
+                {
+                    _fileService.DeleteFile(category.ImageUrl);
+                }
+
+                var uploadResult = await _fileService.SaveFileAsync(dto.ImageFile, "category");
+                if (!uploadResult.IsSuccess || string.IsNullOrEmpty(uploadResult.Data))
+                {
+                    return Result.Failure(uploadResult.ErrorCode ?? "FILE_UPLOAD_FAILED", uploadResult.Message ?? "Tải ảnh danh mục thất bại");
+                }
+
+                category.ImageUrl = uploadResult.Data;
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.ImageUrl))
+            {
+                category.ImageUrl = dto.ImageUrl;
+            }
+
             category.UpdatedAt = DateTime.UtcNow;
 
             _repo.Update(category);
