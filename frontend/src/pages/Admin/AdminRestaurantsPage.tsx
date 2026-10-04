@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Clock3, Eye, MapPin, Phone, Store } from 'lucide-react';
+import { Check, Clock3, Eye, MapPin, Phone} from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
 import Button from '@/components/ui/Button';
