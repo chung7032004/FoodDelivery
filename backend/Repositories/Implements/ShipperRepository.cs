@@ -58,6 +58,11 @@ namespace FoodDelivery.Repositories.Implements
             return await _context.Shippers
                 .FirstOrDefaultAsync(s => s.UserId == userId);
         }
+        public async Task<Shipper?> GetShipperByRecordIdAsync(Guid shipperId)
+        {
+            return await _context.Shippers
+                .FirstOrDefaultAsync(s => s.Id == shipperId);
+        }
         public async Task<List<OrderDetail>> GetOrdersByShipperAsync(Guid shipperId)
         {
             return await _context.OrderDetails

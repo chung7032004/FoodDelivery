@@ -76,16 +76,43 @@ namespace FoodDelivery.Service.Implements
         }
         public async Task<Result<string>> ApplyShipperAsync(Guid userId, ApplyShipperDto dto)
         {
-            var existing = await _shipperRepository.HasShipperRecordAsync(userId);
-            if (existing)
-                return HttpErrors.BadRequest<string>("ALREADY_APPLIED", "Bạn đã đăng ký làm shipper rồi");
+            var existing = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (existing != null && existing.Status != ShipperStatus.Rejected)
+                return HttpErrors.BadRequest<string>("ALREADY_APPLIED", "Hồ sơ của bạn đang chờ duyệt hoặc đã được duyệt");
+
+            var identityCard = dto.IdentityCard.Trim();
+            var vehicleType = dto.VehicleType.Trim();
+            var vehiclePlate = dto.VehiclePlate.Trim().ToUpperInvariant();
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(identityCard, @"^(\d{9}|\d{12})$"))
+                return HttpErrors.BadRequest<string>("INVALID_IDENTITY_CARD", "Số CCCD/CMND phải gồm 9 hoặc 12 chữ số");
+            if (vehicleType.Length is < 2 or > 50)
+                return HttpErrors.BadRequest<string>("INVALID_VEHICLE_TYPE", "Loại phương tiện phải từ 2 đến 50 ký tự");
+            if (vehiclePlate.Length is < 5 or > 15 || !System.Text.RegularExpressions.Regex.IsMatch(vehiclePlate, @"^[0-9A-Z .-]+$"))
+                return HttpErrors.BadRequest<string>("INVALID_VEHICLE_PLATE", "Biển số xe không hợp lệ");
+
+            if (existing != null)
+            {
+                existing.IdentityCard = identityCard;
+                existing.VehicleType = vehicleType;
+                existing.VehiclePlate = vehiclePlate;
+                existing.Status = ShipperStatus.Pending;
+                existing.RejectReason = null;
+                existing.ReviewedAt = null;
+                existing.ReviewedByAdminId = null;
+                existing.IsActive = false;
+                existing.IsAvailable = false;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return Result<string>.Success("Đã gửi lại hồ sơ, vui lòng chờ admin duyệt");
+            }
 
             var shipper = new Shipper
             {
                 UserId       = userId,
-                IdentityCard = dto.IdentityCard,
-                VehicleType  = dto.VehicleType,
-                VehiclePlate = dto.VehiclePlate,
+                IdentityCard = identityCard,
+                VehicleType  = vehicleType,
+                VehiclePlate = vehiclePlate,
                 Status       = ShipperStatus.Pending,
                 IsActive     = false,
                 IsAvailable  = false
@@ -96,9 +123,34 @@ namespace FoodDelivery.Service.Implements
 
             return Result<string>.Success("Đăng ký thành công, vui lòng chờ admin duyệt");
         }
+
+        public async Task<Result<MyShipperApplicationDto>> GetMyApplicationAsync(Guid userId)
+        {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null)
+            {
+                return Result<MyShipperApplicationDto>.Success(new MyShipperApplicationDto
+                {
+                    HasApplication = false
+                });
+            }
+
+            return Result<MyShipperApplicationDto>.Success(new MyShipperApplicationDto
+            {
+                HasApplication = true,
+                ShipperId = shipper.Id,
+                Status = shipper.Status,
+                IdentityCard = shipper.IdentityCard,
+                VehicleType = shipper.VehicleType,
+                VehiclePlate = shipper.VehiclePlate,
+                RejectReason = shipper.RejectReason,
+                AppliedAt = shipper.CreatedAt,
+                ReviewedAt = shipper.ReviewedAt
+            });
+        }
         public async Task<Result<string>> ReviewApplicationAsync(Guid shipperId, Guid adminId, ReviewShipperDto dto)
         {
-            var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
+            var shipper = await _shipperRepository.GetShipperByRecordIdAsync(shipperId);
             if (shipper == null)
                 return HttpErrors.NotFound<string>("SHIPPER_NOTFOUND", "Không tìm thấy đơn đăng ký");
 

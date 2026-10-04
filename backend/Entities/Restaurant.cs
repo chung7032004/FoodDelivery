@@ -8,6 +8,10 @@ public class Restaurant
     public string Name { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
+    public RestaurantApplicationStatus ApplicationStatus { get; set; } = RestaurantApplicationStatus.Pending;
+    public string? RejectionReason { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public Guid? ReviewedByAdminId { get; set; }
     public bool IsOpen { get; set; }
     public string? ClosingMessage { get; set; }
     public TimeSpan OpenTime { get; set; }

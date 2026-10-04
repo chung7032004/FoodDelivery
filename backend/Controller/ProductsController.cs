@@ -42,7 +42,8 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
 
         [HasPermission(PermissionConstants.Products.Edit)]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, ProductUpdateDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(Guid id, [FromForm] ProductUpdateDto dto)
             => await _productService.UpdateProductAsync(id, dto) ? Ok() : NotFound();
 
         [HasPermission(PermissionConstants.Products.Edit)]

@@ -1223,6 +1223,10 @@ namespace FoodDelivery.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("ApplicationStatus")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<TimeSpan>("CloseTime")
                         .HasColumnType("interval");
 
@@ -1234,6 +1238,15 @@ namespace FoodDelivery.Migrations
 
                     b.Property<bool>("IsOpen")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByAdminId")
+                        .HasColumnType("uuid");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");

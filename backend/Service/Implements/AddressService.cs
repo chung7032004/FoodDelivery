@@ -103,7 +103,7 @@ public class AddressService : IAddressService
     }
     public async Task <Result> UpdateAddress (Guid userId, Guid addressId, AddressRequest addressRequest)
     {
-        var address = await _addressRepository.GetByIdAsync(addressId);
+        var address = await _addressRepository.GetByIdAndUserIdAsync(addressId, userId);
         if(address == null)
         {
             return HttpErrors.NotFound("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
@@ -114,7 +114,7 @@ public class AddressService : IAddressService
         address.Longitude = addressRequest.Longitude;
         address.UpdatedAt = DateTime.UtcNow;
         address.PhoneNumber = addressRequest.PhoneNumber;
-        address.ReceiverName = address.ReceiverName;
+        address.ReceiverName = addressRequest.ReceiverName;
         if (addressRequest.IsDefault)
         {
             var addressDefault = await _addressRepository.GetDefaultByUserIdAsync(userId);
@@ -130,15 +130,14 @@ public class AddressService : IAddressService
         await _context.SaveChangesAsync();
         return Result.Success();
     }
-    public async Task <Result> DeleteAddress (Guid addressId)
+    public async Task <Result> DeleteAddress (Guid userId, Guid addressId)
     {
-        var address = await _addressRepository.GetByIdAsync(addressId);
+        var address = await _addressRepository.GetByIdAndUserIdAsync(addressId, userId);
         if(address == null)
         {
             return HttpErrors.NotFound("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
         bool wasDefault = address.IsDefault;
-        Guid userId = address.UserId;
         await _addressRepository.DeleteAsync(address);
 
         if (wasDefault)

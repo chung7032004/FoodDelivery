@@ -1,6 +1,58 @@
 @FoodDelivery_HostAddress = http://localhost:5147
+@accessToken = paste-access-token-here
+@adminToken = paste-admin-access-token-here
+@restaurantId = 00000000-0000-0000-0000-000000000000
 
 GET {{FoodDelivery_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Get the current user's shipper application status
+GET {{FoodDelivery_HostAddress}}/api/shipper/application/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Check my restaurant application
+GET {{FoodDelivery_HostAddress}}/api/restaurant/application/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Submit restaurant application
+POST {{FoodDelivery_HostAddress}}/api/restaurant/register
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+	"name": "Bếp Nhà Mình",
+	"address": "123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh",
+	"phone": "0901234567",
+	"latitude": 10.7731,
+	"longitude": 106.7030,
+	"openTime": "08:00:00",
+	"closeTime": "22:00:00"
+}
+
+### List restaurant applications as admin
+GET {{FoodDelivery_HostAddress}}/api/restaurant/admin?page=1&pageSize=10&status=0
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Approve restaurant application as admin
+PUT {{FoodDelivery_HostAddress}}/api/restaurant/admin/{{restaurantId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+	"isApproved": true
+}
+
+### Reject restaurant application as admin
+PUT {{FoodDelivery_HostAddress}}/api/restaurant/admin/{{restaurantId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+	"isApproved": false,
+	"rejectReason": "Vui lòng cập nhật thông tin liên hệ của nhà hàng."
+}

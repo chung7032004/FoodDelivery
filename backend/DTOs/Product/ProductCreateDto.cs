@@ -10,15 +10,7 @@ namespace FoodDelivery.DTOs.Product
         public bool IsAvailable { get; set; } = true;
         public bool IsFeatured { get; set; } = false;
         public int DisplayOrder { get; set; } = 0;
-        
-        // Danh sách ảnh kèm thông tin
-        public List<ProductImageCreateDto>? Images { get; set; }
-    }
-
-    public class ProductImageCreateDto
-    {
-        public IFormFile ImageFile { get; set; } = null!;
-        public bool IsMain { get; set; } = false;
-        public int DisplayOrder { get; set; } = 0;
+        public List<IFormFile>? ImageFiles { get; set; }
+        public int? MainImageIndex { get; set; }
     }
 }

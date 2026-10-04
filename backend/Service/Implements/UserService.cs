@@ -24,7 +24,7 @@ public class UserService : IUserService
             var meta = new PaginationMeta(filter.Page, filter.PageSize, totalCount, (totalCount + filter.PageSize - 1) / filter.PageSize);
             var response = new PagedResponse<AdminUserListDto>(users, meta);
 
-            return HttpErrors.InternalServerError<PagedResponse<AdminUserListDto>>("ERROR", "Lỗi lấy danh sách người dùng");
+            return Result<PagedResponse<AdminUserListDto>>.Success(response);
         }
         catch (Exception ex)
         {

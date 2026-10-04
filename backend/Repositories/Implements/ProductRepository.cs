@@ -42,6 +42,7 @@ namespace FoodDelivery.Repositories.Implementations
         {
             return await _context.Products
                 .Include(p => p.Category)
+                .Include(p => p.ProductImages)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
         public async Task<ProductDetailResponseDto?> GetByIdDetailAsync(Guid id)

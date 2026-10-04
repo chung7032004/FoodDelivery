@@ -57,7 +57,8 @@ public class AddressController : ControllerBase
     [HasPermission(PermissionConstants.Address.Delete)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _addressService.DeleteAddress(id);
+        var userId = User.GetUserId();
+        var result = await _addressService.DeleteAddress(userId, id);
         return result.ToActionResult();
     }
     [HttpPatch("{id}/default")]

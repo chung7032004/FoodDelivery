@@ -16,6 +16,30 @@ public class RestaurantController : ControllerBase
         _restaurantService = restaurantService;
     }
 
+    [Authorize]
+    [HttpGet("application/me")]
+    public async Task<IActionResult> GetMyApplication()
+    {
+        var result = await _restaurantService.GetMyApplicationAsync(User.GetUserId());
+        return result.ToActionResult();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetRestaurantsForAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] RestaurantApplicationStatus? status = null)
+    {
+        var result = await _restaurantService.GetRestaurantsForAdminAsync(page, pageSize, status);
+        return result.ToActionResult();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("admin/{restaurantId:guid}/review")]
+    public async Task<IActionResult> ReviewRestaurant(Guid restaurantId, [FromBody] ReviewRestaurantRequest request)
+    {
+        var result = await _restaurantService.ReviewRestaurantApplicationAsync(restaurantId, User.GetUserId(), request);
+        return result.ToActionResult();
+    }
+
     [HttpGet("profile")]
     [HasPermission(PermissionConstants.Restaurants.View)]
     public async Task<IActionResult> GetProfile()

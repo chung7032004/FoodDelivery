@@ -29,11 +29,12 @@ namespace FoodDelivery.Service.Implements
             var (totalCount,products) = await _productRepo.GetAllAsync(categoryId,searchQuery,page,pageSize);
             var productsResponse = products.Select(p => new ProductResponseDto
             {
-                Id = p.Id,                  
+                Id = p.Id,
                 Name = p.Name,
-                Price = p.Price, 
-                MainImageUrl = p.ProductImages.Where(i=>i.IsMain).Select(i=>i.ImageUrl).FirstOrDefault() 
-                            ?? p.ProductImages.Select(i=>i.ImageUrl).FirstOrDefault(),       
+                Description = p.Description ?? string.Empty,
+                Price = p.Price,
+                MainImageUrl = p.ProductImages.Where(i=>i.IsMain).Select(i=>i.ImageUrl).FirstOrDefault()
+                            ?? p.ProductImages.Select(i=>i.ImageUrl).FirstOrDefault(),
                 IsAvailable = p.IsAvailable,
                 IsFeatured = p.IsFeatured,
                 DisplayOrder = p.DisplayOrder,
@@ -54,15 +55,6 @@ namespace FoodDelivery.Service.Implements
             );
             return Result<PagedResponse<ProductResponseDto>>.Success(response);
         }
-
-        // public async Task<IEnumerable<ProductResponseDto>> GetFeaturedProductsAsync()
-        // {
-        //     var products = await _productRepo.GetAllAsync();
-        //     return products
-        //         .Where(p => p.IsFeatured && p.IsAvailable)
-        //         .OrderBy(p => p.DisplayOrder)
-        //         .Select(MapToDto);
-        // }
 
         public async Task<Result<ProductDetailResponseDto?>> GetProductDetailByIdAsync(Guid productId)
         {
@@ -96,30 +88,39 @@ namespace FoodDelivery.Service.Implements
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (request.Images != null && request.Images.Count > 0)
+                var files = request.ImageFiles ?? new List<IFormFile>();
+                if (files.Count > 0)
                 {
-                    foreach (var image in request.Images)
+                    var mainIndex = request.MainImageIndex ?? 0;
+                    mainIndex = Math.Clamp(mainIndex, 0, files.Count - 1);
+
+                    for (var i = 0; i < files.Count; i++)
                     {
-                        var uploadResult = await _fileService.SaveFileAsync(image.ImageFile, "products");
+                        var imageFile = files[i];
+                        var uploadResult = await _fileService.SaveFileAsync(imageFile, "products");
                         if (!uploadResult.IsSuccess || string.IsNullOrEmpty(uploadResult.Data))
                         {
-                            // Rollback ảnh đã upload trước đó
                             foreach (var url in uploadedUrls)
                                 _fileService.DeleteFile(url);
 
                             return HttpErrors.BadRequest<ProductResponseDto>(
                                 "IMAGE_UPLOAD_FAILED",
-                                "Upload ảnh thất bại cho sản phẩm với tên " + image.ImageFile.FileName);
+                                "Upload ảnh thất bại cho sản phẩm với tên " + imageFile.FileName);
                         }
 
-                        uploadedUrls.Add(uploadResult.Data); // track để rollback nếu cần
+                        uploadedUrls.Add(uploadResult.Data);
                         product.ProductImages.Add(new ProductImage
                         {
                             ImageUrl = uploadResult.Data,
-                            IsMain = image.IsMain,
-                            DisplayOrder = image.DisplayOrder,
+                            IsMain = i == mainIndex,
+                            DisplayOrder = i,
                             CreatedAt = DateTime.UtcNow,
                         });
+                    }
+
+                    if (!product.ProductImages.Any(img => img.IsMain))
+                    {
+                        product.ProductImages.First().IsMain = true;
                     }
                 }
 
@@ -147,12 +148,59 @@ namespace FoodDelivery.Service.Implements
             if (product == null) return false;
 
             product.Name = dto.Name;
+            product.Description = dto.Description ?? string.Empty;
             product.Price = dto.Price;
-            // product.ImageUrl = dto.ImageUrl ?? string.Empty;
             product.IsAvailable = dto.IsAvailable;
             product.IsFeatured = dto.IsFeatured;
             product.DisplayOrder = dto.DisplayOrder;
             product.UpdatedAt = DateTime.UtcNow;
+
+            var imageFiles = dto.ImageFiles ?? new List<IFormFile>();
+            if (imageFiles.Count > 0)
+            {
+                product.ProductImages ??= new List<ProductImage>();
+
+                if (dto.MainImageIndex.HasValue)
+                {
+                    foreach (var img in product.ProductImages)
+                    {
+                        img.IsMain = false;
+                    }
+                }
+
+                var mainIndex = dto.MainImageIndex ?? 0;
+                if (dto.MainImageIndex.HasValue)
+                {
+                    mainIndex = Math.Clamp(mainIndex, 0, imageFiles.Count - 1);
+                }
+
+                for (var i = 0; i < imageFiles.Count; i++)
+                {
+                    var imageFile = imageFiles[i];
+                    var uploadResult = await _fileService.SaveFileAsync(imageFile, "products");
+                    if (!uploadResult.IsSuccess || string.IsNullOrEmpty(uploadResult.Data))
+                    {
+                        return false;
+                    }
+
+                    var isMain = dto.MainImageIndex.HasValue
+                        ? i == mainIndex
+                        : !product.ProductImages.Any(img => img.IsMain) && i == 0;
+
+                    product.ProductImages.Add(new ProductImage
+                    {
+                        ImageUrl = uploadResult.Data,
+                        IsMain = isMain,
+                        DisplayOrder = product.ProductImages.Count,
+                        CreatedAt = DateTime.UtcNow,
+                    });
+                }
+
+                if (!product.ProductImages.Any(img => img.IsMain))
+                {
+                    product.ProductImages.First().IsMain = true;
+                }
+            }
 
             await _productRepo.UpdateAsync(product);
             await _context.SaveChangesAsync();
@@ -206,15 +254,15 @@ namespace FoodDelivery.Service.Implements
                 Id = p.Id,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category?.Name ?? string.Empty,
-                RestaurantId = p.RestaurantId,  // Thêm RestaurantId
+                RestaurantId = p.RestaurantId,
                 Name = p.Name,
+                Description = p.Description ?? string.Empty,
                 Price = p.Price,
-                MainImageUrl = mainImage?.ImageUrl,  // Lấy URL ảnh chính
+                MainImageUrl = mainImage?.ImageUrl,
                 IsAvailable = p.IsAvailable,
                 IsFeatured = p.IsFeatured,
                 DisplayOrder = p.DisplayOrder,
                 CreatedAt = p.CreatedAt
-                // Không có UpdatedAt trong DTO mới
             };
         }
     }

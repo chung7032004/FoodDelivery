@@ -42,6 +42,24 @@ public class RestaurantRepository : IRestaurantRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<(List<Restaurant> Items, int TotalCount)> GetAllForAdminAsync(int page, int pageSize, RestaurantApplicationStatus? status)
+    {
+        var query = _context.Restaurants
+            .AsNoTracking()
+            .Include(restaurant => restaurant.Owner)
+            .AsQueryable();
+        if (status.HasValue)
+            query = query.Where(restaurant => restaurant.ApplicationStatus == status.Value);
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(restaurant => restaurant.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return (items, totalCount);
+    }
+
     public async Task UpdateAsync(Restaurant restaurant)
     {
         _context.Update(restaurant);

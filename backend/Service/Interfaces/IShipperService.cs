@@ -9,6 +9,7 @@ namespace FoodDelivery.Service.Interfaces
     {
         Task<Result<ShipperStatsDto>> GetShipperStatsAsync(Guid userId);
         Task<Result<string>> ApplyShipperAsync(Guid userId, ApplyShipperDto dto);
+        Task<Result<MyShipperApplicationDto>> GetMyApplicationAsync(Guid userId);
         Task<Result<string>> ReviewApplicationAsync(Guid shipperId, Guid adminId, ReviewShipperDto dto);
         Task<Result<PagedResponse<ShipperApplicationDto>>> GetAllShippersAsync(int page, int pageSize);
         Task<Result<PagedResponse<ShipperApplicationDto>>> GetPendingApplicationsAsync(int page, int pageSize);
