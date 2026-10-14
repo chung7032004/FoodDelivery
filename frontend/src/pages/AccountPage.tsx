@@ -9,23 +9,26 @@ import { ProfileTab as ProfileTabView } from '@/components/account/ProfileTab';
 import { SecurityTab as SecurityTabView } from '@/components/account/SecurityTab';
 import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/contexts/AuthContext';
-import { accountService, type AccountResponse } from '@/services/account.service';
+import { accountService, type AccountResponse, type UserRoleRestriction } from '@/services/account.service';
 import { getImageUrl } from '@/utils/image';
+import { toast } from 'sonner';
 import {
   User as UserIcon,
   Package,
   MapPin,
   ShieldCheck,
   LogOut,
+  MessageSquareWarning,
 } from 'lucide-react';
 
-type Tab = 'profile' | 'orders' | 'addresses' | 'security';
+type Tab = 'profile' | 'orders' | 'addresses' | 'security' | 'appeals';
 
 const TABS: { key: Tab; label: string; icon: typeof UserIcon }[] = [
   { key: 'profile',   label: 'Thông tin', icon: UserIcon },
   { key: 'orders',    label: 'Đơn hàng',  icon: Package },
   { key: 'addresses', label: 'Địa chỉ',   icon: MapPin },
   { key: 'security',  label: 'Bảo mật',   icon: ShieldCheck },
+  { key: 'appeals',   label: 'Khiếu nại quyền', icon: MessageSquareWarning },
 ];
 
 export function AccountPage() {
@@ -158,6 +161,7 @@ export function AccountPage() {
           {activeTab === 'orders' && <OrdersTabView />}
           {activeTab === 'addresses' && <AddressesTabView />}
           {activeTab === 'security' && <SecurityTabView />}
+          {activeTab === 'appeals' && <RoleRestrictionsTab />}
         </div>
       </main>
 
@@ -166,3 +170,95 @@ export function AccountPage() {
   );
 }
 
+function RoleRestrictionsTab() {
+  const [restrictions, setRestrictions] = useState<UserRoleRestriction[]>([]);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+
+  async function loadRestrictions() {
+    setLoading(true);
+    setError('');
+    try {
+      setRestrictions(await accountService.getMyRoleRestrictions());
+    } catch {
+      setError('Không tải được trạng thái thu hồi quyền.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadRestrictions();
+  }, []);
+
+  async function submitAppeal(event: React.FormEvent<HTMLFormElement>, restriction: UserRoleRestriction) {
+    event.preventDefault();
+    const reason = reasons[restriction.restrictionId]?.trim() ?? '';
+    if (reason.length < 10) {
+      setError('Nội dung khiếu nại cần có ít nhất 10 ký tự.');
+      return;
+    }
+    setSubmittingId(restriction.restrictionId);
+    setError('');
+    try {
+      await accountService.submitRoleAppeal(restriction.roleName, reason);
+      setReasons((current) => ({ ...current, [restriction.restrictionId]: '' }));
+      await loadRestrictions();
+      toast.success('Đã gửi khiếu nại đến admin.');
+    } catch {
+      setError('Không gửi được khiếu nại. Vui lòng thử lại.');
+    } finally {
+      setSubmittingId(null);
+    }
+  }
+
+  if (loading) return <div className="flex min-h-40 items-center justify-center"><Spinner size="lg" /></div>;
+  if (error && restrictions.length === 0) {
+    return <div role="alert" className="space-y-3 text-sm text-red-700"><p>{error}</p><button type="button" onClick={() => void loadRestrictions()} className="font-semibold underline">Thử lại</button></div>;
+  }
+  if (restrictions.length === 0) {
+    return <div className="py-8 text-center"><ShieldCheck className="mx-auto text-emerald-600" size={32} /><p className="mt-3 font-semibold text-slate-800">Không có quyền nào đang bị thu hồi</p><p className="mt-1 text-sm text-slate-500">Nếu admin thu hồi một quyền, thông tin và biểu mẫu khiếu nại sẽ hiển thị tại đây.</p></div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">Quyền bị thu hồi</h2>
+        <p className="mt-1 text-sm text-slate-600">Bạn vẫn có thể sử dụng tài khoản khách hàng. Gửi khiếu nại nếu cho rằng quyết định thu hồi có nhầm lẫn.</p>
+      </div>
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {restrictions.map((restriction) => {
+        const pending = restriction.appealStatus === 'Pending';
+        return (
+          <article key={restriction.restrictionId} className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
+            <h3 className="font-semibold text-slate-900">Quyền {restriction.roleName === 'Shipper' ? 'Shipper' : 'chủ nhà hàng'} đang bị thu hồi</h3>
+            <p className="mt-2 text-sm text-slate-700"><span className="font-medium">Lý do:</span> {restriction.reason}</p>
+            {restriction.appealResponse && <p className="mt-3 border-l-2 border-red-300 pl-3 text-sm text-slate-700"><span className="font-medium">Phản hồi của admin:</span> {restriction.appealResponse}</p>}
+            {pending ? (
+              <p className="mt-4 rounded-lg bg-white px-3 py-2 text-sm font-medium text-amber-800">Khiếu nại đã được gửi, đang chờ admin xem xét.</p>
+            ) : (
+              <form onSubmit={(event) => void submitAppeal(event, restriction)} className="mt-4 space-y-3">
+                {restriction.appealStatus === 'Rejected' && <p className="text-sm font-medium text-red-700">Khiếu nại trước đã bị từ chối. Bạn có thể gửi khiếu nại mới.</p>}
+                <textarea
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  rows={4}
+                  value={reasons[restriction.restrictionId] ?? ''}
+                  onChange={(event) => setReasons((current) => ({ ...current, [restriction.restrictionId]: event.target.value }))}
+                  placeholder="Trình bày lý do bạn yêu cầu khôi phục quyền (10–1000 ký tự)..."
+                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-orange-500"
+                />
+                <button type="submit" disabled={submittingId !== null || (reasons[restriction.restrictionId]?.trim().length ?? 0) < 10} className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50">
+                  {submittingId === restriction.restrictionId ? 'Đang gửi...' : 'Gửi khiếu nại'}
+                </button>
+              </form>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+}

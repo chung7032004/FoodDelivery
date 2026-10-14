@@ -71,6 +71,17 @@ export interface ShipperApplication {
   identityCard: string; // Added identityCard
 }
 
+export interface AdminRoleAppeal {
+  appealId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  roleName: 'Shipper' | 'RestaurantOwner';
+  restrictionReason: string;
+  appealReason: string;
+  submittedAt: string;
+}
+
 interface ApiResult<T> {
   data: T;
   isSuccess: boolean;
@@ -95,6 +106,14 @@ export const adminService = {
 
   blockUser: (id: string) => api.patch(`/accounts/${id}/block`),
   unblockUser: (id: string) => api.patch(`/accounts/${id}/unblock`),
+  suspendUserRole: (id: string, roleName: string, reason: string) =>
+    api.post(`/accounts/${id}/roles/${encodeURIComponent(roleName)}/restriction`, { reason }),
+  getRoleAppeals: async () => {
+    const { data } = await api.get<ApiResult<AdminRoleAppeal[]>>('/accounts/role-appeals');
+    return data.data;
+  },
+  reviewRoleAppeal: (id: string, isApproved: boolean, response?: string) =>
+    api.patch(`/accounts/role-appeals/${id}/review`, { isApproved, response }),
 
   getOrders: async (params: { searchCode?: string; status?: string; page?: number; pageSize?: number }) => {
     const { data } = await api.get<ApiResult<PagedResult<AdminOrder>>>('/admin/orders', { params });
