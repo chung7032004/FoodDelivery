@@ -1,5 +1,6 @@
 
 using FoodDelivery.Common;
+using FoodDelivery.Data;
 using FoodDelivery.Middlewares;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
@@ -62,6 +63,7 @@ builder.Services.AddDbContext<FoodContext>(options =>
 );
 
 builder.Services.AddSignalR();
+builder.Services.AddScoped<InitialAdminSeeder>();
 //Định nghĩa chính sách CORS
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
@@ -205,6 +207,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 
     var app = builder.Build();
+
+    await using (var scope = app.Services.CreateAsyncScope())
+    {
+        var initialAdminSeeder = scope.ServiceProvider.GetRequiredService<InitialAdminSeeder>();
+        await initialAdminSeeder.SeedAsync();
+    }
 
     // Cho phép Swagger chạy ở TẤT CẢ môi trường (kể cả Production)
     app.UseSwagger();
