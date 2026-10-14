@@ -59,7 +59,7 @@ namespace FoodDelivery.Service.Implements
                         Title = "Khách hàng đã để lại đánh giá",
                         Message = $"Khách hàng vừa đánh giá sản phẩm {orderItem.ProductName}: {ratingStars} ({request.Rating}/5)",
                         Type = (int)NotificationType.REVIEW,
-                        Link = $"/admin/products/{orderItem.ProductId}"
+                        Link = "/admin/products"
                     };
                     await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
                 }

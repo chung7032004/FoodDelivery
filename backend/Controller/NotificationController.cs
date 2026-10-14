@@ -45,7 +45,8 @@ public class NotificationController : ControllerBase
     [HttpGet("{notificationId}")]
     public async Task<IActionResult> GetNotificationById([FromRoute] Guid notificationId)
     {
-        var result = await _notificationService.GetNotificationByIdAsync(notificationId);
+        var userId = User.GetUserId();
+        var result = await _notificationService.GetNotificationByIdAsync(userId, notificationId);
         return result.ToActionResult();
     }
 
@@ -69,7 +70,8 @@ public class NotificationController : ControllerBase
     [HttpPut("{notificationId}/read")]
     public async Task<IActionResult> MarkAsRead([FromRoute] Guid notificationId)
     {
-        var result = await _notificationService.MarkAsReadAsync(notificationId);
+        var userId = User.GetUserId();
+        var result = await _notificationService.MarkAsReadAsync(userId, notificationId);
         return result.ToActionResult();
     }
 
@@ -85,7 +87,8 @@ public class NotificationController : ControllerBase
     [HttpDelete("{notificationId}")]
     public async Task<IActionResult> DeleteNotification([FromRoute] Guid notificationId)
     {
-        var result = await _notificationService.DeleteNotificationAsync(notificationId);
+        var userId = User.GetUserId();
+        var result = await _notificationService.DeleteNotificationAsync(userId, notificationId);
         return result.ToActionResult();
     }
 }

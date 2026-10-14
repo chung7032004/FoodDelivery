@@ -450,658 +450,658 @@ namespace FoodDelivery.Migrations
                         new
                         {
                             Id = new Guid("4a5e57f9-7371-ff34-a7c0-e6cf47f912c8"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9343),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4585),
                             Description = "Quyền cho Products - View",
                             Name = "Permissions.Products.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(8959)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4259)
                         },
                         new
                         {
                             Id = new Guid("641ccf8e-48a4-63f9-ea51-46a8f84e8275"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9421),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4643),
                             Description = "Quyền cho Products - Create",
                             Name = "Permissions.Products.Create",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9400)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4626)
                         },
                         new
                         {
                             Id = new Guid("35f5f086-45fa-c7c6-8a5e-ea8f9c97cea8"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9442),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4663),
                             Description = "Quyền cho Products - Edit",
                             Name = "Permissions.Products.Edit",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9426)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4647)
                         },
                         new
                         {
                             Id = new Guid("f1d8a62c-3192-969d-5d75-025c2928d679"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9460),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4682),
                             Description = "Quyền cho Products - Delete",
                             Name = "Permissions.Products.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9445)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4668)
                         },
                         new
                         {
                             Id = new Guid("2f7e4df2-8507-4ef5-625a-2f7959334de6"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9501),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4714),
                             Description = "Quyền cho Products - ToggleAvailability",
                             Name = "Permissions.Products.ToggleAvailability",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9464)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4685)
                         },
                         new
                         {
                             Id = new Guid("462495bb-1b19-10a6-a40f-a2f15ed27874"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9525),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4738),
                             Description = "Quyền cho Categories - View",
                             Name = "Permissions.Categories.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9510)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4722)
                         },
                         new
                         {
                             Id = new Guid("1cf712ea-bf75-5da7-0315-f6abf938c90c"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9541),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4794),
                             Description = "Quyền cho Categories - Manage",
                             Name = "Permissions.Categories.Manage",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9528)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4741)
                         },
                         new
                         {
                             Id = new Guid("01fbb69d-2fe0-cfe2-60cc-9ddefdb59221"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9562),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4814),
                             Description = "Quyền cho Orders - View",
                             Name = "Permissions.Orders.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9548)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4801)
                         },
                         new
                         {
                             Id = new Guid("79a651a3-d1ae-03dd-9d16-6378fa5a8da3"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9589),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4835),
                             Description = "Quyền cho Orders - ViewAll",
                             Name = "Permissions.Orders.ViewAll",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9574)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4823)
                         },
                         new
                         {
                             Id = new Guid("91bb8b66-0967-83ce-7056-629707d49a86"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9609),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4852),
                             Description = "Quyền cho Orders - ViewHistory",
                             Name = "Permissions.Orders.ViewHistory",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9595)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4839)
                         },
                         new
                         {
                             Id = new Guid("55674d3f-5e0b-2f4e-0123-849bc32efd83"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9673),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4868),
                             Description = "Quyền cho Orders - Create",
                             Name = "Permissions.Orders.Create",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9612)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4855)
                         },
                         new
                         {
                             Id = new Guid("67c04dad-c1c4-c165-628f-62f4f39794d1"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9691),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4884),
                             Description = "Quyền cho Orders - Confirm",
                             Name = "Permissions.Orders.Confirm",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9676)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4873)
                         },
                         new
                         {
                             Id = new Guid("19bddbc6-bc3d-33b5-9a93-ac104667687f"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9708),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4899),
                             Description = "Quyền cho Orders - Cancel",
                             Name = "Permissions.Orders.Cancel",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9694)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4886)
                         },
                         new
                         {
                             Id = new Guid("19fc086c-165d-67c5-668f-56661a36164d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9726),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4913),
                             Description = "Quyền cho Orders - UpdateStatus",
                             Name = "Permissions.Orders.UpdateStatus",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9711)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4901)
                         },
                         new
                         {
                             Id = new Guid("ccc21865-8cbd-f136-7f56-5c9551c5c120"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9745),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4929),
                             Description = "Quyền cho Orders - AssignShipper",
                             Name = "Permissions.Orders.AssignShipper",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9729)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4916)
                         },
                         new
                         {
                             Id = new Guid("7c06b883-0b51-f2eb-74b0-435447264e2f"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9763),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4944),
                             Description = "Quyền cho Orders - RespondToProposal",
                             Name = "Permissions.Orders.RespondToProposal",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9748)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4931)
                         },
                         new
                         {
                             Id = new Guid("a2da381b-d201-15a4-1949-e2e85417c86a"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9780),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4960),
                             Description = "Quyền cho Orders - ConfirmOrder",
                             Name = "Permissions.Orders.ConfirmOrder",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9767)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4947)
                         },
                         new
                         {
                             Id = new Guid("0798cb38-d699-bcc8-774f-87ac16dcb56d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9800),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5011),
                             Description = "Quyền cho Orders - OutOfStock",
                             Name = "Permissions.Orders.OutOfStock",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9785)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(4963)
                         },
                         new
                         {
                             Id = new Guid("416c3b00-b88a-f2d6-0f98-edd2530f4cfd"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9821),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5034),
                             Description = "Quyền cho Orders - StartPreparing",
                             Name = "Permissions.Orders.StartPreparing",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9805)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5017)
                         },
                         new
                         {
                             Id = new Guid("ec601469-ca78-db72-cd02-248fd76a3558"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9848),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5051),
                             Description = "Quyền cho Orders - MarkAsReady",
                             Name = "Permissions.Orders.MarkAsReady",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9824)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5038)
                         },
                         new
                         {
                             Id = new Guid("98a8f386-db29-0ea2-98df-a340c0787c08"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9865),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5066),
                             Description = "Quyền cho Orders - MarkAsDelivered",
                             Name = "Permissions.Orders.MarkAsDelivered",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9850)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5053)
                         },
                         new
                         {
                             Id = new Guid("531335c1-be81-604d-927f-38492c2a3bdb"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9909),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5080),
                             Description = "Quyền cho Orders - MarkPaymentComplete",
                             Name = "Permissions.Orders.MarkPaymentComplete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9868)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5068)
                         },
                         new
                         {
                             Id = new Guid("745be01f-d2c8-8cca-6684-f322171229ff"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9931),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5098),
                             Description = "Quyền cho Restaurants - View",
                             Name = "Permissions.Restaurants.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9916)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5086)
                         },
                         new
                         {
                             Id = new Guid("2821a053-365e-d274-2f88-c10912fd142b"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9949),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5113),
                             Description = "Quyền cho Restaurants - UpdateProfile",
                             Name = "Permissions.Restaurants.UpdateProfile",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9935)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5100)
                         },
                         new
                         {
                             Id = new Guid("d2865fa6-328c-da22-aad5-12cd86505b1b"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9966),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5128),
                             Description = "Quyền cho Restaurants - ManageSettings",
                             Name = "Permissions.Restaurants.ManageSettings",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9951)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5116)
                         },
                         new
                         {
                             Id = new Guid("28fc09cf-1d97-d3cc-66b9-e7a6210a3ced"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9985),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5143),
                             Description = "Quyền cho Restaurants - ViewRevenue",
                             Name = "Permissions.Restaurants.ViewRevenue",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9971)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5130)
                         },
                         new
                         {
                             Id = new Guid("676d33fc-eacf-fcc4-00a5-09c3521386f3"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(7),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5161),
                             Description = "Quyền cho Staffs - View",
                             Name = "Permissions.Staffs.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 334, DateTimeKind.Utc).AddTicks(9991)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5148)
                         },
                         new
                         {
                             Id = new Guid("00d42e12-16d8-1161-d9c3-8198d016b61d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(24),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5177),
                             Description = "Quyền cho Staffs - Create",
                             Name = "Permissions.Staffs.Create",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(10)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5165)
                         },
                         new
                         {
                             Id = new Guid("83bc6004-6954-1c64-f355-b54fa1e8f7cc"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(40),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5229),
                             Description = "Quyền cho Staffs - Edit",
                             Name = "Permissions.Staffs.Edit",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(27)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5179)
                         },
                         new
                         {
                             Id = new Guid("6f6232a5-e70c-eb97-a1e8-cfb0190dfc80"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(56),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5247),
                             Description = "Quyền cho Staffs - Delete",
                             Name = "Permissions.Staffs.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(43)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5233)
                         },
                         new
                         {
                             Id = new Guid("ba2e8da4-a36d-4bc8-25fc-ae51d41fea7d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(80),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5267),
                             Description = "Quyền cho Shippers - View",
                             Name = "Permissions.Shippers.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(66)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5254)
                         },
                         new
                         {
                             Id = new Guid("18637eb6-dd2d-4916-90e3-d190753fe651"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(96),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5283),
                             Description = "Quyền cho Shippers - Block",
                             Name = "Permissions.Shippers.Block",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(83)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5270)
                         },
                         new
                         {
                             Id = new Guid("61bada20-4fcd-42a8-5984-8d320dea3511"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(113),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5300),
                             Description = "Quyền cho Shippers - ViewApplications",
                             Name = "Permissions.Shippers.ViewApplications",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(99)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5286)
                         },
                         new
                         {
                             Id = new Guid("a2e39fde-d6a6-3055-0848-862f4e6927b3"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(154),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5318),
                             Description = "Quyền cho Shippers - ViewAll",
                             Name = "Permissions.Shippers.ViewAll",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(118)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5304)
                         },
                         new
                         {
                             Id = new Guid("21599a50-4f9d-af77-224f-efc720c49d1e"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(173),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5334),
                             Description = "Quyền cho Shippers - ReviewApplications",
                             Name = "Permissions.Shippers.ReviewApplications",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(158)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5321)
                         },
                         new
                         {
                             Id = new Guid("ff561daf-dec8-466f-18e4-4ad43906fb2f"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(191),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5352),
                             Description = "Quyền cho Shippers - ViewDashboard",
                             Name = "Permissions.Shippers.ViewDashboard",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(176)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5339)
                         },
                         new
                         {
                             Id = new Guid("979367dc-0890-f8d6-dbf6-b999ac3b0b0d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(208),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5367),
                             Description = "Quyền cho Shippers - ApplyAsShipper",
                             Name = "Permissions.Shippers.ApplyAsShipper",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(195)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5355)
                         },
                         new
                         {
                             Id = new Guid("40486d09-d640-93b6-125b-742b3fb9c30a"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(226),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5382),
                             Description = "Quyền cho Shippers - AcceptOrder",
                             Name = "Permissions.Shippers.AcceptOrder",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(211)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5370)
                         },
                         new
                         {
                             Id = new Guid("22756935-8c09-b76e-cf2c-bd564546549c"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(246),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5438),
                             Description = "Quyền cho Shippers - ViewAssignedOrders",
                             Name = "Permissions.Shippers.ViewAssignedOrders",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(231)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5422)
                         },
                         new
                         {
                             Id = new Guid("e81365d2-eb79-4f90-dbfc-0e796802259a"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(262),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5454),
                             Description = "Quyền cho Shippers - ViewOrderDetails",
                             Name = "Permissions.Shippers.ViewOrderDetails",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(249)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5441)
                         },
                         new
                         {
                             Id = new Guid("3cd72fe7-9b93-b471-2a4b-97591815b548"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(280),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5469),
                             Description = "Quyền cho Shippers - ConfirmPickup",
                             Name = "Permissions.Shippers.ConfirmPickup",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(265)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5457)
                         },
                         new
                         {
                             Id = new Guid("115f4508-cbcf-cc1d-2e59-c81f77ca169c"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(299),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5484),
                             Description = "Quyền cho Shippers - MarkDeliverySuccess",
                             Name = "Permissions.Shippers.MarkDeliverySuccess",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(284)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5472)
                         },
                         new
                         {
                             Id = new Guid("57eefa92-847d-a119-fcd5-6864e4810afe"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(315),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5499),
                             Description = "Quyền cho Shippers - ViewDashboardStats",
                             Name = "Permissions.Shippers.ViewDashboardStats",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(301)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5487)
                         },
                         new
                         {
                             Id = new Guid("0cceae31-6ec1-0e3e-78a0-ec9bcd77a9da"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(353),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5518),
                             Description = "Quyền cho Shippers - ViewDeliveryHistory",
                             Name = "Permissions.Shippers.ViewDeliveryHistory",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(339)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5503)
                         },
                         new
                         {
                             Id = new Guid("e68d08c0-aca1-23d5-67b8-1e9ec7d68f4e"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(371),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5532),
                             Description = "Quyền cho Shippers - ProposeOrderChange",
                             Name = "Permissions.Shippers.ProposeOrderChange",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(357)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5520)
                         },
                         new
                         {
                             Id = new Guid("2dbab2bf-4d1c-26ca-84f3-217d416c9d53"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(388),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5546),
                             Description = "Quyền cho Shippers - ViewProposals",
                             Name = "Permissions.Shippers.ViewProposals",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(375)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5534)
                         },
                         new
                         {
                             Id = new Guid("5ba9233d-0528-5199-202e-b611e789f3fe"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(406),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5561),
                             Description = "Quyền cho Shippers - CancelAssignedOrder",
                             Name = "Permissions.Shippers.CancelAssignedOrder",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(391)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5549)
                         },
                         new
                         {
                             Id = new Guid("12532d80-90fb-fd9c-8f04-3154d7a76cce"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(422),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5575),
                             Description = "Quyền cho Shippers - ViewEarnings",
                             Name = "Permissions.Shippers.ViewEarnings",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(408)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5563)
                         },
                         new
                         {
                             Id = new Guid("3b3a1dbb-a477-6322-4580-4ff269a0591d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(438),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5591),
                             Description = "Quyền cho Shippers - UpdateAvailability",
                             Name = "Permissions.Shippers.UpdateAvailability",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(424)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5578)
                         },
                         new
                         {
                             Id = new Guid("6bc3f860-b68c-8568-6564-78b6a17735fa"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(461),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5636),
                             Description = "Quyền cho Users - View",
                             Name = "Permissions.Users.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(447)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5599)
                         },
                         new
                         {
                             Id = new Guid("e6b7aa38-22c2-348d-5827-efeb05b4b45e"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(479),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5652),
                             Description = "Quyền cho Users - ManageReviews",
                             Name = "Permissions.Users.ManageReviews",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(465)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5640)
                         },
                         new
                         {
                             Id = new Guid("db454c1f-a726-589d-5585-7ee8c79c3434"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(502),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5673),
                             Description = "Quyền cho Accounts - ViewOwn",
                             Name = "Permissions.Accounts.ViewOwn",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(488)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5660)
                         },
                         new
                         {
                             Id = new Guid("21bd6ce0-657d-9610-2fc5-34caf572fbe8"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(519),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5688),
                             Description = "Quyền cho Accounts - UpdateOwn",
                             Name = "Permissions.Accounts.UpdateOwn",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(505)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5676)
                         },
                         new
                         {
                             Id = new Guid("4c77f9fc-e86f-78b8-c88b-a2df097f6bd3"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(536),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5704),
                             Description = "Quyền cho Accounts - ChangePassword",
                             Name = "Permissions.Accounts.ChangePassword",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(522)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5691)
                         },
                         new
                         {
                             Id = new Guid("89c37a1c-4545-d211-ab83-1785370f3c10"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(554),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5752),
                             Description = "Quyền cho Accounts - ViewAll",
                             Name = "Permissions.Accounts.ViewAll",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(539)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5707)
                         },
                         new
                         {
                             Id = new Guid("454b45b2-c9b0-ba27-b071-88c7ce4f9821"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(589),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5767),
                             Description = "Quyền cho Accounts - View",
                             Name = "Permissions.Accounts.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(556)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5755)
                         },
                         new
                         {
                             Id = new Guid("e8031eea-0eef-f077-9aa5-c44e18fef35f"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(606),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5783),
                             Description = "Quyền cho Accounts - Edit",
                             Name = "Permissions.Accounts.Edit",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(592)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5770)
                         },
                         new
                         {
                             Id = new Guid("428a7672-6e0e-5486-0493-dd54a9d9ecb0"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(623),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5798),
                             Description = "Quyền cho Accounts - Delete",
                             Name = "Permissions.Accounts.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(610)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5786)
                         },
                         new
                         {
                             Id = new Guid("54d379ae-ad74-040a-c946-f56cd58ef72a"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(639),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5811),
                             Description = "Quyền cho Accounts - Lock",
                             Name = "Permissions.Accounts.Lock",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(626)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5800)
                         },
                         new
                         {
                             Id = new Guid("c501c51b-6061-b652-d47f-8a593e35e5bb"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(655),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5828),
                             Description = "Quyền cho Accounts - Unlock",
                             Name = "Permissions.Accounts.Unlock",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(642)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5816)
                         },
                         new
                         {
                             Id = new Guid("1f20e50d-312e-e12d-bbe3-9b176f4055dc"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(673),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5842),
                             Description = "Quyền cho Accounts - AssignRole",
                             Name = "Permissions.Accounts.AssignRole",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(658)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5830)
                         },
                         new
                         {
                             Id = new Guid("62bf81bb-b05b-3dab-ab8e-46f87cf16bbf"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(694),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5860),
                             Description = "Quyền cho Address - View",
                             Name = "Permissions.Address.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(679)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5848)
                         },
                         new
                         {
                             Id = new Guid("e827ae98-f118-1f4e-e890-4cb036aba6b8"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(710),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5902),
                             Description = "Quyền cho Address - Create",
                             Name = "Permissions.Address.Create",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(696)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5862)
                         },
                         new
                         {
                             Id = new Guid("f8edc86c-8f35-bc18-75a5-17cfec2310f0"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(726),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5919),
                             Description = "Quyền cho Address - Edit",
                             Name = "Permissions.Address.Edit",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(713)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5905)
                         },
                         new
                         {
                             Id = new Guid("c4bdb36c-4205-1966-10fc-6b5701a69c42"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(742),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5934),
                             Description = "Quyền cho Address - Delete",
                             Name = "Permissions.Address.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(728)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5922)
                         },
                         new
                         {
                             Id = new Guid("e35c101b-a88c-8804-7ccb-6f0c2a5cf1e1"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(761),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5951),
                             Description = "Quyền cho Address - SetDefault",
                             Name = "Permissions.Address.SetDefault",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(747)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5938)
                         },
                         new
                         {
                             Id = new Guid("496fc662-2331-b5ab-2dba-803c897dd134"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(781),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5969),
                             Description = "Quyền cho Cart - View",
                             Name = "Permissions.Cart.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(767)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5957)
                         },
                         new
                         {
                             Id = new Guid("c5355ae4-569e-3834-47be-60ae6c73b9c5"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(816),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5985),
                             Description = "Quyền cho Cart - AddItem",
                             Name = "Permissions.Cart.AddItem",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(803)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5974)
                         },
                         new
                         {
                             Id = new Guid("3e1115c6-b4da-0b86-6140-c77889a5dec1"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(834),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5999),
                             Description = "Quyền cho Cart - UpdateItem",
                             Name = "Permissions.Cart.UpdateItem",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(819)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(5988)
                         },
                         new
                         {
                             Id = new Guid("08965e65-eaba-3846-f3ca-5de5a9894e08"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(851),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6014),
                             Description = "Quyền cho Cart - RemoveItem",
                             Name = "Permissions.Cart.RemoveItem",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(837)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6002)
                         },
                         new
                         {
                             Id = new Guid("9153963b-fc31-2e9b-2a99-d243b6081845"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(867),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6029),
                             Description = "Quyền cho Cart - ClearCart",
                             Name = "Permissions.Cart.ClearCart",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(853)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6017)
                         },
                         new
                         {
                             Id = new Guid("a1bb2e7a-c3c4-31c0-8a79-931946540a5e"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(888),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6046),
                             Description = "Quyền cho Review - Create",
                             Name = "Permissions.Review.Create",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(874)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6034)
                         },
                         new
                         {
                             Id = new Guid("008769f2-b432-ec12-a2a3-abf5f664c802"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(904),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6060),
                             Description = "Quyền cho Review - Edit",
                             Name = "Permissions.Review.Edit",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(891)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6049)
                         },
                         new
                         {
                             Id = new Guid("1b25fc03-7ad1-c69c-dae0-25daab39a24b"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(922),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6074),
                             Description = "Quyền cho Review - View",
                             Name = "Permissions.Review.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(908)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6063)
                         },
                         new
                         {
                             Id = new Guid("fea911ea-a325-1e7e-8feb-866ad4a9a5c4"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(938),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6116),
                             Description = "Quyền cho Review - Manage",
                             Name = "Permissions.Review.Manage",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(925)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6077)
                         },
                         new
                         {
                             Id = new Guid("2e9b21fa-0456-1c67-b02f-77c8ffbdd1bc"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(954),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6135),
                             Description = "Quyền cho Review - Delete",
                             Name = "Permissions.Review.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(941)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6121)
                         },
                         new
                         {
                             Id = new Guid("924c4e8c-1963-ec6b-7602-4a7700971a14"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(973),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6156),
                             Description = "Quyền cho Notifications - View",
                             Name = "Permissions.Notifications.View",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(959)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6144)
                         },
                         new
                         {
                             Id = new Guid("ee00f29c-4500-640d-cb1d-8909ae281747"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(991),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6172),
                             Description = "Quyền cho Notifications - MarkAsRead",
                             Name = "Permissions.Notifications.MarkAsRead",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(976)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6159)
                         },
                         new
                         {
                             Id = new Guid("5273f960-e88a-b69b-c87c-aa16332b9d5d"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1009),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6187),
                             Description = "Quyền cho Notifications - Delete",
                             Name = "Permissions.Notifications.Delete",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(994)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6175)
                         },
                         new
                         {
                             Id = new Guid("1972a37c-ad35-0c73-ec42-8f1e18925e33"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1026),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6202),
                             Description = "Quyền cho Notifications - Send",
                             Name = "Permissions.Notifications.Send",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1012)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6190)
                         },
                         new
                         {
                             Id = new Guid("d8d648d0-c0f5-523a-3dda-d95613982d96"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1069),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6222),
                             Description = "Quyền cho Dashboard - ViewOwn",
                             Name = "Permissions.Dashboard.ViewOwn",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1031)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6208)
                         },
                         new
                         {
                             Id = new Guid("408a4c2e-b781-797e-1ac0-462ac106ba27"),
-                            CreatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1088),
+                            CreatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6236),
                             Description = "Quyền cho Dashboard - ViewSystem",
                             Name = "Permissions.Dashboard.ViewSystem",
-                            UpdatedAt = new DateTime(2026, 6, 17, 8, 53, 54, 335, DateTimeKind.Utc).AddTicks(1074)
+                            UpdatedAt = new DateTime(2026, 10, 10, 16, 30, 10, 33, DateTimeKind.Utc).AddTicks(6224)
                         });
                 });
 
@@ -1224,8 +1224,9 @@ namespace FoodDelivery.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("ApplicationStatus")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(1);
+                        .HasDefaultValue(0);
 
                     b.Property<TimeSpan>("CloseTime")
                         .HasColumnType("interval");
@@ -1238,15 +1239,6 @@ namespace FoodDelivery.Migrations
 
                     b.Property<bool>("IsOpen")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("RejectionReason")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedByAdminId")
-                        .HasColumnType("uuid");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
@@ -1267,6 +1259,15 @@ namespace FoodDelivery.Migrations
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByAdminId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2450,6 +2451,81 @@ namespace FoodDelivery.Migrations
                     b.ToTable("UserRoles");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Entities.UserRoleAppeal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdminResponse")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("RestrictionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByAdminId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestrictionId");
+
+                    b.HasIndex("Status", "SubmittedAt");
+
+                    b.ToTable("UserRoleAppeals");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.UserRoleRestriction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RestrictedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RestrictedByAdminId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId", "RoleId")
+                        .HasFilter("\"IsActive\" = TRUE");
+
+                    b.ToTable("UserRoleRestrictions");
+                });
+
             modelBuilder.Entity("FoodDelivery.Entities.Address", b =>
                 {
                     b.HasOne("FoodDelivery.Entities.User", "User")
@@ -2760,6 +2836,36 @@ namespace FoodDelivery.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Entities.UserRoleAppeal", b =>
+                {
+                    b.HasOne("FoodDelivery.Entities.UserRoleRestriction", "Restriction")
+                        .WithMany("Appeals")
+                        .HasForeignKey("RestrictionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restriction");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.UserRoleRestriction", b =>
+                {
+                    b.HasOne("FoodDelivery.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FoodDelivery.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodDelivery.Entities.Cart", b =>
                 {
                     b.Navigation("CartItems");
@@ -2845,6 +2951,11 @@ namespace FoodDelivery.Migrations
                     b.Navigation("Shipper");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.UserRoleRestriction", b =>
+                {
+                    b.Navigation("Appeals");
                 });
 #pragma warning restore 612, 618
         }

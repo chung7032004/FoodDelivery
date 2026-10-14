@@ -42,3 +42,10 @@ public enum RestaurantApplicationStatus
     Approved,
     Rejected
 }
+
+public enum RoleAppealStatus
+{
+    Pending,
+    Approved,
+    Rejected
+}

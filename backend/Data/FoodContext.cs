@@ -28,6 +28,8 @@ public class FoodContext : DbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }
+    public DbSet<UserRoleRestriction> UserRoleRestrictions { get; set; }
+    public DbSet<UserRoleAppeal> UserRoleAppeals { get; set; }
     public override async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
@@ -74,6 +76,31 @@ public class FoodContext : DbContext
             .HasOne(ur=>ur.Role)
             .WithMany(r=>r.UserRoles)
             .HasForeignKey(ur=>ur.RoleId);
+        modelBuilder.Entity<UserRoleRestriction>(entity =>
+        {
+            entity.HasOne(restriction => restriction.User)
+                .WithMany()
+                .HasForeignKey(restriction => restriction.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(restriction => restriction.Role)
+                .WithMany()
+                .HasForeignKey(restriction => restriction.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(restriction => restriction.Reason).HasMaxLength(500);
+            entity.HasIndex(restriction => new { restriction.UserId, restriction.RoleId })
+                .HasFilter("\"IsActive\" = TRUE");
+        });
+        modelBuilder.Entity<UserRoleAppeal>(entity =>
+        {
+            entity.HasOne(appeal => appeal.Restriction)
+                .WithMany(restriction => restriction.Appeals)
+                .HasForeignKey(appeal => appeal.RestrictionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(appeal => appeal.Reason).HasMaxLength(1000);
+            entity.Property(appeal => appeal.AdminResponse).HasMaxLength(500);
+            entity.Property(appeal => appeal.Status).HasConversion<int>();
+            entity.HasIndex(appeal => new { appeal.Status, appeal.SubmittedAt });
+        });
         modelBuilder.Entity<RefreshToken>()
             .HasOne(rf=>rf.User)
             .WithMany(u=>u.RefreshTokens)
@@ -247,7 +274,7 @@ public class FoodContext : DbContext
         modelBuilder.Entity<Restaurant>()
             .Property(restaurant => restaurant.ApplicationStatus)
             .HasConversion<int>()
-            .HasDefaultValue(RestaurantApplicationStatus.Approved);
+            .HasDefaultValue(RestaurantApplicationStatus.Pending);
         
         modelBuilder.Entity<ProductImage>()
             .HasOne(pi => pi.Product)

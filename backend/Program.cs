@@ -61,6 +61,7 @@ builder.Services.AddDbContext<FoodContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("Default"))
 );
 
+builder.Services.AddSignalR();
 //Định nghĩa chính sách CORS
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
@@ -72,6 +73,9 @@ builder.Services.AddCors(options => {
                         .AllowAnyHeader()
                         .AllowCredentials());
 });
+
+
+
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
@@ -89,6 +93,7 @@ builder.Services.AddScoped<IPasswordResetOtpRepository,PasswordResetOtpRepositor
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IUserRoleAccessService, UserRoleAccessService>();
 builder.Services.AddScoped<IFileService,FileService>();
 builder.Services.AddScoped<IAddressService,AddressService>();
 builder.Services.AddScoped<IProductService, ProductService>();
@@ -126,6 +131,49 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 {
     option.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var requestPath = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken)
+                && requestPath.StartsWithSegments("/notificationHub"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = async context =>
+        {
+            var userIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            if (!Guid.TryParse(userIdClaim, out var userId) || context.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
+            {
+                context.Fail("Token không chứa mã người dùng hợp lệ.");
+                return;
+            }
+
+            var businessRoleClaims = identity.FindAll(identity.RoleClaimType)
+                .Where(roleClaim => roleClaim.Value.Equals("Shipper", StringComparison.OrdinalIgnoreCase)
+                    || roleClaim.Value.Equals("RestaurantOwner", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (businessRoleClaims.Count == 0)
+                return;
+
+            await using var scope = context.HttpContext.RequestServices.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<FoodContext>();
+            var activeRoles = await dbContext.UserRoles
+                .Where(userRole => userRole.UserId == userId
+                    && (userRole.RoleId == FoodDelivery.Constants.RoleIds.Shipper
+                        || userRole.RoleId == FoodDelivery.Constants.RoleIds.RestaurantOwner))
+                .Select(userRole => userRole.Role.Name)
+                .ToListAsync(context.HttpContext.RequestAborted);
+            foreach (var roleClaim in businessRoleClaims)
+            {
+                if (!activeRoles.Contains(roleClaim.Value, StringComparer.OrdinalIgnoreCase))
+                    identity.RemoveClaim(roleClaim);
+            }
+        },
         OnChallenge = async context =>
         {
             context.HandleResponse();
@@ -176,6 +224,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
     app.UseMiddleware<RestaurantOpenMiddleware>();// chặn order khi quán đóng 
     app.MapControllers();// Kết nối các đường dẫn (Route) tới Controller
-
+    // Map Hub cho SignalR
+    app.MapHub<NotificationHub>("/notificationHub");
     app.Run();
-

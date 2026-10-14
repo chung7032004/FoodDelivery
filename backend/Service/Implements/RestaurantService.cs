@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using FoodDelivery.Common;
 using FoodDelivery.Constants;
+using FoodDelivery.DTOs.Notification;
 using FoodDelivery.DTOs.Restaurant;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories;
@@ -13,14 +14,43 @@ public class RestaurantService : IRestaurantService
     private readonly IRestaurantRepository _restaurantRepository;
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly INotificationService _notificationService;
     private readonly FoodContext _context;
 
-    public RestaurantService(IRestaurantRepository restaurantRepository, IUserRepository userRepository, IRoleRepository roleRepository, FoodContext context)
+    public RestaurantService(
+        IRestaurantRepository restaurantRepository,
+        IUserRepository userRepository,
+        IRoleRepository roleRepository,
+        INotificationService notificationService,
+        FoodContext context)
     {
         _restaurantRepository = restaurantRepository;
         _userRepository = userRepository;
         _roleRepository = roleRepository;
+        _notificationService = notificationService;
         _context = context;
+    }
+
+    private async Task NotifyAdminsAsync(string restaurantName)
+    {
+        try
+        {
+            var admins = await _userRepository.GetUsersByRoleAsync("admin");
+            foreach (var admin in admins)
+            {
+                await _notificationService.CreateNotificationAsync(admin.Id, new NotificationRequest
+                {
+                    Title = "Hồ sơ nhà hàng mới",
+                    Message = $"Nhà hàng {restaurantName} đã gửi hồ sơ đăng ký và đang chờ duyệt.",
+                    Type = (int)NotificationType.SYSTEM,
+                    Link = "/admin/restaurants"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to notify admins about restaurant application: {ex}");
+        }
     }
 
     // Helper: lấy quán của user đang đăng nhập
@@ -176,6 +206,7 @@ public class RestaurantService : IRestaurantService
             _context.UserRoles.RemoveRange(user.UserRoles.Where(userRole => userRole.RoleId == RoleIds.RestaurantOwner));
             await _restaurantRepository.UpdateAsync(existingRestaurant);
             await _context.SaveChangesAsync();
+            await NotifyAdminsAsync(existingRestaurant.Name);
             return Result.Success();
         }
         
@@ -202,6 +233,7 @@ public class RestaurantService : IRestaurantService
             _context.UserRoles.RemoveRange(user.UserRoles.Where(userRole => userRole.RoleId == RoleIds.RestaurantOwner));
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+            await NotifyAdminsAsync(restaurant.Name);
             return Result.Success();
         } 
         catch(Exception ex){
@@ -272,6 +304,15 @@ public class RestaurantService : IRestaurantService
         restaurant.UpdatedAt = DateTime.UtcNow;
         await _restaurantRepository.UpdateAsync(restaurant);
         await _context.SaveChangesAsync();
+        await _notificationService.CreateNotificationAsync(restaurant.OwnerId, new NotificationRequest
+        {
+            Title = request.IsApproved ? "Hồ sơ nhà hàng đã được duyệt" : "Hồ sơ nhà hàng bị từ chối",
+            Message = request.IsApproved
+                ? $"Hồ sơ nhà hàng {restaurant.Name} đã được duyệt. Bạn có thể bắt đầu quản lý quán."
+                : $"Hồ sơ nhà hàng {restaurant.Name} bị từ chối. Lý do: {restaurant.RejectionReason}",
+            Type = (int)NotificationType.SYSTEM,
+            Link = "/restaurant"
+        });
         return Result.Success();
     }
 
