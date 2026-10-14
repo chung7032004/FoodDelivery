@@ -79,6 +79,26 @@ cd food-delivery-backend
 ### 3️ Chạy migration
 dotnet ef database update
 
-### 4️ Run project
+### 4 Cấu hình admin ban đầu (tùy chọn)
+
+Để tạo tài khoản admin đầu tiên, cấu hình các biến môi trường sau trước khi chạy backend:
+
+- `InitialAdmin__Email`
+- `InitialAdmin__Password` (tối thiểu 12 ký tự)
+- `InitialAdmin__FullName`
+- `InitialAdmin__Phone` (10 chữ số, bắt đầu bằng `0`)
+
+Ví dụ với PowerShell:
+
+```powershell
+$env:InitialAdmin__Email = "admin@example.com"
+$env:InitialAdmin__Password = "<strong-unique-password>"
+$env:InitialAdmin__FullName = "System Administrator"
+$env:InitialAdmin__Phone = "0900000000"
+```
+
+Seeder tạo tài khoản khi email chưa tồn tại; nếu email đã có tài khoản thì chỉ gán quyền Admin, không thay đổi mật khẩu. Cần bảo đảm email cấu hình thuộc quyền kiểm soát của quản trị viên. Nếu không cấu hình các biến này, bước tạo admin được bỏ qua.
+
+### 5 Run project
 dotnet run
 ```
