@@ -2,6 +2,7 @@ using FoodDelivery.Entities;
 using FoodDelivery.Service.Interfaces;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Common;
+using FoodDelivery.DTOs.Notification;
 using FoodDelivery.DTOs.Shipper;
 using FoodDelivery.Repositories;
 using FoodDelivery.Constants;
@@ -14,14 +15,43 @@ namespace FoodDelivery.Service.Implements
         private readonly IShipperRepository _shipperRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IUserRepository _userRepository;
+        private readonly INotificationService _notificationService;
         private readonly FoodContext _context;
 
-        public ShipperService(IShipperRepository shipperRepository, IRoleRepository roleRepository, IUserRepository userRepository, FoodContext context)
+        public ShipperService(
+            IShipperRepository shipperRepository,
+            IRoleRepository roleRepository,
+            IUserRepository userRepository,
+            INotificationService notificationService,
+            FoodContext context)
         {
             _shipperRepository = shipperRepository;
             _roleRepository = roleRepository;
             _userRepository = userRepository;
+            _notificationService = notificationService;
             _context = context;
+        }
+
+        private async Task NotifyAdminsAsync(string title, string message, string link)
+        {
+            try
+            {
+                var admins = await _userRepository.GetUsersByRoleAsync("admin");
+                foreach (var admin in admins)
+                {
+                    await _notificationService.CreateNotificationAsync(admin.Id, new NotificationRequest
+                    {
+                        Title = title,
+                        Message = message,
+                        Type = (int)NotificationType.SYSTEM,
+                        Link = link
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to notify admins: {ex}");
+            }
         }
         public async Task<Result<PagedResponse<ShipperApplicationDto>>> GetAllShippersAsync(int page, int pageSize)
         {
@@ -104,6 +134,10 @@ namespace FoodDelivery.Service.Implements
                 existing.IsAvailable = false;
                 existing.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                await NotifyAdminsAsync(
+                    "Hồ sơ shipper mới",
+                    "Người dùng đã gửi lại hồ sơ đăng ký shipper.",
+                    "/admin/shippers");
                 return Result<string>.Success("Đã gửi lại hồ sơ, vui lòng chờ admin duyệt");
             }
 
@@ -120,6 +154,12 @@ namespace FoodDelivery.Service.Implements
 
             await _shipperRepository.AddShipperAsync(shipper);
             await _context.SaveChangesAsync();
+
+            var applicant = await _userRepository.GetUserByIdWithRoleAsync(userId);
+            await NotifyAdminsAsync(
+                "Hồ sơ shipper mới",
+                $"{applicant?.FullName ?? "Người dùng"} đã đăng ký làm shipper.",
+                "/admin/shippers");
 
             return Result<string>.Success("Đăng ký thành công, vui lòng chờ admin duyệt");
         }
@@ -185,6 +225,15 @@ namespace FoodDelivery.Service.Implements
             shipper.UpdatedAt         = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await _notificationService.CreateNotificationAsync(shipper.UserId, new NotificationRequest
+            {
+                Title = dto.IsApproved ? "Hồ sơ shipper đã được duyệt" : "Hồ sơ shipper bị từ chối",
+                Message = dto.IsApproved
+                    ? "Hồ sơ đăng ký shipper của bạn đã được duyệt. Bạn có thể bắt đầu nhận đơn."
+                    : $"Hồ sơ đăng ký shipper của bạn bị từ chối. Lý do: {dto.RejectReason ?? "Không có"}",
+                Type = (int)NotificationType.SYSTEM,
+                Link = "/shipper"
+            });
             return Result<string>.Success(dto.IsApproved ? "Đã duyệt shipper" : "Đã từ chối đơn");
         }
 
@@ -243,10 +292,21 @@ namespace FoodDelivery.Service.Implements
             orderDetail.Status = OrderStatus.Shipping;
             
             _shipperRepository.UpdateOrderDetail(orderDetail);
-            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { 
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory  {
                 OrderId = orderId, Status = OrderStatus.Shipping, ChangeByUserId = userId, ChangedAt = DateTime.UtcNow, ActionBy = OrderActionBy.Shipper
             });
-            return await _shipperRepository.SaveChangesAsync();
+            var saved = await _shipperRepository.SaveChangesAsync();
+            if (saved && orderDetail.Order != null)
+            {
+                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đang được giao",
+                    Message = $"Shipper đã lấy đơn #{orderDetail.Order.OrderCode} và đang trên đường giao đến bạn.",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/account"
+                });
+            }
+            return saved;
         }
        public async Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId)
         {
@@ -333,8 +393,19 @@ namespace FoodDelivery.Service.Implements
                 ActionBy = OrderActionBy.Shipper,
                 Note = "Shipper đã nhận đơn hàng"
             });
-            
-            return await _shipperRepository.SaveChangesAsync();
+
+            var saved = await _shipperRepository.SaveChangesAsync();
+            if (saved && orderDetail.Order != null)
+            {
+                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                {
+                    Title = "Shipper đã nhận đơn",
+                    Message = $"Đơn #{orderDetail.Order.OrderCode} đã có shipper nhận giao.",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/account"
+                });
+            }
+            return saved;
         }
         
         public async Task<OrderDetailResponse?> GetOrderByIdAsync(Guid orderId)
@@ -426,7 +497,18 @@ namespace FoodDelivery.Service.Implements
                 ChangedAt = DateTime.UtcNow,
                 Note = "Giao hàng thành công"
             });
-            return await _shipperRepository.SaveChangesAsync();
+            var saved = await _shipperRepository.SaveChangesAsync();
+            if (saved && orderDetail.Order != null)
+            {
+                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đã được giao",
+                    Message = $"Đơn hàng #{orderDetail.Order.OrderCode} của bạn đã được giao thành công!",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/account"
+                });
+            }
+            return saved;
         }
 
         public async Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null)
@@ -471,7 +553,22 @@ namespace FoodDelivery.Service.Implements
                 ChangedAt = DateTime.UtcNow,
                 Note = reason ?? "Giao hàng thất bại"
             });
-            return await _shipperRepository.SaveChangesAsync();
+            var saved = await _shipperRepository.SaveChangesAsync();
+            if (saved && orderDetail.Order != null)
+            {
+                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                {
+                    Title = "Giao hàng không thành công",
+                    Message = $"Đơn #{orderDetail.Order.OrderCode} chưa giao được. Lý do: {reason ?? "Không có"}",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/account"
+                });
+                await NotifyAdminsAsync(
+                    "Đơn hàng giao thất bại",
+                    $"Shipper báo giao thất bại đơn #{orderDetail.Order.OrderCode}. Lý do: {reason ?? "Không có"}",
+                    "/admin/orders");
+            }
+            return saved;
         }
 
         

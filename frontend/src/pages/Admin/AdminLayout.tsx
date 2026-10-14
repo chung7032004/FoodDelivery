@@ -1,7 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Bell,
   Boxes,
   ChevronRight,
   Home,
@@ -9,6 +8,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  MessageSquareWarning,
   PackageOpen,
   ShoppingBag,
   Store,
@@ -17,10 +17,12 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const navItems = [
   { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
   { label: 'Tài khoản', to: '/admin/users', icon: Users },
+  { label: 'Khiếu nại quyền', to: '/admin/role-appeals', icon: MessageSquareWarning },
   { label: 'Đơn hàng', to: '/admin/orders', icon: ShoppingBag },
   { label: 'Shipper', to: '/admin/shippers', icon: Truck },
   { label: 'Nhà hàng', to: '/admin/restaurants', icon: Store },
@@ -166,13 +168,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               <Home size={16} />
               Trang người dùng
             </Link>
-            <button
-              aria-label="Thông báo"
-              className="relative rounded-xl p-2 text-muted transition hover:bg-black/5 hover:text-orange-500"
-            >
-              <Bell size={19} />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-orange-500" />
-            </button>
+            <NotificationBell />
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-600">
               {user?.name?.slice(0, 2).toUpperCase() || 'AD'}
             </span>

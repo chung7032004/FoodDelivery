@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, Eye, Lock, Mail, Pencil, Phone, Search, Trash2, Unlock, X } from 'lucide-react';
+import { CalendarDays, Eye, Lock, Mail, Pencil, Phone, Search, ShieldOff, Trash2, Unlock, X } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -33,6 +33,9 @@ export default function AdminUsersPage() {
   const [editPhone, setEditPhone] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [restrictingRole, setRestrictingRole] = useState<string | null>(null);
+  const [restrictionReason, setRestrictionReason] = useState('');
+  const [isRestrictingRole, setIsRestrictingRole] = useState(false);
 
   // Tải danh sách người dùng
   const loadUsers = async (isMounted = true) => {
@@ -141,6 +144,25 @@ export default function AdminUsersPage() {
       setDetailError('Không thể cập nhật tài khoản. Hãy kiểm tra email, số điện thoại và ảnh đại diện.');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleSuspendRole(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedUser || !restrictingRole) return;
+    setIsRestrictingRole(true);
+    setDetailError('');
+    try {
+      await adminService.suspendUserRole(selectedUser.id, restrictingRole, restrictionReason.trim());
+      const updatedUser = await adminService.getUserDetail(selectedUser.id);
+      if (updatedUser) setSelectedUser(updatedUser);
+      setRestrictingRole(null);
+      setRestrictionReason('');
+      await loadUsers();
+    } catch {
+      setDetailError('Không thể thu hồi quyền. Hãy kiểm tra lý do và thử lại.');
+    } finally {
+      setIsRestrictingRole(false);
     }
   }
 
@@ -359,6 +381,19 @@ export default function AdminUsersPage() {
                 </div>
                 <button type="button" onClick={() => setIsEditing(true)} title="Chỉnh sửa tài khoản" aria-label="Chỉnh sửa tài khoản" className="ml-auto rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"><Pencil size={16} /></button>
               </div>
+              {selectedUser.roles.some((role) => role === 'Shipper' || role === 'RestaurantOwner') && (
+                <div className="border-y border-slate-100 py-4">
+                  <h4 className="text-sm font-semibold text-slate-800">Quyền kinh doanh</h4>
+                  <p className="mt-1 text-xs text-slate-500">Thu hồi quyền này không khóa tài khoản; người dùng vẫn có thể sử dụng quyền Khách hàng.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(['Shipper', 'RestaurantOwner'] as const).filter((role) => selectedUser.roles.includes(role)).map((role) => (
+                      <button key={role} type="button" onClick={() => { setRestrictingRole(role); setRestrictionReason(''); }} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">
+                        <ShieldOff size={14} /> Thu hồi {role === 'Shipper' ? 'Shipper' : 'chủ nhà hàng'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailField icon={<Mail size={15} />} label="Email" value={selectedUser.email} />
                 <DetailField icon={<Phone size={15} />} label="Điện thoại" value={selectedUser.phone || 'Chưa cập nhật'} />
@@ -386,6 +421,27 @@ export default function AdminUsersPage() {
         ) : detailError ? (
           <p role="alert" className="py-6 text-sm text-red-600">{detailError}</p>
         ) : null}
+      </AdminModal>
+      <AdminModal
+        open={Boolean(restrictingRole)}
+        onClose={() => { if (!isRestrictingRole) setRestrictingRole(null); }}
+        title="Thu hồi quyền truy cập?"
+        description={selectedUser?.fullName}
+      >
+        <form onSubmit={handleSuspendRole} className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Người dùng sẽ mất quyền {restrictingRole === 'Shipper' ? 'Shipper' : 'chủ nhà hàng'} và chỉ còn quyền khách hàng. Họ có thể gửi khiếu nại để admin xem xét.
+          </p>
+          <label className="block text-sm font-medium text-slate-700">
+            Lý do thu hồi quyền
+            <textarea required minLength={5} maxLength={500} value={restrictionReason} onChange={(event) => setRestrictionReason(event.target.value)} rows={4} className="mt-1 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-orange-500" />
+          </label>
+          {detailError && <p role="alert" className="text-sm text-red-600">{detailError}</p>}
+          <div className="flex justify-end gap-2">
+            <button type="button" disabled={isRestrictingRole} onClick={() => setRestrictingRole(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Hủy</button>
+            <Button type="submit" variant="danger" isLoading={isRestrictingRole} disabled={restrictionReason.trim().length < 5}>Thu hồi quyền</Button>
+          </div>
+        </form>
       </AdminModal>
       <ConfirmationModal
         open={Boolean(confirmingUser)}

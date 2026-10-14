@@ -39,6 +39,22 @@ public class OrderService :IOrderService
         _userRepository = userRepository;
         _shipperRepository = shipperRepository;
     }
+
+    private async Task NotifyRestaurantUsersAsync(Guid restaurantId, NotificationRequest request)
+    {
+        var recipientIds = await _context.Restaurants
+            .Where(restaurant => restaurant.Id == restaurantId)
+            .Select(restaurant => restaurant.OwnerId)
+            .ToListAsync();
+        var staffIds = await _context.Staff
+            .Where(staff => staff.IsActive && staff.RestaurantId == restaurantId)
+            .Select(staff => staff.UserId)
+            .ToListAsync();
+
+        foreach (var recipientId in recipientIds.Concat(staffIds).Distinct())
+            await _notificationService.CreateNotificationAsync(recipientId, request);
+    }
+
     public async Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request)
     {
         if(request.Quantity <= 0)
@@ -258,7 +274,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng mới",
                 Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
                 Type = (int)NotificationType.ORDER,
-                Link = $"/admin/orders/{order.Id}"
+                Link = "/admin/orders"
             });
         }
 
@@ -275,7 +291,22 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng mới cần xử lý",
                 Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
                 Type = (int)NotificationType.ORDER,
-                Link = $"/staff/orders?search={order.OrderCode}"
+                Link = "/restaurant/orders"
+            });
+        }
+
+        var restaurantOwnerId = await _context.Restaurants
+            .Where(restaurant => restaurant.Id == restaurantId)
+            .Select(restaurant => restaurant.OwnerId)
+            .FirstOrDefaultAsync();
+        if (restaurantOwnerId != Guid.Empty && !staffMembers.Any(staff => staff.UserId == restaurantOwnerId))
+        {
+            await _notificationService.CreateNotificationAsync(restaurantOwnerId, new NotificationRequest
+            {
+                Title = "Đơn hàng mới cần xử lý",
+                Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                Type = (int)NotificationType.ORDER,
+                Link = "/restaurant/orders"
             });
         }
     }
@@ -439,10 +470,18 @@ public class OrderService :IOrderService
                     Title = "Khách hàng hủy đơn hàng",
                     Message = $"Khách hàng đã hủy đơn #{order.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
                     Type = (int)NotificationType.ORDER,
-                    Link = $"/admin/orders/{orderId}"
+                    Link = "/admin/orders"
                 };
                 await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
             }
+
+            await NotifyRestaurantUsersAsync(order.RestaurantId, new NotificationRequest
+            {
+                Title = "Khách hàng đã hủy đơn",
+                Message = $"Khách hàng đã hủy đơn #{order.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                Type = (int)NotificationType.ORDER,
+                Link = "/restaurant/orders"
+            });
         }
         catch (Exception ex)
         {
@@ -505,8 +544,27 @@ public class OrderService :IOrderService
         {
             await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
             await _context.SaveChangesAsync();
-            return Result.Success();
-        }
+
+           try
+           {
+               var notificationRequest = new NotificationRequest
+               {
+                   Title = request.IsAccepted ? "Khách hàng xác nhận đơn hàng" : "Khách hàng từ chối đề xuất",
+                   Message = request.IsAccepted
+                       ? $"Khách hàng đã xác nhận thay đổi món trong đơn #{order.OrderCode}."
+                       : $"Khách hàng đã từ chối đề xuất cho đơn #{order.OrderCode}.",
+                   Type = (int)NotificationType.ORDER,
+                   Link = "/restaurant/orders"
+               };
+               await NotifyRestaurantUsersAsync(order.RestaurantId, notificationRequest);
+           }
+           catch (Exception notificationException)
+           {
+               Console.Error.WriteLine($"Failed to notify restaurant staff about customer response: {notificationException}");
+           }
+
+           return Result.Success();
+       }
         catch (Exception ex)
         {
             return HttpErrors.InternalServerError("DB_ERROR", "Lỗi lưu dữ liệu: " + ex.Message);
@@ -600,7 +658,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng được xác nhận",
                 Message = $"Đơn hàng #{order.OrderCode} của bạn đã được nhà hàng xác nhận và đang chuẩn bị.",
                 Type = (int)NotificationType.ORDER,
-                Link = $"/customer/orders/{orderId}"
+                Link = "/account"
             };
             await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
         }
@@ -654,7 +712,7 @@ public class OrderService :IOrderService
                 Title = "Một số món hàng hết stock",
                 Message = $"Các món: {removedItems} không còn nguyên liệu. Vui lòng xác nhận tiếp tục hay hủy đơn.",
                 Type = (int)NotificationType.ORDER,
-                Link = $"/customer/orders/{orderId}"
+                Link = "/account"
             };
             await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
         }
@@ -698,7 +756,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng đang được chế biến",
                 Message = $"Đơn hàng #{order.OrderCode} đang được nhà hàng chế biến. Vui lòng chờ...",
                 Type = (int)NotificationType.ORDER,
-                Link = $"/customer/orders/{orderId}"
+                Link = "/account"
             };
             await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
         }
@@ -757,7 +815,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng sẵn sàng giao",
                 Message = $"Đơn hàng #{order.OrderCode} của bạn đã sẵn sàng. Shipper sắp tới lấy hàng.",
                 Type = (int)NotificationType.DELIVERY,
-                Link = $"/customer/orders/{orderId}"
+                Link = "/account"
             };
             await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
         }
@@ -776,7 +834,7 @@ public class OrderService :IOrderService
                     Title = "Đơn hàng được phân công",
                     Message = $"Bạn được phân công giao đơn #{order.OrderCode} cho {order.Customer?.FullName ?? "Khách hàng"}. Tổng tiền: {order.TotalAmount:N0} VND",
                     Type = (int)NotificationType.DELIVERY,
-                    Link = $"/shipper/orders/{orderId}"
+                    Link = "/shipper/orders"
                 };
                 await _notificationService.CreateNotificationAsync(shipperUserId.Value, notificationRequest);
             }
@@ -814,9 +872,55 @@ public class OrderService :IOrderService
         order.OrderDetail.CancelReason = request.Reason;
         await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
         await _context.SaveChangesAsync();
-        // Nếu khách đã thanh toán qua ví/thẻ -> Gọi Service hoàn tiền.
-        // Gửi thông báo Push cho Khách hàng: "Đơn hàng của bạn đã bị hủy bởi nhà hàng".
-        // Gửi thông báo cho Shipper (nếu đã có shipper nhận đơn): "Đơn hàng đã bị hủy, bạn không cần đến quán".
+
+        try
+        {
+            await _notificationService.CreateNotificationAsync(order.CustomerId, new NotificationRequest
+            {
+                Title = "Đơn hàng đã bị hủy",
+                Message = $"Đơn hàng #{order.OrderCode} đã bị hủy. Lý do: {request.Reason ?? "Không có"}",
+                Type = (int)NotificationType.ORDER,
+                Link = "/account"
+            });
+
+            if (order.OrderDetail.ShipperId.HasValue)
+            {
+                var shipperUserId = await _context.Shippers
+                    .Where(shipper => shipper.Id == order.OrderDetail.ShipperId.Value)
+                    .Select(shipper => shipper.UserId)
+                    .FirstOrDefaultAsync();
+                if (shipperUserId != Guid.Empty)
+                {
+                    await _notificationService.CreateNotificationAsync(shipperUserId, new NotificationRequest
+                    {
+                        Title = "Đơn hàng đã bị hủy",
+                        Message = $"Đơn #{order.OrderCode} đã bị hủy. Bạn không cần đến quán để lấy hàng.",
+                        Type = (int)NotificationType.DELIVERY,
+                        Link = "/shipper/orders"
+                    });
+                }
+            }
+        }
+        catch (Exception notificationException)
+        {
+            Console.Error.WriteLine($"Failed to notify users about order cancellation: {notificationException}");
+        }
+
+        try
+        {
+            await NotifyRestaurantUsersAsync(order.RestaurantId, new NotificationRequest
+            {
+                Title = "Đơn hàng đã bị hủy",
+                Message = $"Đơn hàng #{order.OrderCode} đã bị hủy bởi admin.",
+                Type = (int)NotificationType.ORDER,
+                Link = "/restaurant/orders"
+            });
+        }
+        catch (Exception notificationException)
+        {
+            Console.Error.WriteLine($"Failed to notify restaurant about order cancellation: {notificationException}");
+        }
+
         return Result.Success();
     }
 
@@ -859,7 +963,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng đã được giao",
                 Message = $"Đơn hàng #{order.OrderCode} của bạn đã được giao thành công!",
                 Type = (int)NotificationType.DELIVERY,
-                Link = $"/customer/orders/{orderId}"
+                Link = "/account"
             };
             await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
         }
@@ -897,15 +1001,24 @@ public class OrderService :IOrderService
                     Title = "Khách hàng đã thanh toán",
                     Message = $"Khách hàng đã thanh toán đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
                     Type = (int)NotificationType.PAYMENT,
-                    Link = $"/admin/orders/{orderId}"
+                    Link = "/admin/orders"
                 };
                 await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
             }
+
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error sending notification: {ex.Message}");
         }
+
+        await _notificationService.CreateNotificationAsync(order.CustomerId, new NotificationRequest
+        {
+            Title = "Thanh toán thành công",
+            Message = $"Thanh toán cho đơn #{order.OrderCode} đã được xác nhận.",
+            Type = (int)NotificationType.PAYMENT,
+            Link = "/account"
+        });
 
         return Result.Success();
     }
@@ -949,7 +1062,7 @@ public class OrderService :IOrderService
                 Title = "Đơn hàng được phân công",
                 Message = $"Bạn được phân công giao đơn #{order.OrderCode} cho {order.Customer?.FullName ?? "Khách hàng"}. Tổng tiền: {order.TotalAmount:N0} VND",
                 Type = (int)NotificationType.DELIVERY,
-                Link = $"/shipper/orders/{orderId}"
+                Link = "/shipper/orders"
             };
             await _notificationService.CreateNotificationAsync(shipperId, notificationRequest);
         }

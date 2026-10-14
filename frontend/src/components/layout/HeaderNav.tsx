@@ -4,6 +4,7 @@ import { ButtonPrimary } from '../ui';
 import { Search, ShoppingCart, User, LogOut, Package, ShieldCheck, Store } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountDropdown } from './AccountDropdown';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { cartQueryKey, cartService } from '@/services/cart.service';
 
@@ -108,7 +109,9 @@ export function HeaderNav({ cartCount }: HeaderNavProps) {
           {/* Auth — desktop */}
           <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
-              <AccountDropdown />
+              <>
+                <AccountDropdown />
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link
@@ -165,6 +168,8 @@ export function HeaderNav({ cartCount }: HeaderNavProps) {
             </ButtonPrimary>
           </Link>
 
+          <NotificationBell />
+
           {/* Hamburger — mobile */}
           <button
             onClick={() => setMobileOpen((prev) => !prev)}
@@ -202,6 +207,10 @@ export function HeaderNav({ cartCount }: HeaderNavProps) {
           <div className="border-t border-border pt-4 flex flex-col gap-2">
             {isAuthenticated ? (
               <>
+                <div className="flex items-center gap-2 px-3">
+                  <NotificationBell />
+                  <span className="text-sm font-medium text-white">Thông báo</span>
+                </div>
                 <div className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-white">
                   <span className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center text-xs font-bold">
                     {user?.name?.charAt(0).toUpperCase() ?? <User size={14} />}

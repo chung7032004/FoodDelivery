@@ -1,7 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Bell,
   ClipboardList,
   Home,
   LayoutDashboard,
@@ -12,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface NavigationItem {
   label: string;
@@ -114,12 +114,7 @@ export function RestaurantLayout({ children }: { children: ReactNode }) {
             >
               Trang người dùng
             </Link>
-            <button
-              aria-label="Thông báo"
-              className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100"
-            >
-              <Bell size={19} />
-            </button>
+            <NotificationBell appearance="light" />
           </div>
         </header>
 

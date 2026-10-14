@@ -2,6 +2,8 @@
 @accessToken = paste-access-token-here
 @adminToken = paste-admin-access-token-here
 @restaurantId = 00000000-0000-0000-0000-000000000000
+@userId = 00000000-0000-0000-0000-000000000000
+@appealId = 00000000-0000-0000-0000-000000000000
 
 GET {{FoodDelivery_HostAddress}}/weatherforecast/
 Accept: application/json
@@ -55,4 +57,52 @@ Content-Type: application/json
 {
 	"isApproved": false,
 	"rejectReason": "Vui lòng cập nhật thông tin liên hệ của nhà hàng."
+}
+
+### Restrict a user's Shipper role as admin
+POST {{FoodDelivery_HostAddress}}/api/accounts/{{userId}}/roles/Shipper/restriction
+Authorization: ******
+Content-Type: application/json
+
+{
+	"reason": "Vi phạm quy định giao hàng."
+}
+
+### Get my active role restrictions
+GET {{FoodDelivery_HostAddress}}/api/accounts/me/role-restrictions
+Authorization: ******
+Accept: application/json
+
+### Submit an appeal to restore a role
+POST {{FoodDelivery_HostAddress}}/api/accounts/me/role-appeals
+Authorization: ******
+Content-Type: application/json
+
+{
+	"roleName": "Shipper",
+	"reason": "Tôi cho rằng việc thu hồi quyền có nhầm lẫn, xin admin kiểm tra lại."
+}
+
+### List pending role appeals as admin
+GET {{FoodDelivery_HostAddress}}/api/accounts/role-appeals
+Authorization: ******
+Accept: application/json
+
+### Approve an appeal and restore the role
+PATCH {{FoodDelivery_HostAddress}}/api/accounts/role-appeals/{{appealId}}/review
+Authorization: ******
+Content-Type: application/json
+
+{
+	"isApproved": true
+}
+
+### Reject an appeal
+PATCH {{FoodDelivery_HostAddress}}/api/accounts/role-appeals/{{appealId}}/review
+Authorization: ******
+Content-Type: application/json
+
+{
+	"isApproved": false,
+	"response": "Quyết định thu hồi quyền được giữ nguyên do vi phạm đã được xác nhận."
 }

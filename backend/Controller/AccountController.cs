@@ -15,10 +15,12 @@ public class AccountController : ControllerBase
 {
     private readonly IAccountService _service;
     private readonly IUserService _userService;
-    public AccountController ( IAccountService accountService, IUserService userService)
+    private readonly IUserRoleAccessService _roleAccessService;
+    public AccountController ( IAccountService accountService, IUserService userService, IUserRoleAccessService roleAccessService)
     {
         _service = accountService;
         _userService = userService;
+        _roleAccessService = roleAccessService;
     }
 
     [HttpGet("me")]
@@ -86,6 +88,44 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> DeleteAsync(Guid id)
     {
         var result = await _service.DeleteAccountAsync(id);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{id}/roles/{roleName}/restriction")]
+    [HasPermission(PermissionConstants.Accounts.Lock)]
+    public async Task<IActionResult> SuspendRole(Guid id, string roleName, [FromBody] SuspendUserRoleRequest request)
+    {
+        var result = await _roleAccessService.SuspendRoleAsync(id, User.GetUserId(), roleName, request);
+        return result.ToActionResult();
+    }
+
+    [HttpGet("me/role-restrictions")]
+    public async Task<IActionResult> GetMyRoleRestrictions()
+    {
+        var result = await _roleAccessService.GetMyRestrictionsAsync(User.GetUserId());
+        return result.ToActionResult();
+    }
+
+    [HttpPost("me/role-appeals")]
+    public async Task<IActionResult> SubmitRoleAppeal([FromBody] SubmitRoleAppealRequest request)
+    {
+        var result = await _roleAccessService.SubmitAppealAsync(User.GetUserId(), request);
+        return result.ToActionResult();
+    }
+
+    [HttpGet("role-appeals")]
+    [HasPermission(PermissionConstants.Accounts.ViewAll)]
+    public async Task<IActionResult> GetPendingRoleAppeals()
+    {
+        var result = await _roleAccessService.GetPendingAppealsAsync();
+        return result.ToActionResult();
+    }
+
+    [HttpPatch("role-appeals/{appealId}/review")]
+    [HasPermission(PermissionConstants.Accounts.Unlock)]
+    public async Task<IActionResult> ReviewRoleAppeal(Guid appealId, [FromBody] ReviewRoleAppealRequest request)
+    {
+        var result = await _roleAccessService.ReviewAppealAsync(appealId, User.GetUserId(), request);
         return result.ToActionResult();
     }
     

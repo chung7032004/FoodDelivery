@@ -23,6 +23,7 @@ import RestaurantManagementPage from '@/pages/Restaurant/RestaurantManagementPag
 import RestaurantOrdersPage from '@/pages/Restaurant/RestaurantOrdersPage';
 import RestaurantApplyPage from '@/pages/Restaurant/RestaurantApplyPage';
 import AdminRestaurantsPage from '@/pages/Admin/AdminRestaurantsPage';
+import AdminRoleAppealsPage from '@/pages/Admin/AdminRoleAppealsPage';
 import ShipperHomePage from '@/pages/Shipper/ShipperHomePage';
 import ShipperOrdersPage from '@/pages/Shipper/ShipperOrdersPage';
 import ShipperAssignedPage from '@/pages/Shipper/ShipperAssignedPage';
@@ -63,6 +64,7 @@ export function AppRoutes() {
         }
       />
       <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['Admin']}><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/admin/role-appeals" element={<ProtectedRoute requiredRoles={['Admin']}><AdminRoleAppealsPage /></ProtectedRoute>} />
       <Route path="/admin/orders" element={<ProtectedRoute requiredRoles={['Admin']}><AdminOrdersPage /></ProtectedRoute>} />
       <Route path="/admin/shippers" element={<ProtectedRoute requiredRoles={['Admin']}><AdminShippersPage /></ProtectedRoute>} />
       <Route path="/admin/restaurants" element={<ProtectedRoute requiredRoles={['Admin']}><AdminRestaurantsPage /></ProtectedRoute>} />

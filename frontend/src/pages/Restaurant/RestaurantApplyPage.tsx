@@ -56,7 +56,7 @@ export default function RestaurantApplyPage() {
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['my-restaurant-application'] });
       setError('');
-      toast.success(result.message ?? 'Đã gửi hồ sơ đăng ký nhà hàng.');
+      toast.success(result.message ?? 'Đã gửi hồ sơ, vui lòng chờ admin duyệt.');
     },
     onError: (requestError) => setError(requestError instanceof Error ? requestError.message : 'Không thể gửi hồ sơ nhà hàng.'),
   });
