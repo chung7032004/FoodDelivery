@@ -6,6 +6,7 @@ namespace FoodDelivery.Repositories.Interfaces;
 
 public interface IStaffRepository
 {
+
     Task<Staff?> GetStaffByUserId(Guid userId);
     Task<List<OrderDto>> GetOrdersByRestaurant(Guid restaurantId);
     Task<List<OrderDto>> GetPendingOrdersByRestaurant(Guid restaurantId);
@@ -15,4 +16,5 @@ public interface IStaffRepository
     Task<Staff?> GetStaffByRestaurantIdAsync(Guid restaurantId);
     Task<bool> ReportOrderIssueAsync(Guid orderId, Guid restaurantId, string issueDescription, string issueType);
     Task<List<ReviewDto>> GetRestaurantReviewsAsync(Guid restaurantId, int? rating = null);
+    Task<bool> IsStaffOfRestaurantAsync(Guid userId, Guid restaurantId);
 }

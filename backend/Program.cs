@@ -8,6 +8,7 @@ using FoodDelivery.Repositories.Implements;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Implements;
+using FoodDelivery.Service.Implements.StateMachine;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -112,7 +113,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-
+builder.Services.AddSingleton<IOrderStateMachine, OrderStateMachine>();
 
 builder.Services.AddMemoryCache();
 // Cấu hình Redis Cache

@@ -198,7 +198,7 @@ export function AddressOverviewMap({ addresses }: { addresses: SavedAddressLocat
         />
         <FitAddressLocations locations={locations} />
         {locations.map((address) => (
-          <CircleMarker
+          <CircleMarker 
             key={address.id}
             center={[address.latitude, address.longitude]}
             radius={address.isDefault ? 10 : 8}

@@ -319,5 +319,12 @@ public class StaffRepository : IStaffRepository
 
         return reviews;
     }
+    public async Task<bool> IsStaffOfRestaurantAsync(Guid userId, Guid restaurantId)
+    {
+        var staff = await _context.Staff
+            .AnyAsync(s => s.UserId == userId && s.RestaurantId == restaurantId && s.IsActive);
+        return staff;
+    }
+
 }
 

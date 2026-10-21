@@ -5,6 +5,10 @@ using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using FoodDelivery.Service.Implements.StateMachine;
+using FoodDelivery.Service.StateMachine;
+using FoodDelivery.Repositories;
+using FoodDelivery.Constants;
 
 namespace FoodDelivery.Service.Implementations;
 public class OrderService :IOrderService
@@ -17,6 +21,9 @@ public class OrderService :IOrderService
     private readonly INotificationService _notificationService;
     private readonly IUserRepository _userRepository;
     private readonly IShipperRepository _shipperRepository;
+    private readonly IOrderStateMachine _orderStateMachine;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IStaffRepository _staffRepository;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
@@ -27,10 +34,14 @@ public class OrderService :IOrderService
         INotificationService notificationService,
         IUserRepository userRepository,
         IShipperRepository shipperRepository,
+        IOrderStateMachine orderStateMachine,
+        IRoleRepository roleRepository,
+        IStaffRepository staffRepository,
         FoodContext context)
     {
         _productRepository = productRepo;
         _orderRepository = orderRepo;
+        _orderStateMachine = orderStateMachine;
         _context = context;
         _cartItemRepository = cartItemRepo;
         _addressRepository = addressRepo;
@@ -38,6 +49,8 @@ public class OrderService :IOrderService
         _notificationService = notificationService;
         _userRepository = userRepository;
         _shipperRepository = shipperRepository;
+        _roleRepository = roleRepository;
+        _staffRepository = staffRepository;
     }
 
     private async Task NotifyRestaurantUsersAsync(Guid restaurantId, NotificationRequest request)
@@ -54,7 +67,107 @@ public class OrderService :IOrderService
         foreach (var recipientId in recipientIds.Concat(staffIds).Distinct())
             await _notificationService.CreateNotificationAsync(recipientId, request);
     }
+    
+    /// Resolve ActorRole từ userId bằng cách query UserRoles.
+    private async Task<ActorRole?> ResolveActorRoleAsync(Guid userId)
+    {
+        var roles = await _roleRepository.GetRolesByUserIdAsync(userId);
+        var roleIds = roles.Select(r => r.Id).ToList();
+        if (roleIds.Contains(RoleIds.Admin))           return ActorRole.Admin;
+        if (roleIds.Contains(RoleIds.RestaurantOwner)) return ActorRole.RestaurantOwner;
+        if (roleIds.Contains(RoleIds.RestaurantStaff)) return ActorRole.RestaurantStaff;
+        if (roleIds.Contains(RoleIds.Shipper))         return ActorRole.Shipper;
+        if (roleIds.Contains(RoleIds.Customer))        return ActorRole.Customer;
+        return null;
+    }
 
+    /// Kiểm tra user có thuộc nhà hàng này không.
+    /// - Owner: check Restaurant.OwnerId
+    /// - Staff: check Staff table
+    private async Task<bool> IsUserInRestaurantAsync(Guid userId, Guid restaurantId, ActorRole actorRole)
+    {
+        if (actorRole == ActorRole.RestaurantOwner)
+        {
+            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
+            return restaurant != null && restaurant.OwnerId == userId;
+        }
+        else if (actorRole == ActorRole.RestaurantStaff)
+        {
+            var isStaff = await _staffRepository.IsStaffOfRestaurantAsync(userId, restaurantId);
+            return isStaff;
+        }
+        return false;
+    }
+    /// Áp dụng transition — thay thế mọi if (status != X) rải rác.
+    /// Tự động: check state machine → cập nhật status → ghi history → chạy side effect.
+    private async Task<Result> ApplyTransitionAsync(
+        Order order,
+        OrderAction action,
+        ActorRole actor,
+        Guid actorUserId,
+        string historyNote,
+        Func<Order, Task>? onSuccess = null)
+    {
+        var current = order.OrderDetail.Status;
+
+        if (!_orderStateMachine.CanTransition(current, action, actor, order))
+        {
+            return HttpErrors.BadRequest(
+                "INVALID_STATUS",
+                $"Không thể thực hiện '{action}' ở trạng thái '{current}'.");
+        }
+
+        var next = _orderStateMachine.GetNextStatus(current, action, actor, order);
+        order.OrderDetail.Status = next;
+
+        await _orderRepository.AddOrderHistoryAsync(new OrderStatusHistory
+        {
+            OrderId = order.Id,
+            Status = next,
+            ChangeByUserId = actorUserId,
+            ChangedAt = DateTime.UtcNow,
+            Note = historyNote,
+            ActionBy = MapActor(actor)
+        });
+
+        await _context.SaveChangesAsync();
+
+        if (onSuccess != null)
+        {
+            try { await onSuccess(order); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Notification] Error: {ex.Message}");
+            }
+        }
+
+        return Result.Success();
+    }
+    /// Shortcut: tìm order theo id rồi apply transition.
+    private async Task<Result> TransitionByIdAsync(
+        Guid orderId,
+        OrderAction action,
+        ActorRole actor,
+        Guid actorUserId,
+        string historyNote,
+        Func<Order, Task>? onSuccess = null)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+
+        return await ApplyTransitionAsync(
+            order, action, actor, actorUserId, historyNote, onSuccess);
+    }
+    private static OrderActionBy MapActor(ActorRole actor) => actor switch
+    {
+        ActorRole.Customer        => OrderActionBy.Customer,
+        ActorRole.Admin           => OrderActionBy.Admin,
+        ActorRole.Shipper         => OrderActionBy.Shipper,
+        ActorRole.RestaurantOwner => OrderActionBy.RestaurantOwner,
+        ActorRole.RestaurantStaff => OrderActionBy.RestaurantStaff,
+        _                         => OrderActionBy.System
+    };
     public async Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request)
     {
         if(request.Quantity <= 0)
@@ -491,85 +604,82 @@ public class OrderService :IOrderService
         // Nếu khách đã thanh toán qua ví/thẻ -> Gọi Service hoàn tiền.
         return Result.Success();
     }
-    public async Task<Result> RespondToProposalAsync(Guid customerId, Guid orderId, OrderProposalResponseDto request)
+        public async Task<Result> RespondToProposalAsync(Guid customerId, Guid orderId, OrderProposalResponseDto request)
     {
         var order = await _orderRepository.GetOrderById(orderId);
-        if(order == null || order.CustomerId != customerId)
-        {
+        if (order == null || order.CustomerId != customerId)
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng");
-        }
-        if(order.OrderDetail.Status != OrderStatus.WaitingCustomerDecision)
-        {
-            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng không ở trạng thái chờ xác nhận");
-        }
-        // bỏ món
-        var orderStatusHistory = new OrderStatusHistory
-        {
-            OrderId = orderId,
-            ChangeByUserId = customerId,
-            ChangedAt = DateTime.UtcNow,
-            Note = request.Note ?? string.Empty,
-            ActionBy = OrderActionBy.Customer
-        };
+
         if (request.IsAccepted)
         {
-            var itemsToRemove = order.OrderItems.Where(oi=> oi.IsRemoved).ToList();
-            foreach(var item in itemsToRemove)
-            {
+            // Nhánh 1: Khách đồng ý → Confirmed (hoặc Cancelled nếu hết món)
+            var itemsToRemove = order.OrderItems.Where(oi => oi.IsRemoved).ToList();
+            foreach (var item in itemsToRemove)
                 order.OrderItems.Remove(item);
-            }
+
             if (!order.OrderItems.Any())
             {
-                order.OrderDetail.Status = OrderStatus.Cancelled;
-                orderStatusHistory.Status = OrderStatus.Cancelled;
-                orderStatusHistory.ActionBy = OrderActionBy.System;
-                orderStatusHistory.Note = "Hủy tự động do không còn món nào khả dụng.";
+                // Không còn món nào → hủy tự động (System actor)
+                return await ApplyTransitionAsync(
+                    order,
+                    action: OrderAction.RejectProposal,
+                    actor: ActorRole.Customer,
+                    actorUserId: customerId,
+                    historyNote: "Hủy tự động do không còn món nào khả dụng.",
+                    onSuccess: async o =>
+                    {
+                        await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
+                        {
+                            Title = "Đơn hàng bị hủy",
+                            Message = $"Đơn #{o.OrderCode} bị hủy do không còn món nào khả dụng.",
+                            Type = (int)NotificationType.ORDER,
+                            Link = "/restaurant/orders"
+                        });
+                    });
             }
-            else
-            {
-                orderStatusHistory.Status = OrderStatus.Confirmed;
-                order.OrderDetail.Status = OrderStatus.Confirmed;
-                orderStatusHistory.ActionBy = OrderActionBy.Customer;
-                order.TotalAmount = order.OrderItems.Sum(oi=> oi.Quantity*oi.UnitPrice);
-            }    
+
+            // Còn món → Confirmed
+            order.TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+
+            return await ApplyTransitionAsync(
+                order,
+                action: OrderAction.AcceptProposal,
+                actor: ActorRole.Customer,
+                actorUserId: customerId,
+                historyNote: request.Note ?? "Khách hàng đồng ý với thay đổi của nhà hàng.",
+                onSuccess: async o =>
+                {
+                    await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
+                    {
+                        Title = "Khách hàng xác nhận đơn hàng",
+                        Message = $"Khách hàng đã xác nhận thay đổi món trong đơn #{o.OrderCode}.",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/restaurant/orders"
+                    });
+                });
         }
         else
         {
-            order.OrderDetail.Status = OrderStatus.Cancelled;
-            orderStatusHistory.Status = OrderStatus.Cancelled;
-            orderStatusHistory.ActionBy = OrderActionBy.Customer;
-            orderStatusHistory.Note = request.Note ?? "Khách hàng không đồng ý với thay đổi từ nhà hàng.";
-        }
-       try 
-        {
-            await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
-            await _context.SaveChangesAsync();
-
-           try
-           {
-               var notificationRequest = new NotificationRequest
-               {
-                   Title = request.IsAccepted ? "Khách hàng xác nhận đơn hàng" : "Khách hàng từ chối đề xuất",
-                   Message = request.IsAccepted
-                       ? $"Khách hàng đã xác nhận thay đổi món trong đơn #{order.OrderCode}."
-                       : $"Khách hàng đã từ chối đề xuất cho đơn #{order.OrderCode}.",
-                   Type = (int)NotificationType.ORDER,
-                   Link = "/restaurant/orders"
-               };
-               await NotifyRestaurantUsersAsync(order.RestaurantId, notificationRequest);
-           }
-           catch (Exception notificationException)
-           {
-               Console.Error.WriteLine($"Failed to notify restaurant staff about customer response: {notificationException}");
-           }
-
-           return Result.Success();
-       }
-        catch (Exception ex)
-        {
-            return HttpErrors.InternalServerError("DB_ERROR", "Lỗi lưu dữ liệu: " + ex.Message);
+            // Nhánh 2: Khách từ chối → Cancelled
+            return await ApplyTransitionAsync(
+                order,
+                action: OrderAction.RejectProposal,
+                actor: ActorRole.Customer,
+                actorUserId: customerId,
+                historyNote: request.Note ?? "Khách hàng không đồng ý với thay đổi từ nhà hàng.",
+                onSuccess: async o =>
+                {
+                    await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
+                    {
+                        Title = "Khách hàng từ chối đề xuất",
+                        Message = $"Khách hàng đã từ chối đề xuất cho đơn #{o.OrderCode}.",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/restaurant/orders"
+                    });
+                });
         }
     }
+
     public async Task<Result<PagedResponse<OrderAdminSummaryResponse>>> GetOrderAdminAsync(OrderFilterModel filter)
     {
         var query = _orderRepository.GetQueryable();
@@ -625,49 +735,40 @@ public class OrderService :IOrderService
         );  
         return Result<PagedResponse<OrderAdminSummaryResponse>>.Success(pageResponse);
     }
-    public async Task<Result> ConfirmOrderAsync(Guid adminId, Guid orderId)
+    public async Task<Result> ConfirmOrderAsync(Guid userId, Guid orderId)
     {
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null)
         {
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
-        if(order.OrderDetail.Status != OrderStatus.Pending)
+        var actorRole = await ResolveActorRoleAsync(userId);
+        if(actorRole is null)
         {
-            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
+            return HttpErrors.Forbidden("FORBIDDEN", "Không xác định được vai trò.");
         }
-        order.OrderDetail.Status = OrderStatus.Confirmed;
-        var history = new OrderStatusHistory
+        if (actorRole.Value.IsRestaurantSide()
+            && !await IsUserInRestaurantAsync(userId, order.RestaurantId, actorRole.Value))
         {
-            ActionBy = OrderActionBy.Admin,
-            ChangeByUserId = adminId,
-            ChangedAt = DateTime.UtcNow,
-            Note = "Admin đã xác nhận đơn hàng.",
-            OrderId = orderId,
-            Status = OrderStatus.Confirmed
-        };
-
-        await _orderRepository.AddOrderHistoryAsync(history);
-        await _context.SaveChangesAsync();
-
-        // 📢 Send notification to customer: Order confirmed
-        try
-        {
-            var notificationRequest = new NotificationRequest
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không có quyền thực hiện hành động này.");
+        }
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.Confirm,
+            actor: actorRole.Value,
+            actorUserId: userId,
+            historyNote: "Nhà hàng đã xác nhận đơn hàng.",
+            onSuccess: async o =>
             {
-                Title = "Đơn hàng được xác nhận",
-                Message = $"Đơn hàng #{order.OrderCode} của bạn đã được nhà hàng xác nhận và đang chuẩn bị.",
-                Type = (int)NotificationType.ORDER,
-                Link = "/account"
-            };
-            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending notification: {ex.Message}");
-        }
-
-        return Result.Success();
+                 await _notificationService.CreateNotificationAsync(o.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng được xác nhận",
+                    Message = $"Đơn hàng #{o.OrderCode} của bạn đã được nhà hàng xác nhận và đang chuẩn bị.",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+            }
+        );
     }
     public async Task<Result> OutOfStockAsync(Guid adminId, Guid orderId, OutOfStockRequest request)
     {
@@ -724,206 +825,204 @@ public class OrderService :IOrderService
         return Result.Success(); 
     }
     //chuyển trạng thái qua preparing
-    public async Task<Result> StartPreparingAsync(Guid adminId, Guid orderId)
+    public async Task<Result> StartPreparingAsync(Guid userId, Guid orderId)
     {
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
         {
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
-        if (order.OrderDetail.Status != OrderStatus.Confirmed)
+        var actorRole = await ResolveActorRoleAsync(userId);
+        if (actorRole is null || !actorRole.Value.IsRestaurantSide())
         {
-            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể nấu đơn hàng ở trạng thái {order.OrderDetail.Status}");
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không có quyền thực hiện hành động này.");
         }
-        order.OrderDetail.Status = OrderStatus.Preparing;
-        var history = new OrderStatusHistory
+        if (!await IsUserInRestaurantAsync(userId, order.RestaurantId, actorRole.Value))
         {
-            ActionBy = OrderActionBy.Admin,
-            ChangeByUserId = adminId,
-            ChangedAt = DateTime.UtcNow,
-            Note = "Nhà hàng bắt đầu chế biến món ăn.",
-            OrderId = orderId,
-            Status = OrderStatus.Preparing
-        };
-        await _orderRepository.AddOrderHistoryAsync(history);
-        await _context.SaveChangesAsync();
-
-        // 📢 Send notification to customer: Order is being prepared
-        try
-        {
-            var notificationRequest = new NotificationRequest
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không thuộc nhà hàng này.");            
+        }
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.StartPreparing,
+            actor: actorRole.Value,
+            actorUserId: userId,
+            historyNote: "Nhà hàng bắt đầu chế biến món ăn.",
+            onSuccess: async o =>
             {
-                Title = "Đơn hàng đang được chế biến",
-                Message = $"Đơn hàng #{order.OrderCode} đang được nhà hàng chế biến. Vui lòng chờ...",
-                Type = (int)NotificationType.ORDER,
-                Link = "/account"
-            };
-            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending notification: {ex.Message}");
-        }
-
-        //Kích hoạt hệ thống tìm Shipper
-        return Result.Success();
+                await _notificationService.CreateNotificationAsync(o.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đang được chế biến",
+                    Message = $"Đơn hàng #{o.OrderCode} của bạn đang được nhà hàng chế biến. Vui lòng chờ...",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+            }  
+        );
     }
     //Nấu xong và sẵn sang cho shipper lấy hàng
-    public async Task<Result> MarkAsReadyAsync(Guid adminId, Guid orderId)
+    public async Task<Result> MarkAsReadyAsync(Guid userId, Guid orderId)
     {
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
-        {
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
-        }
-        if (order.OrderDetail.Status != OrderStatus.Preparing)
-        {
-            return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng chưa được nấu xong hoặc đang ở trạng thái khác.");
-        }
-        order.OrderDetail.Status = OrderStatus.ReadyForPickup;
-        
-        // 🚚 Auto-assign an available shipper
-        var availableShipperId = await FindAvailableShipperAsync();
-        Guid? shipperUserId = null;
-        if (availableShipperId.HasValue)
-        {
-            order.OrderDetail.ShipperId = availableShipperId.Value;
-            // Get the Shipper entity to retrieve UserId for notification
-            var shipper = await _context.Shippers
-                .Include(s => s.User)
-                .FirstOrDefaultAsync(s => s.Id == availableShipperId.Value);
-            shipperUserId = shipper?.UserId;
-        }
 
-        var history = new OrderStatusHistory
-        {
-            ActionBy = OrderActionBy.Admin,
-            ChangeByUserId = adminId,
-            ChangedAt = DateTime.UtcNow,
-            Note = "Món ăn đã sẵn sàng. Chờ Shipper đến lấy.",
-            OrderId = orderId,
-            Status = OrderStatus.ReadyForPickup
-        };
-        await _orderRepository.AddOrderHistoryAsync(history);
-        await _context.SaveChangesAsync();
+        var actorRole = await ResolveActorRoleAsync(userId);
+        if (actorRole is null || !actorRole.Value.IsRestaurantSide())
+            return HttpErrors.Forbidden("FORBIDDEN", "Chỉ nhà hàng mới được đánh dấu sẵn sàng.");
 
-        // 📢 Send notification to customer: Order ready for delivery
-        try
-        {
-            var notificationRequest = new NotificationRequest
+        if (!await IsUserInRestaurantAsync(userId, order.RestaurantId, actorRole.Value))
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không thuộc nhà hàng này.");
+
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.MarkReady,
+            actor: actorRole.Value,
+            actorUserId: userId,
+            historyNote: "Món ăn đã sẵn sàng. Chờ Shipper đến lấy.",
+            onSuccess: async o =>
             {
-                Title = "Đơn hàng sẵn sàng giao",
-                Message = $"Đơn hàng #{order.OrderCode} của bạn đã sẵn sàng. Shipper sắp tới lấy hàng.",
-                Type = (int)NotificationType.DELIVERY,
-                Link = "/account"
-            };
-            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending notification: {ex.Message}");
-        }
+                // Auto-assign shipper
+                var availableShipperId = await FindAvailableShipperAsync();
+                Guid? shipperUserId = null;
 
-        // 📢 Send notification to shipper if assigned
-        if (shipperUserId.HasValue)
-        {
-            try
-            {
-                var notificationRequest = new NotificationRequest
+                if (availableShipperId.HasValue)
                 {
-                    Title = "Đơn hàng được phân công",
-                    Message = $"Bạn được phân công giao đơn #{order.OrderCode} cho {order.Customer?.FullName ?? "Khách hàng"}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    o.OrderDetail.ShipperId = availableShipperId.Value;
+                    var shipper = await _context.Shippers
+                        .Include(s => s.User)
+                        .FirstOrDefaultAsync(s => s.Id == availableShipperId.Value);
+                    shipperUserId = shipper?.UserId;
+                    await _context.SaveChangesAsync();
+                }
+
+                // Notify customer
+                await _notificationService.CreateNotificationAsync(o.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng sẵn sàng giao",
+                    Message = $"Đơn hàng #{o.OrderCode} của bạn đã sẵn sàng. Shipper sắp tới lấy hàng.",
                     Type = (int)NotificationType.DELIVERY,
-                    Link = "/shipper/orders"
-                };
-                await _notificationService.CreateNotificationAsync(shipperUserId.Value, notificationRequest);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending notification to shipper: {ex.Message}");
-            }
-        }
+                    Link = "/account"
+                });
 
-        return Result.Success();
-    }
-    public async Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request)
-    {   
-        var order = await _orderRepository.GetOrderById(orderId);
-        if (order == null)
-        {
-            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
-        }
-        if (order.OrderDetail.Status == OrderStatus.Completed || order.OrderDetail.Status == OrderStatus.Cancelled)
-        {
-            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể hủy đơn hàng đã {order.OrderDetail.Status}.");
-        }
-        var orderStatusHistory = new OrderStatusHistory
-        {
-            Status = OrderStatus.Cancelled,
-            OrderId = orderId,
-            ChangeByUserId = adminId,
-            ChangedAt = DateTime.UtcNow,
-            Note = request.Reason,
-            ActionBy = OrderActionBy.Admin 
-        };
-
-        order.OrderDetail.Status = OrderStatus.Cancelled;
-        order.OrderDetail.CancelledByUserId = adminId;
-        order.OrderDetail.CancelReason = request.Reason;
-        await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
-        await _context.SaveChangesAsync();
-
-        try
-        {
-            await _notificationService.CreateNotificationAsync(order.CustomerId, new NotificationRequest
-            {
-                Title = "Đơn hàng đã bị hủy",
-                Message = $"Đơn hàng #{order.OrderCode} đã bị hủy. Lý do: {request.Reason ?? "Không có"}",
-                Type = (int)NotificationType.ORDER,
-                Link = "/account"
-            });
-
-            if (order.OrderDetail.ShipperId.HasValue)
-            {
-                var shipperUserId = await _context.Shippers
-                    .Where(shipper => shipper.Id == order.OrderDetail.ShipperId.Value)
-                    .Select(shipper => shipper.UserId)
-                    .FirstOrDefaultAsync();
-                if (shipperUserId != Guid.Empty)
+                // Notify shipper nếu có
+                if (shipperUserId.HasValue)
                 {
-                    await _notificationService.CreateNotificationAsync(shipperUserId, new NotificationRequest
+                    await _notificationService.CreateNotificationAsync(shipperUserId.Value, new NotificationRequest
                     {
-                        Title = "Đơn hàng đã bị hủy",
-                        Message = $"Đơn #{order.OrderCode} đã bị hủy. Bạn không cần đến quán để lấy hàng.",
+                        Title = "Đơn hàng được phân công",
+                        Message = $"Bạn được phân công giao đơn #{o.OrderCode}. Tổng tiền: {o.TotalAmount:N0} VND",
                         Type = (int)NotificationType.DELIVERY,
                         Link = "/shipper/orders"
                     });
                 }
             }
-        }
-        catch (Exception notificationException)
-        {
-            Console.Error.WriteLine($"Failed to notify users about order cancellation: {notificationException}");
-        }
+        );
+    }
+     public async Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
 
-        try
-        {
-            await NotifyRestaurantUsersAsync(order.RestaurantId, new NotificationRequest
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.CancelByAdmin,
+            actor: ActorRole.Admin,
+            actorUserId: adminId,
+            historyNote: request.Reason ?? "Admin đã hủy đơn hàng.",
+            onSuccess: async o =>
             {
-                Title = "Đơn hàng đã bị hủy",
-                Message = $"Đơn hàng #{order.OrderCode} đã bị hủy bởi admin.",
-                Type = (int)NotificationType.ORDER,
-                Link = "/restaurant/orders"
-            });
-        }
-        catch (Exception notificationException)
-        {
-            Console.Error.WriteLine($"Failed to notify restaurant about order cancellation: {notificationException}");
-        }
+                o.OrderDetail.CancelledByUserId = adminId;
+                o.OrderDetail.CancelReason = request.Reason ?? "Không có lý do cụ thể.";
+                await _context.SaveChangesAsync();
 
-        return Result.Success();
+                // Notify customer
+                await _notificationService.CreateNotificationAsync(o.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đã bị hủy",
+                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy. Lý do: {request.Reason ?? "Không có"}",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+
+                // Notify shipper nếu có
+                if (o.OrderDetail.ShipperId.HasValue)
+                {
+                    var shipperUserId = await _context.Shippers
+                        .Where(s => s.Id == o.OrderDetail.ShipperId.Value)
+                        .Select(s => s.UserId)
+                        .FirstOrDefaultAsync();
+                    if (shipperUserId != Guid.Empty)
+                    {
+                        await _notificationService.CreateNotificationAsync(shipperUserId, new NotificationRequest
+                        {
+                            Title = "Đơn hàng đã bị hủy",
+                            Message = $"Đơn #{o.OrderCode} đã bị hủy. Bạn không cần đến quán để lấy hàng.",
+                            Type = (int)NotificationType.DELIVERY,
+                            Link = "/shipper/orders"
+                        });
+                    }
+                }
+
+                // Notify nhà hàng
+                await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đã bị hủy",
+                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy bởi admin.",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/restaurant/orders"
+                });
+            });
     }
 
+    public async Task<Result> CancelOrderByRestaurantAsync(Guid userId, Guid orderId, CancelOrderRequestDto request)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+
+        var actorRole = await ResolveActorRoleAsync(userId);
+        if (actorRole is null || !actorRole.Value.IsOwner())
+            return HttpErrors.Forbidden("FORBIDDEN", "Chỉ chủ nhà hàng mới được hủy đơn.");
+
+        if (!await IsUserInRestaurantAsync(userId, order.RestaurantId, actorRole.Value))
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không phải chủ nhà hàng này.");
+
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.CancelByRestaurant,
+            actor: actorRole.Value,
+            actorUserId: userId,
+            historyNote: request.Reason ?? "Chủ nhà hàng đã hủy đơn.",
+            onSuccess: async o =>
+            {
+                o.OrderDetail.CancelledByUserId = userId;
+                o.OrderDetail.CancelReason = request.Reason ?? "Không có lý do cụ thể.";
+                await _context.SaveChangesAsync();
+
+                // Notify customer
+                await _notificationService.CreateNotificationAsync(o.CustomerId, new NotificationRequest
+                {
+                    Title = "Đơn hàng đã bị hủy",
+                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy bởi nhà hàng. Lý do: {request.Reason ?? "Không có"}",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+
+                // Notify admins
+                var admins = await _userRepository.GetUsersByRoleAsync("admin");
+                foreach (var admin in admins)
+                {
+                    await _notificationService.CreateNotificationAsync(admin.Id, new NotificationRequest
+                    {
+                        Title = "Nhà hàng hủy đơn",
+                        Message = $"Nhà hàng đã hủy đơn #{o.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/admin/orders"
+                    });
+                }
+            });
+    }
     /// <summary>
     /// Mark order as delivered by shipper
     /// </summary>
@@ -954,24 +1053,13 @@ public class OrderService :IOrderService
 
         await _orderRepository.AddOrderHistoryAsync(history);
         await _context.SaveChangesAsync();
-
-        // 📢 Send notification to customer: Order delivered
-        try
+        await _notificationService.CreateNotificationAsync(order.CustomerId, new NotificationRequest
         {
-            var notificationRequest = new NotificationRequest
-            {
-                Title = "Đơn hàng đã được giao",
-                Message = $"Đơn hàng #{order.OrderCode} của bạn đã được giao thành công!",
-                Type = (int)NotificationType.DELIVERY,
-                Link = "/account"
-            };
-            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending notification: {ex.Message}");
-        }
-
+            Title = "Đơn hàng đã được giao",
+            Message = $"Đơn hàng #{order.OrderCode} của bạn đã được giao thành công!",
+            Type = (int)NotificationType.DELIVERY,
+            Link = "/account"
+        });
         return Result.Success();
     }
 

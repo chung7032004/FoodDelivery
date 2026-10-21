@@ -7,5 +7,6 @@ namespace FoodDelivery.Repositories
         Task<Role?> GetByNameAsync(string name);
         Task<Role?> GetByIdAsync(Guid id);
         Task AddAsync(Role role);
+        Task<IEnumerable<Role>> GetRolesByUserIdAsync(Guid userId);
     }
 }
