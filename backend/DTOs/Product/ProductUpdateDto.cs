@@ -5,6 +5,8 @@ namespace FoodDelivery.DTOs.Product
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public decimal? CostPrice { get; set; }
+        public Guid? CategoryId { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsAvailable { get; set; }
         public bool IsFeatured { get; set; }

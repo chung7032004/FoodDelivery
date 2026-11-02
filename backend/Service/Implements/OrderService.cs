@@ -9,6 +9,7 @@ using FoodDelivery.Service.Implements.StateMachine;
 using FoodDelivery.Service.StateMachine;
 using FoodDelivery.Repositories;
 using FoodDelivery.Constants;
+using FoodDelivery.Service.Interfaces.IShipping;
 
 namespace FoodDelivery.Service.Implementations;
 public class OrderService :IOrderService
@@ -24,6 +25,8 @@ public class OrderService :IOrderService
     private readonly IOrderStateMachine _orderStateMachine;
     private readonly IRoleRepository _roleRepository;
     private readonly IStaffRepository _staffRepository;
+    private readonly IShippingEstimationService _shippingEstimation;
+private readonly IShipperAssignmentStrategy _shipperAssignment;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
@@ -37,6 +40,8 @@ public class OrderService :IOrderService
         IOrderStateMachine orderStateMachine,
         IRoleRepository roleRepository,
         IStaffRepository staffRepository,
+        IShippingEstimationService shippingEstimation,
+        IShipperAssignmentStrategy shipperAssignment,
         FoodContext context)
     {
         _productRepository = productRepo;
@@ -51,6 +56,8 @@ public class OrderService :IOrderService
         _shipperRepository = shipperRepository;
         _roleRepository = roleRepository;
         _staffRepository = staffRepository;
+        _shippingEstimation = shippingEstimation;
+        _shipperAssignment = shipperAssignment;
     }
 
     private async Task NotifyRestaurantUsersAsync(Guid restaurantId, NotificationRequest request)
@@ -106,7 +113,8 @@ public class OrderService :IOrderService
         ActorRole actor,
         Guid actorUserId,
         string historyNote,
-        Func<Order, Task>? onSuccess = null)
+        Func<Order, Task>? onSuccess = null,
+        Action<Order>? beforeSave = null)
     {
         var current = order.OrderDetail.Status;
 
@@ -119,6 +127,7 @@ public class OrderService :IOrderService
 
         var next = _orderStateMachine.GetNextStatus(current, action, actor, order);
         order.OrderDetail.Status = next;
+        beforeSave?.Invoke(order);
 
         await _orderRepository.AddOrderHistoryAsync(new OrderStatusHistory
         {
@@ -197,10 +206,18 @@ public class OrderService :IOrderService
                 ProductName = product.Name,
                 Quantity  = request.Quantity,
                 UnitPrice = product.Price,
+                UnitCostSnapshot = product.CostPrice,
 
             }
         };
-        return await CreateOrderInternalAsync(customerId,request.AddressId, product.RestaurantId,item,request.Note);
+        return await CreateOrderInternalAsync(
+            customerId,
+            request.AddressId,
+            product.RestaurantId,
+            item,
+            request.Note,
+            request.ShippingService,
+            request.PaymentMethod);
 
     }
     public async Task<Result<CreateOrderResponseDto>> CheckoutAsync(Guid customerId,CheckoutRequestDto request)
@@ -240,8 +257,16 @@ public class OrderService :IOrderService
                 ProductName = ci.Product.Name,
                 Quantity  = ci.Quantity,
                 UnitPrice = ci.Product.Price,
+                UnitCostSnapshot = ci.Product.CostPrice,
         }).ToList();
-        var result = await CreateOrderInternalAsync(customerId, request.AddressId, restaurantId, items, request.Note);
+        var result = await CreateOrderInternalAsync(
+            customerId,
+            request.AddressId,
+            restaurantId,
+            items,
+            request.Note,
+            request.ShippingService,
+            request.PaymentMethod);
         if (result.IsSuccess)
         {
             await _cartItemRepository.DeleteRangeAsync(cartItems);
@@ -250,44 +275,29 @@ public class OrderService :IOrderService
         return result;
     }
 
-    public async Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId, Guid restaurantId)
+    public async Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(
+        Guid addressId,
+        Guid restaurantId,
+        decimal subtotal,
+        string serviceType = "Standard")
     {
-        var address = await _addressRepository.GetByIdAsync(addressId);
-        if(address == null)
+        if (!IsSupportedShippingService(serviceType))
+            return HttpErrors.BadRequest<ShippingFeeResponseDto>("UNKNOWN_SERVICE", "Kiểu giao hàng không được hỗ trợ.");
+
+        var est = await _shippingEstimation.EstimateAsync(
+        addressId, restaurantId, serviceType, subtotal, itemCount: 1);
+
+        if (!est.IsSuccess)
+            return HttpErrors.BadRequest<ShippingFeeResponseDto>(est.ErrorCode ?? "SHIPPING_FEE_ERROR", est.Message ?? "Lỗi khi tính phí vận chuyển");
+        if (est.Data == null)
+            return HttpErrors.InternalServerError<ShippingFeeResponseDto>("SHIPPING_FEE_ERROR", "Không nhận được dữ liệu phí vận chuyển");
+        return Result<ShippingFeeResponseDto>.Success(new ShippingFeeResponseDto
         {
-            return HttpErrors.NotFound<ShippingFeeResponseDto>("ADDRESS_NOT_FOUND", "Không tìm thấy địa chỉ");
-        }
-        var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-        if(restaurant == null)
-        {
-            return HttpErrors.BadRequest<ShippingFeeResponseDto>("RESTAURANT_NOT_CONFIGURED", "Cửa hàng chưa được cấu hình.");
-        }
-        
-        var distance = CalculateDistance(restaurant.Latitude, restaurant.Longitude, address.Latitude, address.Longitude);
-        
-        if (distance > 40)
-        {
-            return HttpErrors.BadRequest<ShippingFeeResponseDto>("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
-        }
-        
-        // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
-        decimal shippingFee = 5000 + (decimal)distance * 3000;
-        
-        // Làm tròn đến 1000 VND gần nhất
-        shippingFee = Math.Ceiling(shippingFee / 1000) * 1000;
-        
-        // Estimate delivery time: 10 mins base + 3 mins per km
-        int estimatedMinutes = (int)(10 + (distance * 3));
-        
-        var response = new ShippingFeeResponseDto
-        {
-            ShippingFee = shippingFee,
-            Distance = distance,
-            EstimatedMinutes = estimatedMinutes
-        };
-        
-        return Result<ShippingFeeResponseDto>.Success(response);
-        }
+            ShippingFee = est.Data.Fee,
+            Distance = est.Data.Route.DistanceKm,
+            EstimatedMinutes = est.Data.Route.DurationMinutes
+        });
+    }
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
         var R = 6371; //Bán kính trái đất;
@@ -301,11 +311,23 @@ public class OrderService :IOrderService
         return d *1.2; //Giả sử hệ số đường bộ là 1.2
     }
     private string GenerateOrderCode() => $"FD{DateTime.UtcNow.Ticks}";
+    private static bool IsSupportedShippingService(string? serviceType) =>
+        string.Equals(serviceType, "Standard", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(serviceType, "Express", StringComparison.OrdinalIgnoreCase);
+
     private async Task<Result<CreateOrderResponseDto>> CreateOrderInternalAsync(
         Guid customerId, Guid addressId,
         Guid restaurantId,
-        List<CreateOrderItemDto> items, string? note)
+        List<CreateOrderItemDto> items,
+        string? note,
+        string shippingService,
+        PaymentMethod paymentMethod)
     {
+        if (!IsSupportedShippingService(shippingService))
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("UNKNOWN_SERVICE", "Kiểu giao hàng không được hỗ trợ.");
+        if (paymentMethod != PaymentMethod.Cash)
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("PAYMENT_METHOD_UNAVAILABLE", "Hiện tại chỉ hỗ trợ thanh toán khi nhận hàng.");
+
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
         {
@@ -316,29 +338,22 @@ public class OrderService :IOrderService
         {
             return HttpErrors.BadRequest<CreateOrderResponseDto>("RESTAURANT_NOT_CONFIGURED", "Cửa hàng chưa được cấu hình.");
         }
-        var distance = CalculateDistance(restaurant.Latitude,restaurant.Longitude,address.Latitude,address.Longitude);
-        Console.WriteLine($"distance: {distance}");
-        if (distance > 40)
-        {
-            return HttpErrors.BadRequest<CreateOrderResponseDto>("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
-        }
-        
-        // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
-        decimal shippingFee = 5000 + (decimal)distance * 3000;
-        
-        // Làm tròn đến 1000 VND gần nhất
-        shippingFee = Math.Ceiling(shippingFee / 1000) * 1000;
-        
-        double estimated = 10 + (items.Count - 1) * 2 + (distance * 3);
-        DateTime estimatedDeliveryTime = DateTime.UtcNow.AddMinutes(estimated);
-        Console.WriteLine($"Shipping Fee: {shippingFee}, Distance: {distance}km");
+        var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
+        var est = await _shippingEstimation.EstimateAsync(addressId, restaurantId, shippingService, subtotal, items.Count);
+        if (!est.IsSuccess)
+            return HttpErrors.BadRequest<CreateOrderResponseDto>(est.ErrorCode ?? "SHIPPING_FEE_ERROR", est.Message ?? "Lỗi khi tính phí vận chuyển");
+        if (est.Data == null)
+            return HttpErrors.InternalServerError<CreateOrderResponseDto>("SHIPPING_FEE_ERROR", "Không nhận được dữ liệu phí vận chuyển");
+        var estimatedDeliveryTime = DateTime.UtcNow.AddMinutes(
+            est.Data.Route.DurationMinutes + 10 + Math.Max(0, items.Count - 1) * 2);
         var order = new Order()
         {
             CustomerId = customerId,
             Note = note,
             RestaurantId = restaurantId,
-            TotalAmount = items.Sum(i=>i.UnitPrice * i.Quantity),
-            ShippingFee = shippingFee,
+            Subtotal = subtotal,
+            TotalAmount = subtotal + est.Data.Fee,
+            ShippingFee = est.Data.Fee,
             CreatedAt = DateTime.UtcNow,
             OrderCode = GenerateOrderCode(),
             ReceiverName = address.ReceiverName,
@@ -352,6 +367,7 @@ public class OrderService :IOrderService
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
                 UnitPrice = item.UnitPrice,
+                UnitCostSnapshot = item.UnitCostSnapshot,
                 ProductImage = item.ProductImage,
                 ProductName = item.ProductName,
             });
@@ -360,7 +376,7 @@ public class OrderService :IOrderService
         {
             OrderId = order.Id,
             Status = OrderStatus.Pending,
-            PaymentMethod = PaymentMethod.Cash,
+            PaymentMethod = paymentMethod,
             PaymentStatus = PaymentStatus.Unpaid,
             EstimatedDeliveryTime = estimatedDeliveryTime
         };
@@ -434,8 +450,9 @@ public class OrderService :IOrderService
             OrderCode = order.OrderCode,
             OrderId = order.Id,
             Status = order.OrderDetail.Status,
+            Subtotal = order.Subtotal,
             TotalAmount = order.TotalAmount,
-            ShippingFee = shippingFee,
+            ShippingFee = order.ShippingFee,
             EstimatedDeliveryTime = estimatedDeliveryTime
         });
     }
@@ -497,6 +514,7 @@ public class OrderService :IOrderService
                 PaymentStatus = order.OrderDetail.PaymentStatus,
                 CurrentStatus =order.OrderDetail.Status,
                 CancelReason = order.OrderDetail.CancelReason,
+                Subtotal = order.Subtotal,
                 TotalAmount = order.TotalAmount,
             };
         foreach(var item in order.OrderItems)
@@ -639,7 +657,8 @@ public class OrderService :IOrderService
             }
 
             // Còn món → Confirmed
-            order.TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+            order.Subtotal = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+            order.TotalAmount = order.Subtotal + order.ShippingFee;
 
             return await ApplyTransitionAsync(
                 order,
@@ -824,6 +843,65 @@ public class OrderService :IOrderService
 
         return Result.Success(); 
     }
+
+    public async Task<Result> ReportOutOfStockByRestaurantAsync(
+        Guid userId,
+        Guid orderId,
+        OutOfStockRequest request)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+            return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+
+        var actor = await ResolveActorRoleAsync(userId);
+        if (actor is not (ActorRole.RestaurantOwner or ActorRole.RestaurantStaff))
+            return HttpErrors.Forbidden("FORBIDDEN", "Chỉ nhà hàng mới có thể báo món hết hàng.");
+
+        if (!await IsUserInRestaurantAsync(userId, order.RestaurantId, actor.Value))
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không thuộc nhà hàng của đơn hàng này.");
+
+        var requestedIds = request.RemovedProductIds?.Where(id => id != Guid.Empty).ToHashSet();
+        if (requestedIds == null || requestedIds.Count == 0)
+            return HttpErrors.BadRequest("NO_ITEMS_SELECTED", "Hãy chọn ít nhất một món đã hết hàng.");
+
+        var itemsToRemove = order.OrderItems
+            .Where(item => !item.IsRemoved && requestedIds.Contains(item.ProductId))
+            .ToList();
+        var availableIds = itemsToRemove.Select(item => item.ProductId).ToHashSet();
+        if (!requestedIds.IsSubsetOf(availableIds))
+            return HttpErrors.BadRequest("INVALID_ORDER_ITEMS", "Danh sách món không hợp lệ với đơn hàng này.");
+
+        var removedNames = string.Join(", ", itemsToRemove.Select(item => item.ProductName).Distinct());
+        var note = string.IsNullOrWhiteSpace(request.Note)
+            ? $"Nhà hàng báo hết món: {removedNames}."
+            : request.Note.Trim();
+
+        return await ApplyTransitionAsync(
+            order,
+            action: OrderAction.ReportOutOfStock,
+            actor: actor.Value,
+            actorUserId: userId,
+            historyNote: note,
+            beforeSave: currentOrder =>
+            {
+                foreach (var item in itemsToRemove)
+                {
+                    item.IsRemoved = true;
+                    item.RemoveReason = note;
+                }
+            },
+            onSuccess: async currentOrder =>
+            {
+                await _notificationService.CreateNotificationAsync(currentOrder.CustomerId, new NotificationRequest
+                {
+                    Title = "Nhà hàng báo món hết hàng",
+                    Message = $"{removedNames} hiện không có sẵn. Vui lòng xác nhận tiếp tục với các món còn lại hoặc hủy đơn.",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+            });
+    }
+
     //chuyển trạng thái qua preparing
     public async Task<Result> StartPreparingAsync(Guid userId, Guid orderId)
     {
@@ -882,16 +960,16 @@ public class OrderService :IOrderService
             onSuccess: async o =>
             {
                 // Auto-assign shipper
-                var availableShipperId = await FindAvailableShipperAsync();
+                var shipperId = await _shipperAssignment.FindShipperAsync(o.Id, o.RestaurantId);
                 Guid? shipperUserId = null;
 
-                if (availableShipperId.HasValue)
+                if (shipperId.HasValue)
                 {
-                    o.OrderDetail.ShipperId = availableShipperId.Value;
-                    var shipper = await _context.Shippers
-                        .Include(s => s.User)
-                        .FirstOrDefaultAsync(s => s.Id == availableShipperId.Value);
-                    shipperUserId = shipper?.UserId;
+                    o.OrderDetail.ShipperId = shipperId.Value;
+                    shipperUserId = await _context.Shippers
+                        .Where(s => s.Id == shipperId.Value)
+                        .Select(s => s.UserId)
+                        .FirstOrDefaultAsync();
                     await _context.SaveChangesAsync();
                 }
 
@@ -1161,16 +1239,4 @@ public class OrderService :IOrderService
 
         return Result.Success();
     }
-
-    private async Task<Guid?> FindAvailableShipperAsync()
-    {
-        // Get all active shippers and return the first one
-        // In a real implementation, you might want to consider shipper location, current load, etc.
-        var shipper = await _context.Shippers
-            .Include(s => s.User)
-            .Where(s => s.IsActive && s.User.IsActive)
-            .FirstOrDefaultAsync();
-        return shipper?.Id;
-    }            
-    //tiệm đóng cửa
 }

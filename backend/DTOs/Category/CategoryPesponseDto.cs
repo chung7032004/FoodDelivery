@@ -8,5 +8,6 @@ namespace FoodDelivery.DTOs.Category
         public int DisplayOrder { get; set; }
         public string? ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; }
+        public Guid? RestaurantId { get; set; }
     }
 }

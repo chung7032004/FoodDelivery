@@ -3,6 +3,7 @@ using FoodDelivery.DTOs.Product;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace FoodDelivery.Service.Implements
 {
@@ -22,11 +23,11 @@ namespace FoodDelivery.Service.Implements
             _context = context;
         }
 
-        public async Task<Result<PagedResponse<ProductResponseDto>>> GetALlProductsAsync(Guid? categoryId = null, string? searchQuery = null, int page = 1, int pageSize = 10)
+        public async Task<Result<PagedResponse<ProductResponseDto>>> GetALlProductsAsync(Guid? categoryId = null, string? searchQuery = null, int page = 1, int pageSize = 10, Guid? restaurantId = null)
         {
             pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
             page = page < 1 ? 1 : page;
-            var (totalCount,products) = await _productRepo.GetAllAsync(categoryId,searchQuery,page,pageSize);
+            var (totalCount,products) = await _productRepo.GetAllAsync(categoryId,searchQuery,page,pageSize,restaurantId);
             var productsResponse = products.Select(p => new ProductResponseDto
             {
                 Id = p.Id,
@@ -62,11 +63,42 @@ namespace FoodDelivery.Service.Implements
             return product == null ? HttpErrors.NotFound<ProductDetailResponseDto?>("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại") : Result<ProductDetailResponseDto?>.Success(product);
         }
 
+        public async Task<Result<decimal?>> GetProductCostPriceAsync(Guid productId)
+        {
+            var costPrice = await _context.Products
+                .Where(product => product.Id == productId)
+                .Select(product => product.CostPrice)
+                .FirstOrDefaultAsync();
+            if (costPrice is null && !await _context.Products.AnyAsync(product => product.Id == productId))
+                return HttpErrors.NotFound<decimal?>("PRODUCT_NOT_FOUND", "Sản phẩm không tồn tại.");
+            return Result<decimal?>.Success(costPrice);
+        }
+
 
 
         public async Task<Result<ProductResponseDto>> CreateProductAsync(ProductCreateDto request)
         {
-            int count = await _productRepo.CountAsync(p => p.CategoryId == request.CategoryId);
+            if (request.CostPrice is < 0)
+                return HttpErrors.BadRequest<ProductResponseDto>("INVALID_COST_PRICE", "Giá vốn không thể nhỏ hơn 0.");
+            if (!request.CostPrice.HasValue)
+                return HttpErrors.BadRequest<ProductResponseDto>("COST_PRICE_REQUIRED", "Vui lòng nhập giá vốn để theo dõi lợi nhuận.");
+
+            if (request.RestaurantId == Guid.Empty)
+                return HttpErrors.BadRequest<ProductResponseDto>("RESTAURANT_REQUIRED", "Sản phẩm phải thuộc về một nhà hàng.");
+
+            var restaurant = await _context.Restaurants
+                .FirstOrDefaultAsync(r => r.Id == request.RestaurantId
+                    && r.ApplicationStatus == RestaurantApplicationStatus.Approved);
+            if (restaurant == null)
+                return HttpErrors.BadRequest<ProductResponseDto>("RESTAURANT_NOT_FOUND", "Nhà hàng không tồn tại hoặc chưa được duyệt.");
+
+            var category = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId
+                    && (c.RestaurantId == null || c.RestaurantId == request.RestaurantId));
+            if (category == null)
+                return HttpErrors.BadRequest<ProductResponseDto>("CATEGORY_NOT_FOUND", "Danh mục không tồn tại hoặc không thuộc nhà hàng này.");
+
+            int count = await _productRepo.CountAsync(p => p.RestaurantId == request.RestaurantId && p.CategoryId == request.CategoryId);
             int displayOrder = request.DisplayOrder > 0 ? request.DisplayOrder : (count + 1) * 10;
 
             var product = new Product
@@ -75,6 +107,7 @@ namespace FoodDelivery.Service.Implements
                 CategoryId = request.CategoryId,
                 Name = request.Name,
                 Price = request.Price,
+                CostPrice = request.CostPrice,
                 Description = request.Description ?? string.Empty,
                 IsAvailable = request.IsAvailable,
                 IsFeatured = request.IsFeatured,
@@ -144,12 +177,23 @@ namespace FoodDelivery.Service.Implements
 
         public async Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto dto)
         {
+            if (dto.CostPrice is null or < 0) return false;
             var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
+
+            if (dto.CategoryId.HasValue)
+            {
+                var categoryExists = await _context.Categories.AnyAsync(category =>
+                    category.Id == dto.CategoryId.Value
+                    && (category.RestaurantId == null || category.RestaurantId == product.RestaurantId));
+                if (!categoryExists) return false;
+                product.CategoryId = dto.CategoryId.Value;
+            }
 
             product.Name = dto.Name;
             product.Description = dto.Description ?? string.Empty;
             product.Price = dto.Price;
+            product.CostPrice = dto.CostPrice;
             product.IsAvailable = dto.IsAvailable;
             product.IsFeatured = dto.IsFeatured;
             product.DisplayOrder = dto.DisplayOrder;

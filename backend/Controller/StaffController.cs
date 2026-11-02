@@ -37,6 +37,16 @@ public class StaffController : ControllerBase
         return Ok(result);
     }
 
+    [HasPermission(PermissionConstants.Staffs.View)]
+    [HttpGet("analytics")]
+    public async Task<IActionResult> GetRestaurantAnalytics([FromQuery] string period = "daily")
+    {
+        var result = await _staffService.GetRestaurantAnalytics(User.GetUserId(), period);
+        if (!result.IsSuccess)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
     [HasPermission(PermissionConstants.Orders.View)]
     [HttpGet("orders")]
     public async Task<IActionResult> GetOrdersForPreparation()
@@ -184,6 +194,23 @@ public class StaffController : ControllerBase
         var userId = User.GetUserId();
         var result = await _staffService.ReportOrderIssue(userId, orderId, request.IssueDescription, request.IssueType);
         
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpPost("orders/{orderId}/report-out-of-stock")]
+    public async Task<IActionResult> ReportOutOfStock(
+        [FromRoute] Guid orderId,
+        [FromBody] ReportOutOfStockRequest request)
+    {
+        var result = await _staffService.ReportOutOfStock(
+            User.GetUserId(),
+            orderId,
+            request.RemovedProductIds,
+            request.Note);
+
         if (!result.IsSuccess)
             return BadRequest(result);
 

@@ -4,9 +4,10 @@ namespace FoodDelivery.Service.Implements
 {
     public interface IProductService
     {
-        Task<Result<PagedResponse<ProductResponseDto>>> GetALlProductsAsync(Guid? categoryId = null, string? searchQuery = null, int page = 1, int pageSize = 10);
+        Task<Result<PagedResponse<ProductResponseDto>>> GetALlProductsAsync(Guid? categoryId = null, string? searchQuery = null, int page = 1, int pageSize = 10, Guid? restaurantId = null);
         // Task<IEnumerable<ProductResponseDto>> GetFeaturedProductsAsync();
         Task<Result<ProductDetailResponseDto?>> GetProductDetailByIdAsync(Guid productId);
+        Task<Result<decimal?>> GetProductCostPriceAsync(Guid productId);
         Task<Result<ProductResponseDto>> CreateProductAsync(ProductCreateDto productCreateDto);
         Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto productUpdateDto);
         Task<bool> UpdateDisplayOrderAsync(Guid productId, int newDisplayOrder);

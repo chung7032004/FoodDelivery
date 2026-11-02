@@ -7,6 +7,7 @@ namespace FoodDelivery.Entities
         public virtual Category Category { get; set; } = null!;
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public decimal? CostPrice { get; set; }
         public string Description { get; set; } = string.Empty;
         public bool IsAvailable { get; set; } = true;
         public bool IsFeatured { get; set; } = false;

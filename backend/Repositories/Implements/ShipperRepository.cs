@@ -104,14 +104,14 @@ namespace FoodDelivery.Repositories.Implements
                 .Where(od => od.ShipperId == shipperId 
                     && od.Status == OrderStatus.Completed
                     && od.Order.CreatedAt.Date == today)
-                .SumAsync(od => od.Order.TotalAmount);
+                .SumAsync(od => od.Order.Subtotal);
         }
 
         public async Task<decimal> GetTotalEarningsAsync(Guid shipperId)
         {
             return await _context.OrderDetails
                 .Where(od => od.ShipperId == shipperId && od.Status == OrderStatus.Completed)
-                .SumAsync(od => od.Order.TotalAmount);
+                .SumAsync(od => od.Order.Subtotal);
         }
         public async Task AddShipperAsync(Shipper shipper) => await _context.Shippers.AddAsync(shipper);
         public async Task AddUserRoleAsync(UserRole userRole) => await _context.UserRoles.AddAsync(userRole);

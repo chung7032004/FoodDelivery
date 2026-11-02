@@ -5,6 +5,7 @@ using FoodDelivery.DTOs.Restaurant;
 namespace FoodDelivery.Service.Interfaces;
 public interface IRestaurantService
 {
+    Task<Result<PublicRestaurantProfileDto>> GetPublicRestaurantAsync(Guid restaurantId);
     Task<Result<RestaurantProfileDto>> GetMyRestaurantAsync(Guid userId);
     Task<Result<RestaurantStatusResponse>> GetStatusRestaurantAsync(Guid userId);
     Task<Result> OpenRestaurantAsync(Guid userId);

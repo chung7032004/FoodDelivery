@@ -16,6 +16,14 @@ public class RestaurantController : ControllerBase
         _restaurantService = restaurantService;
     }
 
+    [AllowAnonymous]
+    [HttpGet("public/{restaurantId:guid}")]
+    public async Task<IActionResult> GetPublicRestaurant(Guid restaurantId)
+    {
+        var result = await _restaurantService.GetPublicRestaurantAsync(restaurantId);
+        return result.ToActionResult();
+    }
+
     [Authorize]
     [HttpGet("application/me")]
     public async Task<IActionResult> GetMyApplication()

@@ -17,6 +17,7 @@ public class OrderDetailResponse
     public PaymentStatus PaymentStatus { get; set; }
     public OrderStatus CurrentStatus { get; set; }
     public string? CancelReason { get; set; }
+    public decimal Subtotal { get; set; }
     public decimal TotalAmount { get; set; }
     public List<OrderItemResponse> Items { get; set; } = new();
     public List<OrderStatusHistoryResponse> StatusHistories { get; set; } = new();

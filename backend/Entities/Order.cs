@@ -9,6 +9,7 @@ namespace FoodDelivery.Entities
         public string ShippingAddress {get; set;} = string.Empty;
         public string ReceiverName {get; set;} = string.Empty;
         public string ReceiverPhone {get; set;} = string.Empty;
+        public decimal Subtotal { get; set; }
         public decimal TotalAmount {get; set;}
         public decimal ShippingFee {get; set;} 
         public string? Note {get; set;}

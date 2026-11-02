@@ -24,18 +24,8 @@ public class OrdersController : ControllerBase
         var result = await _orderService.BuyNowAsync(customerId,request);
         if (!result.IsSuccess)
         {
-            return result.ErrorCode switch
-            {
-                "INVALID_QUANTITY" =>BadRequest(result),
-                "PRODUCT_NOT_FOUND" => NotFound(result),
-                "ADDRESS_NOT_FOUND" => NotFound(result),
-                "PRODUCT_UNAVAILABLE" => BadRequest(result),
-                "TOO_FAR" => BadRequest(result),
-                "RESTAURANT_NOT_CONFIGURED" =>Conflict(result),
-                _ => BadRequest(result),
-            };
+            return result.ToActionResult();
         }
-
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
@@ -54,9 +44,16 @@ public class OrdersController : ControllerBase
 
     [HttpGet("orders/shipping-fee")]
     [HasPermission(PermissionConstants.Orders.View)]
-    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] Guid restaurantId)
+    public async Task<IActionResult> CalculateShippingFee(
+        [FromQuery] Guid addressId,
+        [FromQuery] Guid restaurantId,
+        [FromQuery] decimal subtotal = 0,
+        [FromQuery] string serviceType = "Standard")
     {
-        var result = await _orderService.CalculateShippingFeeAsync(addressId,restaurantId);
+        if (subtotal < 0)
+            return BadRequest(new { ErrorCode = "INVALID_SUBTOTAL", Message = "Subtotal không thể nhỏ hơn 0." });
+
+        var result = await _orderService.CalculateShippingFeeAsync(addressId, restaurantId, subtotal, serviceType);
         return result.ToActionResult();
     }
 

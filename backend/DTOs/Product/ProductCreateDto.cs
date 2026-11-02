@@ -7,6 +7,7 @@ namespace FoodDelivery.DTOs.Product
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public decimal? CostPrice { get; set; }
         public bool IsAvailable { get; set; } = true;
         public bool IsFeatured { get; set; } = false;
         public int DisplayOrder { get; set; } = 0;

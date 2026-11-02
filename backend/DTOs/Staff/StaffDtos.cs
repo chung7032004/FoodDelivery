@@ -14,9 +14,16 @@ public class OrderDto
 
 public class OrderItemDto
 {
+    public Guid ProductId { get; set; }
     public string ProductName { get; set; } = "";
     public int Quantity { get; set; }
     public decimal Price { get; set; }
+}
+
+public class ReportOutOfStockRequest
+{
+    public List<Guid> RemovedProductIds { get; set; } = new();
+    public string Note { get; set; } = string.Empty;
 }
 
 public class StaffStatsDto
@@ -24,7 +31,36 @@ public class StaffStatsDto
     public int TotalOrdersToday { get; set; }
     public int PreparingCount { get; set; }
     public int ReadyCount { get; set; }
-    public int IssueCount { get; set; }
+    public int WaitingCustomerDecisionCount { get; set; }
+    public int PendingCount { get; set; }
+    public int ConfirmedCount { get; set; }
+    public int ShippingCount { get; set; }
+}
+
+public class RestaurantAnalyticsPointDto
+{
+    public DateTime PeriodStart { get; set; }
+    public decimal Revenue { get; set; }
+    public decimal? GrossProfit { get; set; }
+    public int CompletedOrders { get; set; }
+    public int OrdersMissingCost { get; set; }
+}
+
+public class RestaurantAnalyticsDto
+{
+    public string Period { get; set; } = string.Empty;
+    public decimal Revenue { get; set; }
+    public decimal? GrossProfit { get; set; }
+    public int CompletedOrders { get; set; }
+    public int OrdersMissingCost { get; set; }
+    public List<RestaurantAnalyticsPointDto> Points { get; set; } = new();
+}
+
+public class RestaurantAnalyticsOrderDto
+{
+    public DateTime CompletedAt { get; set; }
+    public decimal Revenue { get; set; }
+    public decimal? GrossProfit { get; set; }
 }
 
 public class UpdateOrderStatusRequest

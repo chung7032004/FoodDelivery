@@ -22,7 +22,8 @@ public class RestaurantRepository : IRestaurantRepository
     public async Task<Restaurant?> GetRestaurantByUserIdAsync(Guid userId)
     {
         return await _context.Restaurants
-            .FirstOrDefaultAsync(r => r.OwnerId == userId);
+            .OrderByDescending(r => r.OwnerId == userId)
+            .FirstOrDefaultAsync(r => r.OwnerId == userId || r.Staff.Any(staff => staff.UserId == userId && staff.IsActive));
     }
 
     public async Task<Restaurant?> GetStatusByIdAsync(Guid restaurantId)

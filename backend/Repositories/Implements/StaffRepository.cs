@@ -25,19 +25,15 @@ public class StaffRepository : IStaffRepository
 
     public async Task<List<OrderDto>> GetOrdersByRestaurant(Guid restaurantId)
     {
-        // Get all active orders (not completed or cancelled) for the restaurant
-        // Note: Order entity doesn't have RestaurantId foreign key, so we can't filter by it
-        // Staff accessing this endpoint should only see orders from their restaurant
+        var today = DateTime.UtcNow.Date;
         var orders = await _context.Orders
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
             .Include(o => o.Customer)
-                 .Where(o => o.OrderDetail != null &&
-                     o.RestaurantId == restaurantId &&
-                     (o.OrderDetail.Status == OrderStatus.Pending ||
-                    o.OrderDetail.Status == OrderStatus.Confirmed ||
-                    o.OrderDetail.Status == OrderStatus.Preparing ||
-                    o.OrderDetail.Status == OrderStatus.ReadyForPickup))
+                 .Where(o => o.OrderDetail != null
+                     && o.RestaurantId == restaurantId
+                     && o.CreatedAt >= today
+                     && o.CreatedAt < today.AddDays(1))
             .AsNoTracking()
             .Select(o => new OrderDto
             {
@@ -45,11 +41,12 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
-                TotalAmount = o.TotalAmount,
+                TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
+                    ProductId = oi.ProductId,
                     ProductName = oi.ProductName,
                     Quantity = oi.Quantity,
                     Price = oi.UnitPrice
@@ -63,8 +60,7 @@ public class StaffRepository : IStaffRepository
 
     public async Task<List<OrderDto>> GetPendingOrdersByRestaurant(Guid restaurantId)
     {
-        // Note: Order entity doesn't have RestaurantId foreign key
-        // Staff should only see orders from their restaurant (validated in service layer)
+        // Include all active and delivery stages in the restaurant's order workspace.
         return await _context.Orders
             .Include(o => o.OrderDetail)
             .Include(o => o.OrderItems)
@@ -72,7 +68,11 @@ public class StaffRepository : IStaffRepository
                  .Where(o => o.OrderDetail != null &&
                      o.RestaurantId == restaurantId &&
                      (o.OrderDetail.Status == OrderStatus.Pending ||
-                    o.OrderDetail.Status == OrderStatus.Confirmed))
+                    o.OrderDetail.Status == OrderStatus.WaitingCustomerDecision ||
+                     o.OrderDetail.Status == OrderStatus.Confirmed ||
+                     o.OrderDetail.Status == OrderStatus.Preparing ||
+                     o.OrderDetail.Status == OrderStatus.ReadyForPickup ||
+                     o.OrderDetail.Status == OrderStatus.Shipping))
             .AsNoTracking()
             .Select(o => new OrderDto
             {
@@ -80,11 +80,12 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
-                TotalAmount = o.TotalAmount,
+                TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
+                    ProductId = oi.ProductId,
                     ProductName = oi.ProductName,
                     Quantity = oi.Quantity,
                     Price = oi.UnitPrice
@@ -108,11 +109,12 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
-                TotalAmount = o.TotalAmount,
+                TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
+                    ProductId = oi.ProductId,
                     ProductName = oi.ProductName,
                     Quantity = oi.Quantity,
                     Price = oi.UnitPrice
@@ -256,8 +258,7 @@ public class StaffRepository : IStaffRepository
                  .Where(o => o.OrderDetail != null &&
                      o.RestaurantId == restaurantId &&
                      (o.OrderDetail.Status == OrderStatus.Completed ||
-                    o.OrderDetail.Status == OrderStatus.Cancelled ||
-                    o.OrderDetail.Status == OrderStatus.Shipping) &&
+                    o.OrderDetail.Status == OrderStatus.Cancelled) &&
                    o.CreatedAt >= startDate)
             .AsNoTracking()
             .Select(o => new OrderDto
@@ -266,11 +267,12 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
-                TotalAmount = o.TotalAmount,
+                TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
+                    ProductId = oi.ProductId,
                     ProductName = oi.ProductName,
                     Quantity = oi.Quantity,
                     Price = oi.UnitPrice
@@ -280,6 +282,30 @@ public class StaffRepository : IStaffRepository
             .ToListAsync();
 
                         return orders;
+    }
+
+    public async Task<List<RestaurantAnalyticsOrderDto>> GetCompletedOrderAnalyticsAsync(
+        Guid restaurantId,
+        DateTime fromUtc,
+        DateTime toUtc)
+    {
+        return await _context.Orders
+            .AsNoTracking()
+            .Where(order => order.RestaurantId == restaurantId
+                && order.OrderDetail.Status == OrderStatus.Completed
+                && order.OrderDetail.ActualDeliveryTime >= fromUtc
+                && order.OrderDetail.ActualDeliveryTime < toUtc)
+            .Select(order => new RestaurantAnalyticsOrderDto
+            {
+                CompletedAt = order.OrderDetail.ActualDeliveryTime!.Value,
+                Revenue = order.Subtotal,
+                GrossProfit = order.OrderItems.Any(item => !item.IsRemoved && item.UnitCostSnapshot == null)
+                    ? null
+                    : order.OrderItems
+                        .Where(item => !item.IsRemoved)
+                        .Sum(item => (item.UnitPrice - item.UnitCostSnapshot!.Value) * item.Quantity)
+            })
+            .ToListAsync();
     }
 
     public async Task<List<ReviewDto>> GetRestaurantReviewsAsync(Guid restaurantId, int? rating = null)
@@ -327,4 +353,3 @@ public class StaffRepository : IStaffRepository
     }
 
 }
-

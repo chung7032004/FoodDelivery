@@ -6,7 +6,7 @@ public interface IProductRepository
 {
     Task<Product?> GetByIdAsync(Guid id);
     Task<ProductDetailResponseDto?> GetByIdDetailAsync(Guid id);
-    Task<(int,List<Product>)> GetAllAsync(Guid? categoryId = null, string? searchQuery = null, int Page = 1, int pageSize = 10);
+    Task<(int,List<Product>)> GetAllAsync(Guid? categoryId = null, string? searchQuery = null, int Page = 1, int pageSize = 10, Guid? restaurantId = null);
     Task<List<Product>> GetByCategoryAsync(Guid categoryId);
     Task AddAsync(Product product);
     Task UpdateAsync(Product product);
