@@ -4,22 +4,44 @@ import { api } from "./api";
 export interface CheckoutRequest {
   addressId: string;
   cartItemIds: string[];
+  shippingService: ShippingService;
+  paymentMethod: PaymentMethod;
   note?: string;
 }
+
+export interface BuyNowRequest {
+  productId: string;
+  quantity: number;
+  addressId: string;
+  shippingService: ShippingService;
+  paymentMethod: PaymentMethod;
+  note?: string;
+}
+
+export type ShippingService = "Standard" | "Express";
+export type PaymentMethod = 0 | 1 | 2;
 
 export interface CreatedOrder {
   orderId: string;
   orderCode: string;
   status: number;
+  subtotal: number;
   totalAmount: number;
   shippingFee: number;
   estimatedDeliveryTime: string;
+}
+
+export interface ShippingFeeEstimate {
+  shippingFee: number;
+  distance: number;
+  estimatedMinutes: number;
 }
 
 export interface OrderHistoryItem {
   orderId: string;
   orderCode: string;
   createdAt: string;
+  subtotal: number;
   totalAmount: number;
   shippingFee: number;
   estimatedDeliveryTime: string | null;
@@ -40,6 +62,7 @@ export interface OrderDetail {
   paymentStatus: number | string;
   currentStatus: number | string;
   cancelReason: string | null;
+  subtotal: number;
   totalAmount: number;
   items: {
     orderItemId: string;
@@ -60,8 +83,23 @@ export interface OrderDetail {
 }
 
 export const orderService = {
+  buyNow: async (request: BuyNowRequest): Promise<ApiResult<CreatedOrder>> => {
+    const { data } = await api.post<ApiResult<CreatedOrder>>("/orders/buy-now", request);
+    return data;
+  },
   checkout: async (request: CheckoutRequest): Promise<ApiResult<CreatedOrder>> => {
     const { data } = await api.post<ApiResult<CreatedOrder>>("/orders/checkout", request);
+    return data;
+  },
+  calculateShippingFee: async (
+    addressId: string,
+    restaurantId: string,
+    subtotal: number,
+    serviceType: ShippingService = "Standard",
+  ): Promise<ApiResult<ShippingFeeEstimate>> => {
+    const { data } = await api.get<ApiResult<ShippingFeeEstimate>>("/orders/shipping-fee", {
+      params: { addressId, restaurantId, subtotal, serviceType },
+    });
     return data;
   },
   getMyHistory: async (page = 1, pageSize = 5): Promise<ApiResult<PagedResponse<OrderHistoryItem>>> => {

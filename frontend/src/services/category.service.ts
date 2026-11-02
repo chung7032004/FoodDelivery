@@ -10,6 +10,7 @@ export interface CategoryResponse {
     displayOrder : number
     imageUrl : string | null
     createdAt : string // ISO string, parse bằng new Date() khi cần
+    restaurantId: string | null
 }
 export const categoryService = {
     getAll : async (params : CategoryQueryParams) : Promise<ApiResult<PagedResponse<CategoryResponse>>> =>{

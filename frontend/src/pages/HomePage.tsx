@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { HeaderNav }    from '../components/layout/HeaderNav';
+import { HeaderNav }    from '../components/layout/header/HeaderNav';
 import { Footer }       from '../components/layout/Footer';
 import { HeroSection }  from '../components/sections/HeroSection';
 import { CategoryList } from '../components/sections/CategoryList';

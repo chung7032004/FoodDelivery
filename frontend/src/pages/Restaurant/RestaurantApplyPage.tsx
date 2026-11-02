@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle2, Clock3, Store, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AddressMapPicker } from '@/components/account/AddressMapPicker';
 import { Footer } from '@/components/layout/Footer';
-import { HeaderNav } from '@/components/layout/HeaderNav';
+import { HeaderNav } from '@/components/layout/header/HeaderNav';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { accountService } from '@/services/account.service';

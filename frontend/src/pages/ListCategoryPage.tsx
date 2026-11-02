@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ChartBarStacked } from 'lucide-react';
-import { HeaderNav } from '@/components/layout/HeaderNav';
+import { HeaderNav } from '@/components/layout/header/HeaderNav';
 import { Footer } from '@/components/layout/Footer';
 import { Category } from '@/types/category';
 import { useQuery } from '@tanstack/react-query';

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Utensils, ChevronDown, RefreshCw } from 'lucide-react';
 
 import { Footer } from "@/components/layout/Footer";
-import { HeaderNav } from "@/components/layout/HeaderNav";
+import { HeaderNav } from "@/components/layout/header/HeaderNav";
 
 import { productService } from '@/services/product.service.ts';
 import { Dish } from '@/types';

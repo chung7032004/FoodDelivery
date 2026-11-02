@@ -51,6 +51,8 @@ export interface RestaurantProfile {
   longitude: number;
 }
 
+export type PublicRestaurantProfile = RestaurantProfile;
+
 interface ApiResult<T> { data: T; isSuccess: boolean; message: string | null; }
 
 export const restaurantService = {
@@ -65,6 +67,8 @@ export const restaurantService = {
   reviewApplication: (id: string, isApproved: boolean, rejectReason?: string) =>
     api.put(`/restaurant/admin/${id}/review`, { isApproved, rejectReason }),
   getProfile: async () => (await api.get<ApiResult<RestaurantProfile>>('/restaurant/profile')).data,
+  getPublicProfile: async (restaurantId: string) =>
+    (await api.get<ApiResult<PublicRestaurantProfile>>(`/restaurant/public/${restaurantId}`)).data,
   getStatus: async () => (await api.get<ApiResult<{ isOpen: boolean; closingMessage: string | null; updatedAt: string }>>('/restaurant/status')).data,
   updateProfile: (payload: Omit<RestaurantProfile, 'id' | 'isOpen' | 'closingMessage'>) => api.put('/restaurant/profile', payload),
   open: () => api.put('/restaurant/open'),

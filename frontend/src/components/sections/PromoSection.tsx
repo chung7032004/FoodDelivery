@@ -1,47 +1,55 @@
+import { Link } from 'react-router-dom';
+import { cn } from '@/utils/cn';
+
 // ─── PromoSection ─────────────────────────────────────────────────
 export function PromoSection() {
   return (
-    <section className="px-8 pb-12 max-w-7xl mx-auto">
-      <div className="grid grid-cols-[2fr_1fr] gap-4">
+    <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[2fr_1fr]">
 
         {/* Big promo banner */}
-        <div className="relative bg-[#1A1A1A] rounded-2xl p-8 flex items-center justify-between overflow-hidden">
+        <div className="relative flex items-center justify-between overflow-hidden rounded-2xl bg-[#1A1A1A] p-5 sm:p-6 lg:p-8">
           {/* Glow blob */}
-          <div className="absolute right-0 bottom-0 w-56 h-56 bg-brand/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-40 w-40 translate-x-1/3 translate-y-1/3 rounded-full bg-brand/20 blur-3xl sm:h-56 sm:w-56" />
 
           <div className="relative z-10">
-            <p className="text-xs font-semibold text-orange-400 uppercase tracking-widest mb-2">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-orange-400 sm:text-xs">
               Ưu đãi đặc biệt
             </p>
-            <h3 className="font-display text-2xl font-bold text-white leading-snug mb-5">
-              Miễn phí giao hàng<br />
+            <h3 className="mb-4 font-display text-xl font-bold leading-snug text-white sm:text-2xl sm:mb-5">
+              Miễn phí giao hàng
+              <br />
               <span className="text-orange-400">đơn đầu tiên</span>
             </h3>
-            <button className="bg-brand text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-brand-dark transition-colors cursor-pointer">
+            <Link
+              to="/promotions"
+              className="inline-block rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 sm:px-5 sm:py-2.5"
+            >
               Dùng ngay
-            </button>
+            </Link>
           </div>
 
-          <span className="text-[80px] leading-none opacity-90 relative z-10">🎁</span>
+          <span className="relative z-10 ml-4 text-[56px] leading-none opacity-90 sm:text-[80px]">
+            🎁
+          </span>
         </div>
 
         {/* Small promos stack */}
         <div className="flex flex-col gap-3">
-
           <SmallPromoCard
             title="Combo Trưa tiết kiệm"
             subtitle="Từ 45.000đ · Giao nhanh"
             btnLabel="Xem combo →"
             bgColor="bg-brand"
+            to="/promotions"
           />
-
           <SmallPromoCard
             title="Tích điểm · Đổi quà"
             subtitle="Mỗi đơn tích 1 điểm thưởng"
             btnLabel="Tham gia →"
             bgColor="bg-green-600"
+            to="/promotions"
           />
-
         </div>
       </div>
     </section>
@@ -53,19 +61,24 @@ interface SmallPromoCardProps {
   title: string;
   subtitle: string;
   btnLabel: string;
+  /** Class Tailwind nền — phải là full class (vd 'bg-brand'), không dynamic. */
   bgColor: string;
+  to: string;
 }
 
-function SmallPromoCard({ title, subtitle, btnLabel, bgColor }: SmallPromoCardProps) {
+function SmallPromoCard({ title, subtitle, btnLabel, bgColor, to }: SmallPromoCardProps) {
   return (
-    <div className={`${bgColor} rounded-2xl p-5 flex flex-col justify-between flex-1 text-white`}>
+    <div className={cn('flex flex-1 flex-col justify-between rounded-2xl p-5 text-white', bgColor)}>
       <div>
-        <h4 className="font-display font-bold text-sm leading-snug">{title}</h4>
-        <p className="text-xs opacity-75 mt-1 mb-4">{subtitle}</p>
+        <h4 className="font-display text-sm font-bold leading-snug">{title}</h4>
+        <p className="mt-1 mb-4 text-xs opacity-75">{subtitle}</p>
       </div>
-      <button className="bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-4 py-2 rounded-xl w-fit cursor-pointer transition-colors">
+      <Link
+        to={to}
+        className="w-fit rounded-xl bg-white/20 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
+      >
         {btnLabel}
-      </button>
+      </Link>
     </div>
   );
 }

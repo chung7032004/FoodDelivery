@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Clock3, ShieldCheck, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Footer } from '@/components/layout/Footer';
-import { HeaderNav } from '@/components/layout/HeaderNav';
+import { HeaderNav } from '@/components/layout/header/HeaderNav';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { accountService } from '@/services/account.service';

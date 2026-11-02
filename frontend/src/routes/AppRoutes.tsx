@@ -1,16 +1,18 @@
 // src/routes/AppRoutes.tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
-import { LoginPage } from '../pages/LoginPage';
-import { RegisterPage } from '../pages/RegisterPage';
+import { LoginPage } from '@/pages/Auth/LoginPage';
+import { RegisterPage } from '../pages/Auth/RegisterPage';
 import  { ProtectedRoute}  from './ProtectedRoute';
 import { AccountPage } from '../pages/AccountPage';
-import { SendOtpPage } from '@/pages/SendOtpPage';
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { SendOtpPage } from '@/pages/Auth/SendOtpPage';
+import { ResetPasswordPage } from '@/pages/Auth/ResetPasswordPage';
 import { ListCategoryPage } from '@/pages/ListCategoryPage';
 import ProductDetailPage from '@/pages/ProductDetailPage';
 import { ProductListPage } from '@/pages/ProductListPage';
 import { CartPage } from '@/pages/CartPage';
+import { CheckoutPage } from '@/pages/CheckoutPage';
+import { PublicRestaurantPage } from '@/pages/PublicRestaurantPage';
 
 import AdminUsersPage from '@/pages/Admin/AdminUsersPage';
 import AdminOrdersPage from '@/pages/Admin/AdminOrdersPage';
@@ -43,8 +45,10 @@ export function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path= "/list-category" element={<ListCategoryPage />} />
       <Route path = "/product/:productId" element={<ProductDetailPage />} />
+      <Route path="/restaurants/:restaurantId" element={<PublicRestaurantPage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+      <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
       {/* Route cần đăng nhập mới vào được */}
       <Route
         path="/account"
@@ -72,6 +76,7 @@ export function AppRoutes() {
       <Route path="/admin/categories" element={<ProtectedRoute requiredRoles={['Admin']}><AdminCategoriesPage /></ProtectedRoute>} />
       <Route path="/admin/products" element={<ProtectedRoute requiredRoles={['Admin']}><AdminProductsPage /></ProtectedRoute>} />
       <Route path="/restaurant" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantApprovalRoute><RestaurantManagementPage /></RestaurantApprovalRoute></ProtectedRoute>} />
+      <Route path="/restaurant/settings" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantApprovalRoute><RestaurantManagementPage /></RestaurantApprovalRoute></ProtectedRoute>} />
       <Route path="/restaurant/apply" element={<ProtectedRoute><RestaurantApplyPage /></ProtectedRoute>} />
       <Route path="/restaurant/orders" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantApprovalRoute><RestaurantOrdersPage /></RestaurantApprovalRoute></ProtectedRoute>} />
       <Route path="/restaurant/profile" element={<ProtectedRoute requiredRoles={['RestaurantOwner', 'RestaurantStaff']}><RestaurantApprovalRoute><RestaurantManagementPage /></RestaurantApprovalRoute></ProtectedRoute>} />

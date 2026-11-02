@@ -5,12 +5,16 @@ import { api } from "./api";
 
 export const productService = {
     getAll : async (params : ProductQueryParams) : Promise<ApiResult<PagedResponse<ProductResponseDto>>> =>{
-        const {data} = await api.get<ApiResult<PagedResponse<ProductResponseDto>>>("/products", { params: { categoryId: params.categoryId, q: params.searchQuery, page: params.page, pageSize: params.pageSize } });
+        const {data} = await api.get<ApiResult<PagedResponse<ProductResponseDto>>>("/products", { params: { categoryId: params.categoryId, restaurantId: params.restaurantId, q: params.searchQuery, page: params.page, pageSize: params.pageSize } });
         return data;
     },
     getDetailById : async (id : string ) : Promise<ApiResult<ProductDetailResponseDto>> =>{
         const {data} = await api.get<ApiResult<ProductDetailResponseDto>>('/products/' + id);
         return data ;
+    },
+    getCostPrice: async (id: string): Promise<ApiResult<number | null>> => {
+        const { data } = await api.get<ApiResult<number | null>>(`/products/${id}/cost-price`);
+        return data;
     },
     create: (payload: FormData) => api.post('/products', payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
     update: (id: string, payload: FormData) => api.put(`/products/${id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
