@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
-import { AuthLayout } from '../components/layout/AuthLayout';
-import  Input  from '../components/ui/Input';
-import  Button  from '../components/ui/Button';
+import { AuthLayout } from '../../components/layout/AuthLayout';
+import  Input  from '../../components/ui/Input';
+import  Button  from '../../components/ui/Button';
 import { authService } from '@/services/auth.service';
 import axios from 'axios';
 

@@ -6,7 +6,7 @@ public interface IOrderService
 {
     Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request);
     Task<Result<CreateOrderResponseDto>> CheckoutAsync(Guid customerId,CheckoutRequestDto request);
-    Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId, Guid restaurantId);
+    Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId, Guid restaurantId, decimal subtotal, string serviceType = "Standard");
     Task<Result<PagedResponse<OrderHistoryItemResponse>>> GetMyOrderAsync(Guid customerId, int page, int pageSize);
     Task<Result<OrderDetailResponse>> GetOrderDetailAsync(Guid userId,List<string> roles,Guid orderId);
     Task<Result> CancelOrderByCustomerAsync(Guid userId, Guid orderId , CancelOrderRequestDto cancelOrderRequestDto);
@@ -14,10 +14,12 @@ public interface IOrderService
     Task<Result<PagedResponse<OrderAdminSummaryResponse>>> GetOrderAdminAsync(OrderFilterModel filter);
     Task<Result> ConfirmOrderAsync(Guid adminId, Guid orderId);
     Task<Result> OutOfStockAsync(Guid adminId, Guid orderId, OutOfStockRequest request);
+    Task<Result> ReportOutOfStockByRestaurantAsync(Guid userId, Guid orderId, OutOfStockRequest request);
     Task<Result> StartPreparingAsync(Guid adminId, Guid orderId);
     Task<Result> MarkAsReadyAsync(Guid adminId, Guid orderId);
     Task<Result> MarkAsDeliveredAsync(Guid shipperId, Guid orderId);
     Task<Result> MarkPaymentCompleteAsync(Guid orderId);
     Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request);
     Task<Result> AssignShipperAsync(Guid adminId, Guid orderId, Guid shipperId);
+    Task<Result> CancelOrderByRestaurantAsync(Guid userId, Guid orderId, CancelOrderRequestDto request);
 }

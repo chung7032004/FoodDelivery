@@ -245,6 +245,9 @@ namespace FoodDelivery.Migrations
                     b.Property<decimal>("ShippingFee")
                         .HasColumnType("numeric");
 
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("numeric");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("numeric");
 
@@ -338,6 +341,9 @@ namespace FoodDelivery.Migrations
 
                     b.Property<string>("RemoveReason")
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");
@@ -1133,6 +1139,9 @@ namespace FoodDelivery.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("CostPrice")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");

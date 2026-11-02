@@ -26,6 +26,7 @@ public class OrderRepository : IOrderRepository
                 OrderId = o.Id,
                 OrderCode = o.OrderCode,
                 CreatedAt = o.CreatedAt,
+                Subtotal = o.Subtotal,
                 TotalAmount = o.TotalAmount,
                 ShippingFee = o.ShippingFee,
                 CurrentStatus = o.OrderDetail.Status,

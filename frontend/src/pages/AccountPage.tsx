@@ -1,7 +1,7 @@
 // src/pages/AccountPage.tsx
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { HeaderNav } from '../components/layout/HeaderNav';
+import { HeaderNav } from '../components/layout/header/HeaderNav';
 import { Footer } from '../components/layout/Footer';
 import { AddressesTab as AddressesTabView } from '@/components/account/AddressesTab';
 import { OrdersTab as OrdersTabView } from '@/components/account/OrdersTab';

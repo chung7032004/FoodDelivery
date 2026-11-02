@@ -15,16 +15,21 @@ namespace FoodDelivery.Repositories.Implementations
             _context = context;
         }
 
-        public async Task<(int,List<Product>)> GetAllAsync(Guid? categoryId = null, string? searchQuery = null, int Page = 1, int pageSize = 10)
+        public async Task<(int,List<Product>)> GetAllAsync(Guid? categoryId = null, string? searchQuery = null, int Page = 1, int pageSize = 10, Guid? restaurantId = null)
         {
             var query = _context.Products
                 .AsNoTracking()
                 .Include(p=>p.Category)
                 .Include(p=>p.ProductImages)
+                .Where(p => p.Restaurant != null && p.Restaurant.ApplicationStatus == RestaurantApplicationStatus.Approved)
                 .AsQueryable();
             if (categoryId.HasValue)
             {
                 query = query.Where(p=>p.CategoryId == categoryId);
+            }
+            if (restaurantId.HasValue)
+            {
+                query = query.Where(p => p.RestaurantId == restaurantId);
             }
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
@@ -49,7 +54,7 @@ namespace FoodDelivery.Repositories.Implementations
         {
              return await _context.Products
                 .AsNoTracking()
-                .Where(p => p.Id == id)
+                .Where(p => p.Id == id && p.Restaurant != null && p.Restaurant.ApplicationStatus == RestaurantApplicationStatus.Approved)
                 .Select(p => new ProductDetailResponseDto
                 {
                     Id = p.Id,

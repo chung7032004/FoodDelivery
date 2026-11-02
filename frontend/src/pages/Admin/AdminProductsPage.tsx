@@ -1,9 +1,10 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Pencil, Plus, Search, Trash2, ChartBarStacked } from 'lucide-react';
 import { RestaurantLayout } from '@/pages/Restaurant/RestaurantLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
 import { categoryService, CategoryResponse } from '@/services/category.service';
 import { productService } from '@/services/product.service';
+import { restaurantService } from '@/services/restaurant.service';
 import { ProductResponseDto } from '@/types/product';
 import { getImageUrl } from '@/utils/image';
 import { AdminLayout } from './AdminLayout';
@@ -15,6 +16,7 @@ type ProductForm = {
   name: string;
   description: string;
   price: string;
+  costPrice: string;
   isAvailable: boolean;
   isFeatured: boolean;
   displayOrder: string;
@@ -29,6 +31,7 @@ const emptyForm: ProductForm = {
   name: '',
   description: '',
   price: '',
+  costPrice: '',
   isAvailable: true,
   isFeatured: false,
   displayOrder: '0',
@@ -43,6 +46,14 @@ const money = new Intl.NumberFormat('vi-VN', {
   maximumFractionDigits: 0,
 });
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+  return fallback;
+}
+
 interface AdminProductsPageProps {
   workspace?: 'admin' | 'restaurant';
 }
@@ -50,6 +61,8 @@ interface AdminProductsPageProps {
 export default function AdminProductsPage({ workspace = 'admin' }: AdminProductsPageProps) {
   const [items, setItems] = useState<ProductResponseDto[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
+  const [restaurantId, setRestaurantId] = useState('');
+  const [restaurantName, setRestaurantName] = useState('');
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [editing, setEditing] = useState<ProductResponseDto | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -60,47 +73,69 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
   const [error, setError] = useState('');
 
   // Tải danh sách sản phẩm và danh mục
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
+      let currentRestaurantId: string | undefined;
+      if (workspace === 'restaurant') {
+        const restaurantResult = await restaurantService.getProfile();
+        if (!restaurantResult.isSuccess || !restaurantResult.data) {
+          throw new Error(restaurantResult.message ?? 'Không tìm thấy nhà hàng được gán cho tài khoản.');
+        }
+        currentRestaurantId = restaurantResult.data.id;
+        setRestaurantId(currentRestaurantId);
+        setRestaurantName(restaurantResult.data.name);
+      }
+
       const [products, categoryResult] = await Promise.all([
         productService.getAll({
           searchQuery: search.trim() || undefined,
           categoryId: categoryId || undefined,
+          restaurantId: currentRestaurantId,
           page: 1,
           pageSize: 100,
         }),
         categoryService.getAll({ page: 1, pageSize: 100 }),
       ]);
-      setItems(products.data?.data || []);
-      setCategories(categoryResult.data?.data || []);
-    } catch {
-      setError('Không thể tải danh sách sản phẩm.');
+      if (!products.isSuccess || !products.data || !categoryResult.isSuccess || !categoryResult.data) {
+        throw new Error('Không thể tải danh sách món ăn hoặc danh mục.');
+      }
+      setItems(products.data.data);
+      setCategories(categoryResult.data.data.filter((category) =>
+        workspace === 'admin' || !category.restaurantId || category.restaurantId === currentRestaurantId
+      ));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Không thể tải danh sách sản phẩm.');
     } finally {
       setLoading(false);
     }
-  }
+  }, [categoryId, search, workspace]);
 
   useEffect(() => {
     void load();
-  }, [search, categoryId]);
+  }, [load]);
 
   // Mở modal thêm mới hoặc sửa
   async function openForm(product?: ProductResponseDto) {
     if (product) {
       try {
         const detailRes = await productService.getDetailById(product.id);
+        const costPriceRes = await productService.getCostPrice(product.id);
+        if (!detailRes.isSuccess || !detailRes.data || !costPriceRes.isSuccess) {
+          throw new Error(detailRes.message ?? 'Không thể tải chi tiết sản phẩm.');
+        }
         const detail = detailRes.data;
         const images = detail?.images ?? [];
         const previews = images.map((img) => getImageUrl(img.imageUrl));
         setEditing(product);
         setForm({
-          restaurantId: product.restaurantId || '',
+          restaurantId: workspace === 'restaurant' ? restaurantId : product.restaurantId || '',
           categoryId: product.categoryId || '',
           name: product.name || '',
           description: detail?.description ?? product.description ?? '',
           price: String(product.price || 0),
+          costPrice: costPriceRes.data === null ? '' : String(costPriceRes.data),
           isAvailable: product.isAvailable ?? true,
           isFeatured: product.isFeatured ?? false,
           displayOrder: String(product.displayOrder || 0),
@@ -110,8 +145,10 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
         });
         setShowForm(true);
         return;
-      } catch {
-        // fallback to basic product values below
+      } catch (detailError) {
+        setError(detailError instanceof Error
+          ? `${detailError.message} Biểu mẫu sẽ dùng thông tin cơ bản của món.`
+          : 'Không thể tải chi tiết sản phẩm. Biểu mẫu sẽ dùng thông tin cơ bản của món.');
       }
     }
 
@@ -119,11 +156,12 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
     setForm(
       product
         ? {
-            restaurantId: product.restaurantId || '',
+            restaurantId: workspace === 'restaurant' ? restaurantId : product.restaurantId || '',
             categoryId: product.categoryId || '',
             name: product.name || '',
             description: product.description || '',
             price: String(product.price || 0),
+            costPrice: '',
             isAvailable: product.isAvailable ?? true,
             isFeatured: product.isFeatured ?? false,
             displayOrder: String(product.displayOrder || 0),
@@ -131,7 +169,7 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
             previews: product.mainImageUrl ? [getImageUrl(product.mainImageUrl)] : [],
             mainImageIndex: 0,
           }
-        : emptyForm
+        : { ...emptyForm, restaurantId: workspace === 'restaurant' ? restaurantId : '' }
     );
     setShowForm(true);
   }
@@ -162,18 +200,45 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
   // Submit Form
   async function submit(event: FormEvent) {
     event.preventDefault();
+    const price = Number(form.price);
+    const costPrice = Number(form.costPrice);
+    const displayOrder = Number(form.displayOrder);
+    if (form.name.trim().length < 2) {
+      setError('Tên món phải có ít nhất 2 ký tự.');
+      return;
+    }
+    if (!form.categoryId) {
+      setError('Vui lòng chọn danh mục cho món ăn.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      setError('Giá món ăn phải lớn hơn 0.');
+      return;
+    }
+    if (!form.costPrice.trim() || !Number.isFinite(costPrice) || costPrice < 0) {
+      setError('Vui lòng nhập giá vốn hợp lệ để theo dõi lợi nhuận.');
+      return;
+    }
+    if (!Number.isInteger(displayOrder) || displayOrder < 0) {
+      setError('Thứ tự hiển thị phải là số nguyên không âm.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
+      if (workspace === 'restaurant' && !restaurantId) {
+        throw new Error('Không tìm thấy nhà hàng để gắn sản phẩm.');
+      }
       const formData = new FormData();
-      formData.append('restaurantId', form.restaurantId);
+      formData.append('restaurantId', workspace === 'restaurant' ? restaurantId : form.restaurantId);
       formData.append('categoryId', form.categoryId);
       formData.append('name', form.name.trim());
       formData.append('description', form.description.trim());
-      formData.append('price', String(Number(form.price || 0)));
+      formData.append('price', String(price));
+      formData.append('costPrice', String(costPrice));
       formData.append('isAvailable', String(form.isAvailable));
       formData.append('isFeatured', String(form.isFeatured));
-      formData.append('displayOrder', String(Number(form.displayOrder || 0)));
+      formData.append('displayOrder', String(displayOrder));
 
       if (form.imageFiles.length > 0) {
         form.imageFiles.forEach((file) => {
@@ -189,8 +254,8 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
       }
       setShowForm(false);
       await load();
-    } catch {
-      setError('Không thể lưu thông tin sản phẩm.');
+    } catch (submitError) {
+      setError(getErrorMessage(submitError, 'Không thể lưu thông tin sản phẩm.'));
     } finally {
       setSubmitting(false);
     }
@@ -201,8 +266,8 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
     try {
       await productService.toggle(product.id);
       await load();
-    } catch {
-      setError('Không thể đổi trạng thái sản phẩm.');
+    } catch (toggleError) {
+      setError(getErrorMessage(toggleError, 'Không thể đổi trạng thái sản phẩm.'));
     }
   }
 
@@ -212,8 +277,8 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
     try {
       await productService.remove(id);
       await load();
-    } catch {
-      setError('Không thể xóa sản phẩm.');
+    } catch (removeError) {
+      setError(getErrorMessage(removeError, 'Không thể xóa sản phẩm.'));
     }
   }
 
@@ -224,11 +289,16 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
       {/* Header */}
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-3xl font-bold">Sản phẩm</h2>
-          <p className="mt-1 text-sm text-muted">Quản lý món ăn, giá bán và trạng thái hiển thị.</p>
+          <h2 className="font-display text-3xl font-bold">{workspace === 'restaurant' ? 'Thực đơn nhà hàng' : 'Sản phẩm'}</h2>
+          <p className="mt-1 text-sm text-muted">
+            {workspace === 'restaurant'
+              ? `Quản lý món ăn${restaurantName ? ` của ${restaurantName}` : ''}, giá bán và trạng thái hiển thị.`
+              : 'Quản lý món ăn, giá bán và trạng thái hiển thị.'}
+          </p>
         </div>
         <button
           onClick={() => openForm()}
+          disabled={workspace === 'restaurant' && !restaurantId}
           className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600"
         >
           <Plus size={17} />
@@ -263,9 +333,12 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
 
       {/* Thông báo lỗi */}
       {error && (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </p>
+        <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button type="button" onClick={() => void load()} disabled={loading} className="font-semibold underline disabled:opacity-50">
+            Thử tải lại
+          </button>
+        </div>
       )}
 
       {/* Bảng dữ liệu sản phẩm */}
@@ -370,7 +443,7 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
         description="Thông tin món ăn và trạng thái hiển thị."
       >
         <form onSubmit={submit}>
-          {!editing && (
+          {workspace === 'admin' && !editing && (
             <Field
               label="Restaurant ID"
               value={form.restaurantId}
@@ -408,6 +481,14 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
             type="number"
             value={form.price}
             onChange={(price) => setForm({ ...form, price })}
+            required
+          />
+
+          <Field
+            label="Giá vốn (để tính lợi nhuận)"
+            type="number"
+            value={form.costPrice}
+            onChange={(costPrice) => setForm({ ...form, costPrice })}
             required
           />
 

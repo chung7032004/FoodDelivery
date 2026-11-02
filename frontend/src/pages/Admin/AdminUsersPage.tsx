@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CalendarDays, Eye, Lock, Mail, Pencil, Phone, Search, ShieldOff, Trash2, Unlock, X } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { AdminUser, AdminUserDetail, adminService, PagedResult } from '@/services/admin.service';

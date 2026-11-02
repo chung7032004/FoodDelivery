@@ -15,6 +15,7 @@ export interface ProductResponseDto {
 
 export interface ProductQueryParams {
   categoryId?: string;
+  restaurantId?: string;
   searchQuery?: string;
   page?: number;
   pageSize?: number;

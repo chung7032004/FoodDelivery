@@ -1,9 +1,9 @@
 // src/pages/LoginPage.tsx
 import { useState, useCallback, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { AuthLayout } from '../components/layout/AuthLayout';
+import { AuthLayout } from '@/components/layout/AuthLayout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { authService } from '@/services/auth.service';
@@ -59,6 +59,13 @@ const REMEMBER_ME_KEY = 'rememberLoginFlag';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedPath = (location.state as { returnTo?: unknown } | null)?.returnTo;
+  const returnTo = typeof requestedPath === 'string'
+    && requestedPath.startsWith('/')
+    && !requestedPath.startsWith('//')
+    ? requestedPath
+    : '/';
   const [formData, setFormData] = useState<LoginFormData>(() => {
     if (typeof window === 'undefined') return { email: '', password: '' };
     return {
@@ -115,10 +122,10 @@ export function LoginPage() {
           password: formData.password,
         });
          if (user?.roles.includes('Admin')) {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
+           navigate('/admin', { replace: true });
+         } else {
+           navigate(returnTo, { replace: true });
+         }
       } catch (err) {
         const apiError = err as Partial<AxiosError<ApiErrorResponse>> & Partial<ApiErrorResponse> & {
           response?: { data?: ApiErrorResponse };
@@ -147,7 +154,7 @@ export function LoginPage() {
         setIsLoading(false);
       }
     },
-    [formData, navigate, isLoading]
+    [formData, navigate, isLoading, returnTo]
   );
 
   return (

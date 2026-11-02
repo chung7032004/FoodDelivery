@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { AdminLayout } from './AdminLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { ConfirmationModal } from '@/components/modals/ConfirmationModal';
 import Button from '@/components/ui/Button';
 import { adminService, PagedResult, ShipperApplication } from '@/services/admin.service';
 

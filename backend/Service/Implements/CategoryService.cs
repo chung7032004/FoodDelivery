@@ -137,7 +137,8 @@ namespace FoodDelivery.Service.Implementations
                 Description = c.Description,
                 DisplayOrder = c.DisplayOrder,
                 ImageUrl = c.ImageUrl,
-                CreatedAt = c.CreatedAt
+                CreatedAt = c.CreatedAt,
+                RestaurantId = c.RestaurantId
             };
     }
 }

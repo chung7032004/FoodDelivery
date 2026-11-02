@@ -26,7 +26,9 @@ public enum OrderActionBy
     System = 0,
     Customer = 1,
     Admin = 2,
-    Shipper = 3
+    Shipper = 3,
+    RestaurantOwner = 4,
+    RestaurantStaff = 5
 }
 
 public enum ShipperStatus

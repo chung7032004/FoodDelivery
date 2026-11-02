@@ -1,17 +1,21 @@
 
 using FoodDelivery.Common;
+using FoodDelivery.Common.Options;
 using FoodDelivery.Data;
-using FoodDelivery.Middlewares;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
 using FoodDelivery.Repositories.Implements;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Implements;
+using FoodDelivery.Service.Implements.Shipping;
+using FoodDelivery.Service.Implements.StateMachine;
 using FoodDelivery.Service.Interfaces;
+using FoodDelivery.Service.Interfaces.IShipping;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json;
@@ -76,7 +80,28 @@ builder.Services.AddCors(options => {
                         .AllowCredentials());
 });
 
+builder.Services.Configure<ShippingOptions>(builder.Configuration.GetSection(ShippingOptions.SectionName));
+// Routing
+builder.Services.AddHttpClient<OpenRouteServiceRoutingService>();
+builder.Services.AddScoped<IRoutingService>(sp =>
+{
+    var inner = sp.GetRequiredService<OpenRouteServiceRoutingService>();
+    return new CachedRoutingService(inner, sp.GetRequiredService<IMemoryCache>());
+});
 
+// Surcharges
+builder.Services.AddScoped<ISurchargePipeline, SurchargePipeline>();
+
+// Calculators
+builder.Services.AddScoped<StandardShippingCalculator>();
+builder.Services.AddScoped<ExpressShippingCalculator>();
+builder.Services.AddScoped<IShippingCalculatorResolver, ShippingCalculatorResolver>();
+
+// Facade
+builder.Services.AddScoped<IShippingEstimationService, ShippingEstimationService>();
+
+// Shipper assignment
+builder.Services.AddScoped<IShipperAssignmentStrategy, FirstActiveShipperStrategy>();
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -112,7 +137,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-
+builder.Services.AddSingleton<IOrderStateMachine, OrderStateMachine>();
 
 builder.Services.AddMemoryCache();
 // Cấu hình Redis Cache
@@ -230,7 +255,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     app.UseCors("AllowReactApp");
     app.UseAuthentication(); //Kiểm tra bạn là ai 
     app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
-    app.UseMiddleware<RestaurantOpenMiddleware>();// chặn order khi quán đóng 
     app.MapControllers();// Kết nối các đường dẫn (Route) tới Controller
     // Map Hub cho SignalR
     app.MapHub<NotificationHub>("/notificationHub");

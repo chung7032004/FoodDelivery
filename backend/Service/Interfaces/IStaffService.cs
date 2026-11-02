@@ -7,6 +7,7 @@ namespace FoodDelivery.Service.Interfaces;
 public interface IStaffService
 {
     Task<Result<StaffStatsDto>> GetDashboardStats(Guid userId);
+    Task<Result<RestaurantAnalyticsDto>> GetRestaurantAnalytics(Guid userId, string period);
     Task<Result<List<OrderDto>>> GetOrdersForPreparation(Guid userId);
     Task<Result<List<OrderDto>>> GetCompletedOrders(Guid userId, int days = 30);
     Task<Result<List<ReviewDto>>> GetRestaurantReviews(Guid userId, int? rating = null);
@@ -17,4 +18,5 @@ public interface IStaffService
     Task<Result<string>> StartPreparingOrder(Guid userId, Guid orderId);
     Task<Result<string>> MarkOrderReady(Guid userId, Guid orderId);
     Task<Result<string>> ReportOrderIssue(Guid userId, Guid orderId, string issueDescription, string issueType);
+    Task<Result<string>> ReportOutOfStock(Guid userId, Guid orderId, List<Guid> removedProductIds, string note);
 }

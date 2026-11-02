@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Star,
+  MapPin,
   Minus,
   Plus,
   ShoppingCart,
@@ -10,10 +11,13 @@ import {
   ChevronRight,
   Utensils,
 } from "lucide-react";
-import { HeaderNav } from "@/components/layout/HeaderNav";
+import { HeaderNav } from "@/components/layout/header/HeaderNav";
 import { Footer } from "@/components/layout/Footer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product.service";
+import { restaurantService } from "@/services/restaurant.service";
+import { addressService } from "@/services/address.service";
+import { orderService } from "@/services/order.service";
 import { ProductDetailResponseDto } from "@/types/product";
 import { ApiResult } from "@/types";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -21,6 +25,9 @@ import { getImageUrl } from "@/utils/image";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cartQueryKey, cartService } from "@/services/cart.service";
+import "leaflet/dist/leaflet.css";
+import { RestaurantLocationModal } from "@/components/modals/RestaurantLocationModal";
+import Button from "@/components/ui/Button";
 
 // ---------------------------------------------------------------------------
 // MOCK DATA — shaped like ProductDetailResponseDto + a paginated review slice
@@ -156,12 +163,13 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("desc");
+  const [showRestaurantLocation, setShowRestaurantLocation] = useState(false);
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
   const maxCount = RATING_BREAKDOWN[0].count;
-  const { data: productDetail, isLoading: _isProductDetailLoading } = useQuery({
+  const { data: productDetail } = useQuery({
       queryKey: ['product-detail', productId],
       queryFn: async (): Promise<ApiResult<ProductDetailResponseDto>> => {
         const res = await productService.getDetailById(productId!); // hoặc productId ?? ""
@@ -182,6 +190,30 @@ export default function ProductDetailPage() {
     },
     enabled: !!productDetail?.data?.categoryId,
   });
+  const restaurantId = productDetail?.data?.restaurantId;
+  const restaurantQuery = useQuery({
+    queryKey: ["public-restaurant", restaurantId],
+    queryFn: () => restaurantService.getPublicProfile(restaurantId!),
+    enabled: Boolean(restaurantId && showRestaurantLocation),
+  });
+  const customerAddressQuery = useQuery({
+    queryKey: ["my-addresses"],
+    queryFn: addressService.getMine,
+    enabled: isAuthenticated,
+  });
+  const customerAddresses = customerAddressQuery.data?.data ?? [];
+  const defaultAddress = customerAddresses.find((address) => address.isDefault) ?? customerAddresses[0];
+
+  const shippingDistanceQuery = useQuery({
+    queryKey: ["restaurant-distance", restaurantId, defaultAddress?.id],
+    queryFn: () => {
+      if (!defaultAddress || !restaurantId) {
+        throw new Error("Không tìm thấy địa chỉ mặc định hoặc nhà hàng.");
+      }
+      return orderService.calculateShippingFee(defaultAddress.id, restaurantId, 0);
+    },
+    enabled: showRestaurantLocation && Boolean(defaultAddress && restaurantId),
+  });
   const addToCartMutation = useMutation({
     mutationFn: () => cartService.addItem(productId!, quantity),
     onSuccess: async () => {
@@ -189,7 +221,6 @@ export default function ProductDetailPage() {
       toast.success("Đã thêm món vào giỏ hàng.");
     },
   });
-
   useEffect(() => setSelectedImage(0), [productId]);
 
   return (
@@ -203,11 +234,11 @@ export default function ProductDetailPage() {
 
       {/* Top bar */}
       <div className="max-w-6xl mx-auto px-5 lg:px-8 h-10 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-l font-medium text-[#fb6900]">
+        <Link to={`/restaurants/${productDetail?.data?.restaurantId ?? ""}`} className="flex items-center gap-1.5 text-l font-medium text-[#fb6900] hover:underline">
           <Store size={20} className="text-[#fb6900]" />
           {productDetail?.data?.restaurantName}
           <ChevronRight size={16} className="text-[#fb6900]" />
-        </div>
+        </Link>
       </div>
 
       <section className="max-w-6xl mx-auto px-5 lg:px-8 py-8 lg:py-12">
@@ -270,6 +301,24 @@ export default function ProductDetailPage() {
               {productDetail?.data?.name}
             </h1>
 
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to={`/restaurants/${productDetail?.data?.restaurantId ?? ""}`}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-orange-200 px-3 text-sm font-semibold text-[#fb6900] hover:bg-orange-50"
+              >
+                <Store size={16} />
+                Trang nhà hàng
+              </Link>
+              <Button
+                type="button"
+                onClick={() => setShowRestaurantLocation(true)}
+                variant="outline"
+              >
+                <MapPin size={16} />
+                Địa chỉ & khoảng cách
+              </Button>
+            </div>
+
             <div className="mt-3 flex items-center gap-2">
               <StarRow rating={productDetail?.data?.averageRating} />
               <span className="text-sm text-slate-500">
@@ -307,7 +356,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={() => {
                   if (!isAuthenticated) {
-                    navigate("/login");
+                    navigate("/login", { state: { returnTo: `/product/${productId}` } });
                     return;
                   }
                   addToCartMutation.mutate();
@@ -317,6 +366,25 @@ export default function ProductDetailPage() {
               >
                 <ShoppingCart size={17} />
                 {addToCartMutation.isPending ? "Đang thêm..." : `Thêm vào giỏ · ${formatVnd((productDetail?.data?.price ?? 0) * quantity)}`}
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate("/login");
+                    return;
+                  }
+                  navigate(`/checkout?productId=${productId}&quantity=${quantity}`);
+                }}
+                disabled={!productDetail?.data?.isAvailable}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#fb6900] font-semibold text-sm text-[#fb6900] transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {!isAuthenticated
+                  ? "Đăng nhập để đặt hàng"
+                  : `Tiến hành đặt hàng · ${formatVnd((productDetail?.data?.price ?? 0) * quantity)}`}
               </button>
             </div>
           </div>
@@ -448,6 +516,19 @@ export default function ProductDetailPage() {
         </section>
       </section>
       <Footer />
+      <RestaurantLocationModal
+        isOpen={showRestaurantLocation}
+        onClose={() => setShowRestaurantLocation(false)}
+        restaurant={restaurantQuery.data?.data ?? null}
+        defaultAddress={defaultAddress ?? null}
+        isAuthenticated={isAuthenticated}
+        isLoadingRestaurant={restaurantQuery.isPending}
+        isLoadingAddress={customerAddressQuery.isPending}
+        restaurantError={restaurantQuery.error ? "Không thể tải địa chỉ nhà hàng." : null}
+        shippingDistance={shippingDistanceQuery.data?.data ?? null}
+        shippingLoading={shippingDistanceQuery.isPending}
+        distanceError={shippingDistanceQuery.data && !shippingDistanceQuery.data.isSuccess ? shippingDistanceQuery.data.message : null}
+      />
     </div>
   );
 }

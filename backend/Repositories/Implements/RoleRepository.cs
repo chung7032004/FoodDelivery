@@ -30,5 +30,16 @@ namespace FoodDelivery.Repositories.Implementations
         {
             await _context.Roles.AddAsync(role); 
         }
+        public async Task<IEnumerable<Role>> GetRolesByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return Enumerable.Empty<Role>();
+            }
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Select(ur => ur.Role)
+                .ToListAsync();
+        }
     }
 }

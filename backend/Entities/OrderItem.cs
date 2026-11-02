@@ -10,6 +10,7 @@ namespace FoodDelivery.Entities
         public string ProductImage { get; set; } = string.Empty;
         public int Quantity {get; set;} 
         public decimal UnitPrice {get; set;}
+        public decimal? UnitCostSnapshot { get; set; }
         public bool IsRemoved { get; set; } = false;        //món bị bỏ
         public string? RemoveReason { get; set; }  //"Out of stock"
         public Review? Review { get; set; }

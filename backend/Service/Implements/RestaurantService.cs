@@ -74,7 +74,6 @@ public class RestaurantService : IRestaurantService
         if (restaurant == null)
             return HttpErrors.NotFound<RestaurantProfileDto>("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
 
-        var finalStatus = restaurant.IsOpen && ComputeIsOperating(restaurant);
         var response = new RestaurantProfileDto
         {
             Id = restaurant.Id,
@@ -83,12 +82,33 @@ public class RestaurantService : IRestaurantService
             Phone = restaurant.Phone,
             OpenTime = restaurant.OpenTime,
             CloseTime = restaurant.CloseTime,
-            IsOpen = finalStatus,
+            IsOpen = restaurant.IsOpen,
             ClosingMessage = restaurant.ClosingMessage,
             Latitude = restaurant.Latitude,
             Longitude = restaurant.Longitude
         };
         return Result<RestaurantProfileDto>.Success(response);
+    }
+
+    public async Task<Result<PublicRestaurantProfileDto>> GetPublicRestaurantAsync(Guid restaurantId)
+    {
+        var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
+        if (restaurant == null || restaurant.ApplicationStatus != RestaurantApplicationStatus.Approved)
+            return HttpErrors.NotFound<PublicRestaurantProfileDto>("RESTAURANT_NOT_FOUND", "Không tìm thấy nhà hàng.");
+
+        return Result<PublicRestaurantProfileDto>.Success(new PublicRestaurantProfileDto
+        {
+            Id = restaurant.Id,
+            Name = restaurant.Name,
+            Address = restaurant.Address,
+            Phone = restaurant.Phone,
+            IsOpen = restaurant.IsOpen && ComputeIsOperating(restaurant),
+            ClosingMessage = restaurant.ClosingMessage,
+            OpenTime = restaurant.OpenTime,
+            CloseTime = restaurant.CloseTime,
+            Latitude = restaurant.Latitude,
+            Longitude = restaurant.Longitude
+        });
     }
 
     public async Task<Result<RestaurantStatusResponse>> GetStatusRestaurantAsync(Guid userId)
@@ -97,10 +117,9 @@ public class RestaurantService : IRestaurantService
         if (restaurant == null)
             return HttpErrors.NotFound<RestaurantStatusResponse>("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
 
-        var finalStatus = restaurant.IsOpen && ComputeIsOperating(restaurant);
         var response = new RestaurantStatusResponse
         {
-            IsOpen = finalStatus,
+            IsOpen = restaurant.IsOpen,
             ClosingMessage = restaurant.ClosingMessage,
             UpdatedAt = restaurant.UpdatedAt,
         };
@@ -144,10 +163,31 @@ public class RestaurantService : IRestaurantService
         var restaurant = await GetRestaurantOfUser(userId);
         if (restaurant == null)
             return HttpErrors.NotFound("RESTAURANT_NOT_FOUND", "Bạn chưa được gán vào quán nào.");
+        var phone = request?.Phone?.Trim() ?? string.Empty;
+        if (request == null
+            || string.IsNullOrWhiteSpace(request.Name)
+            || request.Name.Trim().Length < 2
+            || request.Name.Trim().Length > 120
+            || string.IsNullOrWhiteSpace(request.Address)
+            || request.Address.Trim().Length < 5
+            || request.Address.Trim().Length > 300
+            || !Regex.IsMatch(phone, @"^0\d{9}$")
+            || !double.IsFinite(request.Latitude)
+            || request.Latitude < -90
+            || request.Latitude > 90
+            || !double.IsFinite(request.Longitude)
+            || request.Longitude < -180
+            || request.Longitude > 180
+            || request.OpenTime < TimeSpan.Zero
+            || request.OpenTime >= TimeSpan.FromDays(1)
+            || request.CloseTime < TimeSpan.Zero
+            || request.CloseTime >= TimeSpan.FromDays(1)
+            || request.OpenTime == request.CloseTime)
+            return HttpErrors.BadRequest("INVALID_INPUT", "Thông tin nhà hàng không hợp lệ.");
 
-        restaurant.Name = request.Name;
-        restaurant.Address = request.Address;
-        restaurant.Phone = request.Phone;
+        restaurant.Name = request.Name.Trim();
+        restaurant.Address = request.Address.Trim();
+        restaurant.Phone = phone;
         restaurant.Latitude = request.Latitude;
         restaurant.Longitude = request.Longitude;
         restaurant.OpenTime = request.OpenTime;
