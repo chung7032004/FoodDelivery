@@ -2,9 +2,7 @@ using FoodDelivery.DTOs.Product;
 using FoodDelivery.Extensions;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implements;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using PermissionConstants = FoodDelivery.Constants.Permissions;
 
     namespace FoodDelivery.Controllers
@@ -43,12 +41,10 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
             return result.ToActionResult();
         }
 
-        [HasPermission(PermissionConstants.Products.View)]
+        [HasPermission(PermissionConstants.Products.ViewCostPrice)]
         [HttpGet("{id}/cost-price")]
         public async Task<IActionResult> GetCostPrice(Guid id)
         {
-            if (!await CanManageProductAsync(id))
-                return Forbid();
             return (await _productService.GetProductCostPriceAsync(id)).ToActionResult();
         }
         
@@ -69,13 +65,11 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
             return result.ToActionResult();
         }
 
-        [HasPermission(PermissionConstants.Products.Edit)]
+        [HasPermission(PermissionConstants.Products.UpdateCostPrice)]
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Update(Guid id, [FromForm] ProductUpdateDto dto)
         {
-            if (!await CanManageProductAsync(id))
-                return Forbid();
             return await _productService.UpdateProductAsync(id, dto) ? Ok() : NotFound();
         }
 
@@ -83,8 +77,6 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
         [HttpPatch("{id}/display-order")]
         public async Task<IActionResult> UpdateDisplayOrder(Guid id, [FromBody] UpdateDisplayOrderDto dto)
         {
-            if (!await CanManageProductAsync(id))
-                return Forbid();
             return await _productService.UpdateDisplayOrderAsync(id, dto.NewDisplayOrder) ? Ok() : NotFound();
         }
 
@@ -92,8 +84,6 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
         [HttpPatch("{id}/toggle")]
         public async Task<IActionResult> ToggleAvailability(Guid id)
         {
-            if (!await CanManageProductAsync(id))
-                return Forbid();
             return await _productService.ToggleProductAvailabilityAsync(id) ? Ok() : NotFound();
         }
 
@@ -101,8 +91,6 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            if (!await CanManageProductAsync(id))
-                return Forbid();
             return await _productService.DeleteProductAsync(id) ? Ok() : NotFound();
         }
 
@@ -120,19 +108,6 @@ using PermissionConstants = FoodDelivery.Constants.Permissions;
                 return restaurant.Id;
 
             return null;
-        }
-
-        private async Task<bool> CanManageProductAsync(Guid productId)
-        {
-            if (User.IsInRole("Admin"))
-                return true;
-
-            var restaurantId = await GetManagedRestaurantIdAsync();
-            if (!restaurantId.HasValue)
-                return false;
-
-            var productResult = await _productService.GetProductDetailByIdAsync(productId);
-            return productResult.Data?.RestaurantId == restaurantId.Value;
         }
     }
 }

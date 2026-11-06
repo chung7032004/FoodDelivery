@@ -12,7 +12,7 @@ public interface IOrderService
     Task<Result> CancelOrderByCustomerAsync(Guid userId, Guid orderId , CancelOrderRequestDto cancelOrderRequestDto);
     Task<Result> RespondToProposalAsync(Guid customerId, Guid orderId, OrderProposalResponseDto request);
     Task<Result<PagedResponse<OrderAdminSummaryResponse>>> GetOrderAdminAsync(OrderFilterModel filter);
-    Task<Result> ConfirmOrderAsync(Guid adminId, Guid orderId);
+    Task<Result> ConfirmOrderAsync(Guid adminId, Guid orderId, int? prepMinutes = null);
     Task<Result> OutOfStockAsync(Guid adminId, Guid orderId, OutOfStockRequest request);
     Task<Result> ReportOutOfStockByRestaurantAsync(Guid userId, Guid orderId, OutOfStockRequest request);
     Task<Result> StartPreparingAsync(Guid adminId, Guid orderId);

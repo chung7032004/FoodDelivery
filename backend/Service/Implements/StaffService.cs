@@ -213,10 +213,10 @@ public class StaffService : IStaffService
         return Result<StaffProfileDto>.Success(profileDto);
     }
 
-    public async Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId)
+    public async Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId, int? prepMinutes = null)
     {
         return ToStatusResult(
-            await _orderService.ConfirmOrderAsync(userId, orderId),
+            await _orderService.ConfirmOrderAsync(userId, orderId, prepMinutes),
             "Đã xác nhận đơn hàng.");
     }
 

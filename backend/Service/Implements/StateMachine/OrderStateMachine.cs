@@ -55,12 +55,14 @@ public sealed class OrderStateMachine : IOrderStateMachine
         new(OrderStatus.Preparing, OrderStatus.Cancelled,      OrderAction.CancelByRestaurant,   ActorRole.RestaurantOwner),
 
         // ==================== ReadyForPickup ====================
-        new(OrderStatus.ReadyForPickup, OrderStatus.Shipping,  OrderAction.Pickup,        ActorRole.Shipper),
+        new(OrderStatus.ReadyForPickup, OrderStatus.Shipping,  OrderAction.Pickup,        ActorRole.Shipper,
+            order => order.OrderDetail?.ShipperId is not null),
         new(OrderStatus.ReadyForPickup, OrderStatus.Cancelled, OrderAction.CancelByAdmin, ActorRole.Admin),
 
         // ==================== Shipping ====================
         new(OrderStatus.Shipping, OrderStatus.Completed, OrderAction.Deliver,       ActorRole.Shipper),
         new(OrderStatus.Shipping, OrderStatus.Cancelled, OrderAction.CancelByAdmin, ActorRole.Admin),
+        new(OrderStatus.Shipping, OrderStatus.Cancelled, OrderAction.DeliveryFailed, ActorRole.Shipper),
 
         // ==================== Completed / Cancelled ====================
         // Terminal — không có transition ra.

@@ -10,6 +10,9 @@ namespace FoodDelivery.Constants
             public const string Edit = "Permissions.Products.Edit";
             public const string Delete = "Permissions.Products.Delete";
             public const string ToggleAvailability = "Permissions.Products.ToggleAvailability"; // Bật/Tắt món nhanh khi hết hàng
+            public const string ViewCostPrice = "Permissions.Products.ViewCostPrice"; // Xem giá vốn (chỉ dành cho Admin/Owner)
+            public const string UpdateCostPrice = "Permissions.Products.UpdateCostPrice"; // Cập nhật giá vốn (chỉ dành cho Admin/Owner)
+            
         }
 
         public static class Categories

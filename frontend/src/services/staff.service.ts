@@ -1,7 +1,7 @@
 import { api } from './api';
 
 export interface RestaurantOrderItem { productId: string; productName: string; quantity: number; price: number; }
-export interface RestaurantOrder { id: string; orderNumber: string; customerName: string; customerPhone: string; totalAmount: number; status: number; createdAt: string; items: RestaurantOrderItem[]; }
+export interface RestaurantOrder { id: string; orderNumber: string; customerName: string; customerPhone: string; shipperName: string | null; shipperPhone: string | null; shipperVehicleType: string | null; shipperVehiclePlate: string | null; totalAmount: number; status: number; prepMinutes: number | null; createdAt: string; items: RestaurantOrderItem[]; }
 export interface StaffStats {
   totalOrdersToday: number;
   pendingCount: number;
@@ -34,7 +34,7 @@ export const staffService = {
     (await api.get<ApiResult<RestaurantAnalytics>>('/staff/analytics', { params: { period } })).data,
   getOrders: async () => (await api.get<ApiResult<RestaurantOrder[]>>('/staff/orders')).data,
   getCompletedOrders: async (days = 30) => (await api.get<ApiResult<RestaurantOrder[]>>('/staff/completed-orders', { params: { days } })).data,
-  confirm: (id: string) => api.post(`/staff/orders/${id}/confirm`),
+  confirm: (id: string, prepMinutes?: number) => api.post(`/staff/orders/${id}/confirm`, null, { params: prepMinutes ? { prepMinutes } : undefined }),
   startPreparing: (id: string) => api.post(`/staff/orders/${id}/start-preparing`),
   markReady: (id: string) => api.post(`/staff/orders/${id}/mark-ready`),
   reportOutOfStock: (id: string, removedProductIds: string[], note: string) =>

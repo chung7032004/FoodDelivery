@@ -112,4 +112,8 @@ export const orderService = {
     const { data } = await api.get<ApiResult<OrderDetail>>(`/orders/${orderId}`);
     return data;
   },
+  respondToProposal: async (orderId: string, isAccepted: boolean): Promise<ApiResult<null>> => {
+    const { data } = await api.post<ApiResult<null>>(`/orders/${orderId}/respond-proposal`, { isAccepted });
+    return data;
+  },
 };

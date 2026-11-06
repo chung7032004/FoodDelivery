@@ -209,6 +209,8 @@ public class FoodContext : DbContext
             // Enum → int
             entity.Property(od => od.Status)
                 .HasConversion<int>();
+            entity.Property(od => od.DispatchStatus)
+                .HasConversion<int>();
             entity.Property(od => od.PaymentMethod)
                 .HasConversion<int>();
             entity.Property(od => od.PaymentStatus)
@@ -300,6 +302,8 @@ public class FoodContext : DbContext
                 PermissionConstants.Products.Edit,
                 PermissionConstants.Products.Delete,
                 PermissionConstants.Products.ToggleAvailability,
+                PermissionConstants.Products.ViewCostPrice,
+                PermissionConstants.Products.UpdateCostPrice,
 
                 PermissionConstants.Categories.View,
                 PermissionConstants.Categories.Manage,
@@ -396,6 +400,10 @@ public class FoodContext : DbContext
 
                 // Xem địa chỉ giao hàng
                 PermissionConstants.Address.View,
+                PermissionConstants.Address.Create,
+                PermissionConstants.Address.Edit,
+                PermissionConstants.Address.Delete,
+                PermissionConstants.Address.SetDefault,
                 PermissionConstants.Dashboard.ViewOwn,
                 
                 PermissionConstants.Shippers.AcceptOrder,             

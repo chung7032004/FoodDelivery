@@ -103,10 +103,10 @@ public class OrdersController : ControllerBase
     }
     [HttpPost("admin/orders/{orderId}/confirm")]
     [HasPermission(PermissionConstants.Orders.ConfirmOrder)]
-    public async Task<IActionResult> ConfirmOrder(Guid orderId)
+    public async Task<IActionResult> ConfirmOrder(Guid orderId, [FromQuery] int? prepMinutes = null)
     {
         var adminId = User.GetUserId();
-        var result = await _orderService.ConfirmOrderAsync(adminId,orderId);
+        var result = await _orderService.ConfirmOrderAsync(adminId, orderId, prepMinutes);
         return result.ToActionResult();
     }
     [HttpPost("admin/orders/{orderId}/out-of-stock")]
