@@ -14,7 +14,7 @@ public interface IStaffService
     Task<Result<OrderDto>> GetOrderDetails(Guid userId, Guid orderId);
     Task<Result<string>> UpdateOrderStatus(Guid userId, Guid orderId, int newStatus);
     Task<Result<StaffProfileDto>> GetStaffProfile(Guid userId);
-    Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId);
+    Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId, int? prepMinutes = null);
     Task<Result<string>> StartPreparingOrder(Guid userId, Guid orderId);
     Task<Result<string>> MarkOrderReady(Guid userId, Guid orderId);
     Task<Result<string>> ReportOrderIssue(Guid userId, Guid orderId, string issueDescription, string issueType);

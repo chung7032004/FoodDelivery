@@ -153,10 +153,10 @@ public class StaffController : ControllerBase
     }
 
     [HttpPost("orders/{orderId}/confirm")]
-    public async Task<IActionResult> ConfirmOrder([FromRoute] Guid orderId)
+    public async Task<IActionResult> ConfirmOrder([FromRoute] Guid orderId, [FromQuery] int? prepMinutes = null)
     {
         var userId = User.GetUserId();
-        var result = await _staffService.ConfirmOrder(userId, orderId);
+        var result = await _staffService.ConfirmOrder(userId, orderId, prepMinutes);
         
         if (!result.IsSuccess)
             return BadRequest(result);

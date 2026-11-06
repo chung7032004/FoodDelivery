@@ -38,6 +38,14 @@ public enum ShipperStatus
     Rejected
 }
 
+public enum DispatchStatus
+{
+    NotStarted,
+    Searching,
+    Assigned,
+    NoDriverFound
+}
+
 public enum RestaurantApplicationStatus
 {
     Pending,

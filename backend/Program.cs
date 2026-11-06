@@ -100,10 +100,6 @@ builder.Services.AddScoped<IShippingCalculatorResolver, ShippingCalculatorResolv
 // Facade
 builder.Services.AddScoped<IShippingEstimationService, ShippingEstimationService>();
 
-// Shipper assignment
-builder.Services.AddScoped<IShipperAssignmentStrategy, FirstActiveShipperStrategy>();
-
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

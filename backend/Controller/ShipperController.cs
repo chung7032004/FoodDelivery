@@ -85,7 +85,7 @@ namespace FoodDelivery.Controllers
         [HasPermission(PermissionConstants.Shippers.AcceptOrder)]
         public async Task<IActionResult> GetAvailableOrders()
         {
-            var data = await _shipperService.GetAvailableOrdersAsync();
+            var data = await _shipperService.GetAvailableOrdersAsync(User.GetUserId());
             return Ok(data);
         }
 
@@ -111,10 +111,23 @@ namespace FoodDelivery.Controllers
         public async Task<IActionResult> AcceptOrder(Guid orderId)
         {
             var userId = User.GetUserId();
-            var success = await _shipperService.AcceptOrderAsync(orderId, userId);
-            return success
+            var result = await _shipperService.AcceptOrderAsync(orderId, userId);
+            return result.IsSuccess
                 ? Ok(new { message = "Đã nhận đơn hàng thành công" })
-                : BadRequest(new { message = "Không thể nhận đơn hàng tại thời điểm này" });
+                : result.ToActionResult();
+        }
+
+        [HttpPost("orders/{orderId}/release")]
+        [HasPermission(PermissionConstants.Shippers.CancelAssignedOrder)]
+        public async Task<IActionResult> ReleaseOrder(Guid orderId, [FromBody] ShipperActionDTO request)
+        {
+            var result = await _shipperService.ReleaseOrderAsync(
+                orderId,
+                User.GetUserId(),
+                request.Reason ?? "Shipper không thể tiếp tục nhận đơn trước khi lấy hàng.");
+            return result.IsSuccess
+                ? Ok(new { message = "Đơn đã được trả lại để tìm shipper khác" })
+                : result.ToActionResult();
         }
 
         [HttpPost("orders/{orderId}/pickup")]
@@ -122,10 +135,10 @@ namespace FoodDelivery.Controllers
         public async Task<IActionResult> ConfirmPickup(Guid orderId)
         {
             var userId = User.GetUserId();
-            var success = await _shipperService.ConfirmPickUpAsync(orderId, userId);
-            return success
+            var result = await _shipperService.ConfirmPickUpAsync(orderId, userId);
+            return result.IsSuccess
                 ? Ok(new { message = "Đã xác nhận lấy hàng thành công" })
-                : BadRequest(new { message = "Không thể xác nhận lấy hàng" });
+                : result.ToActionResult();
         }
 
         [HttpPost("orders/{orderId}/complete")]

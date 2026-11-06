@@ -6,8 +6,13 @@ public class OrderDto
     public string OrderNumber { get; set; } = "";
     public string CustomerName { get; set; } = "";
     public string CustomerPhone { get; set; } = "";
+    public string? ShipperName { get; set; }
+    public string? ShipperPhone { get; set; }
+    public string? ShipperVehicleType { get; set; }
+    public string? ShipperVehiclePlate { get; set; }
     public decimal TotalAmount { get; set; }
     public int Status { get; set; }
+    public int? PrepMinutes { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<OrderItemDto> Items { get; set; } = new();
 }

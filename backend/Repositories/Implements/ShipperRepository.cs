@@ -68,6 +68,9 @@ namespace FoodDelivery.Repositories.Implements
             return await _context.OrderDetails
                 .Where(od => od.ShipperId == shipperId)
                 .Include(od=> od.Order)
+                    .ThenInclude(order => order.Customer)
+                .Include(od => od.Order)
+                    .ThenInclude(order => order.OrderStatusHistories)
                 .ToListAsync();
         }
             
@@ -90,11 +93,60 @@ namespace FoodDelivery.Repositories.Implements
         public async Task<List<OrderDetail>> GetAvailableOrdersAsync()
         {
             return await _context.OrderDetails
-                .Where(od => od.Status == OrderStatus.ReadyForPickup && od.ShipperId == null)
+                .Where(od => od.ShipperId == null
+                    && od.DispatchStatus == DispatchStatus.Searching
+                    && (od.Status == OrderStatus.Confirmed
+                        || od.Status == OrderStatus.Preparing
+                        || od.Status == OrderStatus.ReadyForPickup))
                 .Include(od => od.Order)
                     .ThenInclude(o => o.Customer)
                 .OrderByDescending(od => od.Order.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<int> TryAssignAvailableOrderAsync(Guid orderId, Guid shipperId, DateTime assignedAt)
+        {
+            if (_context.Database.CurrentTransaction == null)
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                var assigned = await TryAssignAvailableOrderInTransactionAsync(orderId, shipperId, assignedAt);
+                await transaction.CommitAsync();
+                return assigned;
+            }
+
+            return await TryAssignAvailableOrderInTransactionAsync(orderId, shipperId, assignedAt);
+        }
+
+        private async Task<int> TryAssignAvailableOrderInTransactionAsync(
+            Guid orderId,
+            Guid shipperId,
+            DateTime assignedAt)
+        {
+            // Serialize claims per shipper until the surrounding transaction commits.
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtext({shipperId.ToString()}))");
+
+            var hasActiveAssignment = await _context.OrderDetails.AnyAsync(detail =>
+                detail.ShipperId == shipperId
+                && detail.Status != OrderStatus.Completed
+                && detail.Status != OrderStatus.Cancelled);
+            if (hasActiveAssignment)
+                return 0;
+
+            return await _context.OrderDetails
+                .Where(detail => detail.OrderId == orderId
+                    && detail.ShipperId == null
+                    && detail.DispatchStatus == DispatchStatus.Searching
+                    && !_context.Shippers.Any(shipper =>
+                        shipper.Id == shipperId
+                        && shipper.UserId == detail.Order.CustomerId)
+                    && (detail.Status == OrderStatus.Confirmed
+                        || detail.Status == OrderStatus.Preparing
+                        || detail.Status == OrderStatus.ReadyForPickup))
+                .ExecuteUpdateAsync(updates => updates
+                    .SetProperty(detail => detail.ShipperId, shipperId)
+                    .SetProperty(detail => detail.DispatchStatus, DispatchStatus.Assigned)
+                    .SetProperty(detail => detail.ShipperAssignedAt, assignedAt));
         }
 
         public async Task<decimal> GetTodayEarningsAsync(Guid shipperId)
@@ -103,15 +155,16 @@ namespace FoodDelivery.Repositories.Implements
             return await _context.OrderDetails
                 .Where(od => od.ShipperId == shipperId 
                     && od.Status == OrderStatus.Completed
-                    && od.Order.CreatedAt.Date == today)
-                .SumAsync(od => od.Order.Subtotal);
+                    && od.ActualDeliveryTime >= today
+                    && od.ActualDeliveryTime < today.AddDays(1))
+                .SumAsync(od => od.Order.ShippingFee);
         }
 
         public async Task<decimal> GetTotalEarningsAsync(Guid shipperId)
         {
             return await _context.OrderDetails
                 .Where(od => od.ShipperId == shipperId && od.Status == OrderStatus.Completed)
-                .SumAsync(od => od.Order.Subtotal);
+                .SumAsync(od => od.Order.ShippingFee);
         }
         public async Task AddShipperAsync(Shipper shipper) => await _context.Shippers.AddAsync(shipper);
         public async Task AddUserRoleAsync(UserRole userRole) => await _context.UserRoles.AddAsync(userRole);

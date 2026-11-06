@@ -15,6 +15,7 @@ namespace FoodDelivery.Repositories.Interfaces
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId);
         Task<List<OrderDetail>> GetShipperCompletedOrdersAsync(Guid shipperId);
         Task<List<OrderDetail>> GetAvailableOrdersAsync();
+        Task<int> TryAssignAvailableOrderAsync(Guid orderId, Guid shipperId, DateTime assignedAt);
         Task AddShipperAsync(Shipper shipper);
         Task<decimal> GetTodayEarningsAsync(Guid shipperId);
         Task<decimal> GetTotalEarningsAsync(Guid shipperId);

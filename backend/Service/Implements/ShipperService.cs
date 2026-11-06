@@ -6,6 +6,8 @@ using FoodDelivery.DTOs.Notification;
 using FoodDelivery.DTOs.Shipper;
 using FoodDelivery.Repositories;
 using FoodDelivery.Constants;
+using Microsoft.EntityFrameworkCore;
+using FoodDelivery.Service.StateMachine;
 
 namespace FoodDelivery.Service.Implements
 {
@@ -16,6 +18,7 @@ namespace FoodDelivery.Service.Implements
         private readonly IRoleRepository _roleRepository;
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
+        private readonly IOrderStateMachine _orderStateMachine;
         private readonly FoodContext _context;
 
         public ShipperService(
@@ -23,13 +26,22 @@ namespace FoodDelivery.Service.Implements
             IRoleRepository roleRepository,
             IUserRepository userRepository,
             INotificationService notificationService,
+            IOrderStateMachine orderStateMachine,
             FoodContext context)
         {
             _shipperRepository = shipperRepository;
             _roleRepository = roleRepository;
             _userRepository = userRepository;
             _notificationService = notificationService;
+            _orderStateMachine = orderStateMachine;
             _context = context;
+        }
+
+        private async Task CreateRequiredNotificationAsync(Guid userId, NotificationRequest request)
+        {
+            var result = await _notificationService.CreateNotificationAsync(userId, request);
+            if (!result.IsSuccess)
+                throw new InvalidOperationException($"Failed to create notification for user {userId}: {result.Message}");
         }
 
         private async Task NotifyAdminsAsync(string title, string message, string link)
@@ -48,10 +60,26 @@ namespace FoodDelivery.Service.Implements
                     });
                 }
             }
+
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Failed to notify admins: {ex}");
             }
+        }
+
+        private async Task NotifyRestaurantUsersAsync(Guid restaurantId, NotificationRequest request)
+        {
+            var ownerIds = await _context.Restaurants
+                .Where(restaurant => restaurant.Id == restaurantId)
+                .Select(restaurant => restaurant.OwnerId)
+                .ToListAsync();
+            var staffIds = await _context.Staff
+                .Where(staff => staff.IsActive && staff.RestaurantId == restaurantId)
+                .Select(staff => staff.UserId)
+                .ToListAsync();
+
+            foreach (var userId in ownerIds.Concat(staffIds).Distinct())
+                await CreateRequiredNotificationAsync(userId, request);
         }
         public async Task<Result<PagedResponse<ShipperApplicationDto>>> GetAllShippersAsync(int page, int pageSize)
         {
@@ -92,7 +120,7 @@ namespace FoodDelivery.Service.Implements
             var orders = await _shipperRepository.GetOrdersByShipperAsync(shipper.Id);
             var completeCount = orders.Count(o => o.Status == OrderStatus.Completed);
             var failedCount = orders.Count(o => o.Status == OrderStatus.Cancelled);
-            var totalEarnings = orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Order?.TotalAmount ?? 0);
+            var totalEarnings = orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.Order?.ShippingFee ?? 0);
             
             var result = new ShipperStatsDto
             {
@@ -280,25 +308,49 @@ namespace FoodDelivery.Service.Implements
 
 
 
-        public async Task<bool> ConfirmPickUpAsync(Guid orderId, Guid userId)
+        public async Task<Result> ConfirmPickUpAsync(Guid orderId, Guid userId)
         {
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
-            if (orderDetail == null || orderDetail.Status != OrderStatus.ReadyForPickup) return false;
+            if (orderDetail == null)
+                return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
 
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
-            if (orderDetail.ShipperId != shipper.Id) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive)
+                return HttpErrors.Forbidden("SHIPPER_NOT_ACTIVE", "Hồ sơ shipper chưa được duyệt hoặc đang tắt.");
+            if (orderDetail.ShipperId != shipper.Id)
+                return HttpErrors.Forbidden("SHIPPER_NOT_ASSIGNED", "Đơn hàng chưa được phân công cho bạn.");
+            if (orderDetail.Status != OrderStatus.ReadyForPickup)
+            {
+                if (orderDetail.Status is OrderStatus.Confirmed or OrderStatus.Preparing)
+                    return HttpErrors.BadRequest("FOOD_NOT_READY", "Món chưa sẵn sàng để lấy.");
+                return HttpErrors.BadRequest("INVALID_STATUS", "Đơn hàng chưa ở trạng thái chờ lấy món.");
+            }
+            if (orderDetail.Order == null)
+                return HttpErrors.InternalServerError("ORDER_DATA_INVALID", "Không thể tải thông tin đơn hàng.");
 
-            orderDetail.Status = OrderStatus.Shipping;
+            if (!_orderStateMachine.CanTransition(
+                    orderDetail.Status, OrderAction.Pickup, ActorRole.Shipper, orderDetail.Order))
+                return HttpErrors.BadRequest("INVALID_TRANSITION", "Đơn hàng chưa có shipper được gán.");
+
+            orderDetail.Status = _orderStateMachine.GetNextStatus(
+                orderDetail.Status, OrderAction.Pickup, ActorRole.Shipper, orderDetail.Order);
             
             _shipperRepository.UpdateOrderDetail(orderDetail);
             await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory  {
-                OrderId = orderId, Status = OrderStatus.Shipping, ChangeByUserId = userId, ChangedAt = DateTime.UtcNow, ActionBy = OrderActionBy.Shipper
+                OrderId = orderId,
+                Status = OrderStatus.Shipping,
+                ChangeByUserId = userId,
+                ChangedAt = DateTime.UtcNow,
+                ActionBy = OrderActionBy.Shipper,
+                Note = "Shipper đã lấy món ăn."
             });
             var saved = await _shipperRepository.SaveChangesAsync();
-            if (saved && orderDetail.Order != null)
+            if (!saved)
+                return HttpErrors.InternalServerError("PICKUP_SAVE_FAILED", "Không thể lưu trạng thái đã lấy hàng.");
+
+            if (orderDetail.Order != null)
             {
-                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                await CreateRequiredNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
                 {
                     Title = "Đơn hàng đang được giao",
                     Message = $"Shipper đã lấy đơn #{orderDetail.Order.OrderCode} và đang trên đường giao đến bạn.",
@@ -306,16 +358,20 @@ namespace FoodDelivery.Service.Implements
                     Link = "/account"
                 });
             }
-            return saved;
+            return Result.Success();
         }
        public async Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId)
         {
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper?.Orders == null || shipper.Orders.Count == 0) 
+            if (shipper == null)
                 return new List<OrderAdminSummaryResponse>();
 
-            return shipper.Orders
-                .Where(o => o.Status == OrderStatus.ReadyForPickup || o.Status == OrderStatus.Shipping)
+            var assignedOrders = await _shipperRepository.GetOrdersByShipperAsync(shipper.Id);
+            return assignedOrders
+                .Where(o => o.ShipperId != null
+                    && o.DispatchStatus == DispatchStatus.Assigned
+                    && o.Status != OrderStatus.Completed
+                    && o.Status != OrderStatus.Cancelled)
                 .OrderByDescending(o => o.Order?.CreatedAt)
                 .Select(o => new OrderAdminSummaryResponse
                 {
@@ -323,24 +379,42 @@ namespace FoodDelivery.Service.Implements
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingFee = o.Order?.ShippingFee ?? 0,
                     ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
+                    DispatchStatus = o.DispatchStatus.ToString(),
+                    PrepMinutes = o.PrepMinutes,
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
         }
 
-        public async Task<List<OrderAdminSummaryResponse>> GetAvailableOrdersAsync()
+        public async Task<List<OrderAdminSummaryResponse>> GetAvailableOrdersAsync(Guid userId)
         {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable)
+                return new List<OrderAdminSummaryResponse>();
+            if (!await _context.Users.AnyAsync(user => user.Id == userId && user.IsActive))
+                return new List<OrderAdminSummaryResponse>();
+            if (await _context.OrderDetails.AnyAsync(detail =>
+                    detail.ShipperId == shipper.Id
+                    && detail.Status != OrderStatus.Completed
+                    && detail.Status != OrderStatus.Cancelled))
+                return new List<OrderAdminSummaryResponse>();
+
             var availableOrders = await _shipperRepository.GetAvailableOrdersAsync();
             return availableOrders
+                .Where(o => o.Order?.CustomerId != shipper.UserId)
                 .Select(o => new OrderAdminSummaryResponse
                 {
                     Id = o.OrderId,
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingFee = o.Order?.ShippingFee ?? 0,
                     ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
+                    DispatchStatus = o.DispatchStatus.ToString(),
+                    PrepMinutes = o.PrepMinutes,
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
         }
@@ -359,53 +433,171 @@ namespace FoodDelivery.Service.Implements
                     OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
                     CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
                     TotalAmount = o.Order?.TotalAmount ?? 0,
+                    ShippingFee = o.Order?.ShippingFee ?? 0,
                     ShippingAddress = o.Order?.ShippingAddress,
                     Status = o.Status.ToString(),
+                    DispatchStatus = o.DispatchStatus.ToString(),
+                    PrepMinutes = o.PrepMinutes,
                     CreatedAt = o.Order?.CreatedAt ?? DateTime.UtcNow
                 }).ToList();
         }
 
-        public async Task<bool> AcceptOrderAsync(Guid orderId, Guid shipperId)
+        public async Task<Result> AcceptOrderAsync(Guid orderId, Guid shipperId)
         {
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
             if (orderDetail == null)
-                return false;
-
-            if (orderDetail.Status != OrderStatus.ReadyForPickup)
-                return false;
-
-            if (orderDetail.ShipperId != null && orderDetail.ShipperId != Guid.Empty)
-                return false;
+                return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
 
             var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
             if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable)
-                return false;
+                return HttpErrors.Forbidden("SHIPPER_NOT_AVAILABLE", "Hồ sơ shipper chưa được duyệt, đang tắt hoặc không nhận đơn.");
+            var userIsActive = await _context.Users.AnyAsync(user => user.Id == shipperId && user.IsActive);
+            if (!userIsActive)
+                return HttpErrors.Forbidden("SHIPPER_NOT_AVAILABLE", "Tài khoản shipper không hoạt động.");
+            if (orderDetail.Order?.CustomerId == shipper.UserId)
+                return HttpErrors.Forbidden(
+                    "SHIPPER_CANNOT_ACCEPT_OWN_ORDER",
+                    "Bạn không thể nhận giao đơn hàng do chính mình đặt.");
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            var assignedAt = DateTime.UtcNow;
+            var claimed = await _shipperRepository.TryAssignAvailableOrderAsync(orderId, shipper.Id, assignedAt);
+            if (claimed == 0)
+                return HttpErrors.BadRequest(
+                    "SHIPPER_BUSY_OR_ORDER_UNAVAILABLE",
+                    "Bạn đang có đơn cần xử lý hoặc đơn này không còn khả dụng.");
 
             orderDetail.ShipperId = shipper.Id;
-            _shipperRepository.UpdateOrderDetail(orderDetail);
-            
-            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
-            { 
-                OrderId = orderId, 
-                Status = OrderStatus.ReadyForPickup, 
-                ChangeByUserId = shipperId, 
-                ChangedAt = DateTime.UtcNow, 
+            orderDetail.DispatchStatus = DispatchStatus.Assigned;
+            orderDetail.ShipperAssignedAt = assignedAt;
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory
+            {
+                OrderId = orderId,
+                Status = orderDetail.Status,
+                ChangeByUserId = shipperId,
+                ChangedAt = assignedAt,
                 ActionBy = OrderActionBy.Shipper,
-                Note = "Shipper đã nhận đơn hàng"
+                Note = OrderStatusHistory.ShipperAcceptedNote
             });
 
-            var saved = await _shipperRepository.SaveChangesAsync();
-            if (saved && orderDetail.Order != null)
+            await _context.SaveChangesAsync();
+
+            if (orderDetail.Order != null)
             {
-                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                await CreateRequiredNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
                 {
                     Title = "Shipper đã nhận đơn",
                     Message = $"Đơn #{orderDetail.Order.OrderCode} đã có shipper nhận giao.",
                     Type = (int)NotificationType.DELIVERY,
                     Link = "/account"
                 });
+                await NotifyRestaurantUsersAsync(orderDetail.Order.RestaurantId, new NotificationRequest
+                {
+                    Title = "Shipper đã nhận đơn",
+                    Message = $"Shipper đã nhận giao đơn #{orderDetail.Order.OrderCode}.",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/restaurant/orders"
+                });
             }
-            return saved;
+
+            await transaction.CommitAsync();
+
+            return Result.Success();
+        }
+
+        public async Task<Result> ReleaseOrderAsync(Guid orderId, Guid shipperId, string reason)
+        {
+            var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
+            if (orderDetail == null)
+                return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+
+            var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive)
+                return HttpErrors.Forbidden("FORBIDDEN", "Bạn không phải shipper đang hoạt động.");
+
+            var cleanReason = string.IsNullOrWhiteSpace(reason)
+                ? "Shipper không thể tiếp tục nhận đơn trước khi lấy hàng."
+                : reason.Trim();
+            var releasedAt = DateTime.UtcNow;
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            var released = await _context.OrderDetails
+                .Where(detail => detail.OrderId == orderId
+                    && detail.ShipperId == shipper.Id
+                    && (detail.Status == OrderStatus.Confirmed
+                        || detail.Status == OrderStatus.Preparing
+                        || detail.Status == OrderStatus.ReadyForPickup)
+                    && detail.DispatchStatus == DispatchStatus.Assigned)
+                .ExecuteUpdateAsync(updates => updates
+                    .SetProperty(detail => detail.ShipperId, (Guid?)null)
+                    .SetProperty(detail => detail.ShipperAssignedAt, (DateTime?)null)
+                    .SetProperty(detail => detail.DispatchStatus, DispatchStatus.Searching)
+                    .SetProperty(detail => detail.DispatchStartedAt, releasedAt)
+                    .SetProperty(detail => detail.ShipperReleaseCount, detail => detail.ShipperReleaseCount + 1)
+                    .SetProperty(detail => detail.LastShipperReleaseReason, cleanReason));
+            if (released == 0)
+                return HttpErrors.BadRequest(
+                    "ORDER_CANNOT_BE_RELEASED",
+                    "Chỉ shipper được gán mới có thể trả đơn trước khi lấy món.");
+
+            orderDetail.ShipperId = null;
+            orderDetail.Shipper = null;
+            orderDetail.ShipperAssignedAt = null;
+            orderDetail.DispatchStatus = DispatchStatus.Searching;
+            orderDetail.DispatchStartedAt = releasedAt;
+            orderDetail.ShipperReleaseCount++;
+            orderDetail.LastShipperReleaseReason = cleanReason;
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory
+            {
+                OrderId = orderId,
+                Status = orderDetail.Status,
+                ChangeByUserId = shipperId,
+                ChangedAt = releasedAt,
+                ActionBy = OrderActionBy.Shipper,
+                Note = $"Shipper trả đơn để tìm người giao khác. Lý do: {cleanReason}"
+            });
+            await _context.SaveChangesAsync();
+
+            if (orderDetail.Order != null)
+            {
+                await NotifyRestaurantUsersAsync(orderDetail.Order.RestaurantId, new NotificationRequest
+                {
+                    Title = "Đơn hàng cần tìm shipper khác",
+                    Message = $"Shipper đã trả đơn #{orderDetail.Order.OrderCode} trước khi lấy món. Hệ thống đang tìm shipper khác. Lý do: {cleanReason}",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/restaurant/orders"
+                });
+                await NotifyEligibleShippersAsync(orderDetail.Order);
+            }
+
+            await transaction.CommitAsync();
+            return Result.Success();
+        }
+
+        private async Task NotifyEligibleShippersAsync(Order order)
+        {
+            var userIds = await _context.Shippers
+                .Where(shipper => shipper.Status == ShipperStatus.Approved
+                    && shipper.IsActive
+                    && shipper.IsAvailable
+                    && shipper.User.IsActive
+                    && !_context.OrderDetails.Any(activeOrder =>
+                        activeOrder.ShipperId == shipper.Id
+                        && activeOrder.Status != OrderStatus.Completed
+                        && activeOrder.Status != OrderStatus.Cancelled))
+                .Select(shipper => shipper.UserId)
+                .ToListAsync();
+
+            foreach (var userId in userIds)
+            {
+                await CreateRequiredNotificationAsync(userId, new NotificationRequest
+                {
+                    Title = "Có đơn hàng mới cần giao",
+                    Message = $"Đơn #{order.OrderCode} đang cần shipper nhận giao.",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/shipper/orders"
+                });
+            }
         }
         
         public async Task<OrderDetailResponse?> GetOrderByIdAsync(Guid orderId)
@@ -462,30 +654,18 @@ namespace FoodDelivery.Service.Implements
             if (orderDetail == null) return false;
             
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive) return false;
             if (orderDetail.ShipperId != shipper.Id) return false;
-
-            // Allow from both ReadyForPickup and Shipping statuses
-            if (orderDetail.Status != OrderStatus.ReadyForPickup && orderDetail.Status != OrderStatus.Shipping) 
+            if (orderDetail.Status != OrderStatus.Shipping || orderDetail.Order == null)
+                return false;
+            if (!_orderStateMachine.CanTransition(
+                    orderDetail.Status, OrderAction.Deliver, ActorRole.Shipper, orderDetail.Order))
                 return false;
 
-            // Auto confirm pickup if still in ReadyForPickup status
-            if (orderDetail.Status == OrderStatus.ReadyForPickup)
-            {
-                orderDetail.Status = OrderStatus.Shipping;
-                await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
-                { 
-                    OrderId = orderId, 
-                    Status = OrderStatus.Shipping, 
-                    ChangeByUserId = userId,
-                    ActionBy = OrderActionBy.Shipper,
-                    ChangedAt = DateTime.UtcNow,
-                    Note = "Xác nhận lấy hàng từ quán"
-                });
-            }
-
-            orderDetail.Status = OrderStatus.Completed;
+            orderDetail.Status = _orderStateMachine.GetNextStatus(
+                orderDetail.Status, OrderAction.Deliver, ActorRole.Shipper, orderDetail.Order);
             orderDetail.ActualDeliveryTime = DateTime.UtcNow;
+            shipper.TotalDeliveredOrders++;
 
             _shipperRepository.UpdateOrderDetail(orderDetail);
             await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
@@ -500,7 +680,7 @@ namespace FoodDelivery.Service.Implements
             var saved = await _shipperRepository.SaveChangesAsync();
             if (saved && orderDetail.Order != null)
             {
-                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                await CreateRequiredNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
                 {
                     Title = "Đơn hàng đã được giao",
                     Message = $"Đơn hàng #{orderDetail.Order.OrderCode} của bạn đã được giao thành công!",
@@ -517,29 +697,17 @@ namespace FoodDelivery.Service.Implements
             if (orderDetail == null || !cancelledBy.HasValue) return false;
             
             var shipper = await _shipperRepository.GetShipperByIdAsync(cancelledBy.Value);
-            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive || !shipper.IsAvailable) return false;
+            if (shipper == null || shipper.Status != ShipperStatus.Approved || !shipper.IsActive) return false;
             if (orderDetail.ShipperId != shipper.Id) return false;
-
-            // Allow from both ReadyForPickup and Shipping statuses
-            if (orderDetail.Status != OrderStatus.ReadyForPickup && orderDetail.Status != OrderStatus.Shipping)
+            if (orderDetail.Status != OrderStatus.Shipping || orderDetail.Order == null)
                 return false;
 
-            // Auto confirm pickup if still in ReadyForPickup status
-            if (orderDetail.Status == OrderStatus.ReadyForPickup)
-            {
-                orderDetail.Status = OrderStatus.Shipping;
-                await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
-                { 
-                    OrderId = orderId, 
-                    Status = OrderStatus.Shipping, 
-                    ChangeByUserId = cancelledBy.Value,
-                    ActionBy = OrderActionBy.Shipper,
-                    ChangedAt = DateTime.UtcNow,
-                    Note = "Xác nhận lấy hàng từ quán"
-                });
-            }
-            
-            orderDetail.Status = OrderStatus.Cancelled;
+            if (!_orderStateMachine.CanTransition(
+                    orderDetail.Status, OrderAction.DeliveryFailed, ActorRole.Shipper, orderDetail.Order))
+                return false;
+
+            orderDetail.Status = _orderStateMachine.GetNextStatus(
+                orderDetail.Status, OrderAction.DeliveryFailed, ActorRole.Shipper, orderDetail.Order);
             orderDetail.CancelReason = reason ?? string.Empty;
             orderDetail.CancelledByUserId = cancelledBy.Value;
             
@@ -556,17 +724,24 @@ namespace FoodDelivery.Service.Implements
             var saved = await _shipperRepository.SaveChangesAsync();
             if (saved && orderDetail.Order != null)
             {
-                await _notificationService.CreateNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
+                await CreateRequiredNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
                 {
                     Title = "Giao hàng không thành công",
                     Message = $"Đơn #{orderDetail.Order.OrderCode} chưa giao được. Lý do: {reason ?? "Không có"}",
                     Type = (int)NotificationType.DELIVERY,
                     Link = "/account"
                 });
-                await NotifyAdminsAsync(
-                    "Đơn hàng giao thất bại",
-                    $"Shipper báo giao thất bại đơn #{orderDetail.Order.OrderCode}. Lý do: {reason ?? "Không có"}",
-                    "/admin/orders");
+                var admins = await _userRepository.GetUsersByRoleAsync("admin");
+                foreach (var admin in admins)
+                {
+                    await CreateRequiredNotificationAsync(admin.Id, new NotificationRequest
+                    {
+                        Title = "Đơn hàng giao thất bại",
+                        Message = $"Shipper báo giao thất bại đơn #{orderDetail.Order.OrderCode}. Lý do: {reason ?? "Không có"}",
+                        Type = (int)NotificationType.SYSTEM,
+                        Link = "/admin/orders"
+                    });
+                }
             }
             return saved;
         }

@@ -16,7 +16,7 @@ namespace FoodDelivery.Service.Interfaces
 
 
         // --- 3 chức năng nghiệp vụ giao hàng ---
-        Task<bool> ConfirmPickUpAsync(Guid orderId, Guid userId);
+        Task<Result> ConfirmPickUpAsync(Guid orderId, Guid userId);
         Task<bool> MarkSuccessAsync(Guid orderId, Guid userId);
         Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null);
 
@@ -30,8 +30,9 @@ namespace FoodDelivery.Service.Interfaces
         Task<List<OrderAdminSummaryResponse>> GetShipperCompletedOrdersAsync(Guid userId); // Lấy danh sách đơn hoàn thành
         
         Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId);
-        Task<List<OrderAdminSummaryResponse>> GetAvailableOrdersAsync(); // Lấy danh sách orders sẵn sàng để nhận
-        Task<bool> AcceptOrderAsync(Guid orderId, Guid shipperId); // Shipper chấp nhận/nhận đơn
+        Task<List<OrderAdminSummaryResponse>> GetAvailableOrdersAsync(Guid userId); // Lấy danh sách orders sẵn sàng để nhận
+        Task<Result> AcceptOrderAsync(Guid orderId, Guid shipperId); // Shipper chấp nhận/nhận đơn
+        Task<Result> ReleaseOrderAsync(Guid orderId, Guid shipperId, string reason);
         Task<OrderDetailResponse?> GetOrderByIdAsync(Guid orderId);
         Task<bool> UpdateShipperProfileAsync(Guid userId, UpdateShipperProfileDto request);
     }

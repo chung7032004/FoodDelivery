@@ -2,6 +2,8 @@ namespace FoodDelivery.Entities
 {
     public class OrderStatusHistory
     {
+        public const string ShipperAcceptedNote = "Shipper đã nhận đơn hàng";
+
         public Guid Id {get; set;} = Guid.NewGuid();
         public Guid OrderId {get; set;}
         public Order Order {get; set;} = null!;

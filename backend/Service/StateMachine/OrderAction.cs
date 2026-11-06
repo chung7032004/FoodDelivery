@@ -20,6 +20,7 @@ public enum OrderAction
     // Phía shipper
     Pickup,               // Shipper lấy hàng
     Deliver,              // Shipper giao xong
+    DeliveryFailed,       // Shipper báo giao thất bại
 
     // Phía admin hệ thống
     CancelByAdmin,        // Admin hệ thống hủy đơn

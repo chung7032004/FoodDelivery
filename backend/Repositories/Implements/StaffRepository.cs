@@ -41,8 +41,13 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
+                ShipperName = o.OrderDetail!.Shipper == null ? null : o.OrderDetail.Shipper.User.FullName,
+                ShipperPhone = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.User.Phone,
+                ShipperVehicleType = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehicleType,
+                ShipperVehiclePlate = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehiclePlate,
                 TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
+                PrepMinutes = o.OrderDetail.PrepMinutes,
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
@@ -80,8 +85,13 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
+                ShipperName = o.OrderDetail!.Shipper == null ? null : o.OrderDetail.Shipper.User.FullName,
+                ShipperPhone = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.User.Phone,
+                ShipperVehicleType = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehicleType,
+                ShipperVehiclePlate = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehiclePlate,
                 TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
+                PrepMinutes = o.OrderDetail.PrepMinutes,
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
@@ -109,8 +119,13 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
+                ShipperName = o.OrderDetail!.Shipper == null ? null : o.OrderDetail.Shipper.User.FullName,
+                ShipperPhone = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.User.Phone,
+                ShipperVehicleType = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehicleType,
+                ShipperVehiclePlate = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehiclePlate,
                 TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
+                PrepMinutes = o.OrderDetail.PrepMinutes,
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {
@@ -248,7 +263,7 @@ public class StaffRepository : IStaffRepository
 
     public async Task<List<OrderDto>> GetCompletedOrdersByRestaurant(Guid restaurantId, int days = 30)
     {
-        // Get completed and cancelled orders from the last 'days' number of days
+        // A non-positive range includes completed and cancelled orders from all time.
         var startDate = DateTime.UtcNow.AddDays(-days);
         
         var orders = await _context.Orders
@@ -259,7 +274,7 @@ public class StaffRepository : IStaffRepository
                      o.RestaurantId == restaurantId &&
                      (o.OrderDetail.Status == OrderStatus.Completed ||
                     o.OrderDetail.Status == OrderStatus.Cancelled) &&
-                   o.CreatedAt >= startDate)
+                   (days <= 0 || o.CreatedAt >= startDate))
             .AsNoTracking()
             .Select(o => new OrderDto
             {
@@ -267,8 +282,13 @@ public class StaffRepository : IStaffRepository
                 OrderNumber = o.OrderCode,
                 CustomerName = o.Customer!.FullName ?? "Unknown",
                 CustomerPhone = o.Customer.Phone ?? "",
+                ShipperName = o.OrderDetail!.Shipper == null ? null : o.OrderDetail.Shipper.User.FullName,
+                ShipperPhone = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.User.Phone,
+                ShipperVehicleType = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehicleType,
+                ShipperVehiclePlate = o.OrderDetail.Shipper == null ? null : o.OrderDetail.Shipper.VehiclePlate,
                 TotalAmount = o.Subtotal,
                 Status = (int)(o.OrderDetail!.Status),
+                PrepMinutes = o.OrderDetail.PrepMinutes,
                 CreatedAt = o.CreatedAt,
                 Items = o.OrderItems!.Select(oi => new OrderItemDto
                 {

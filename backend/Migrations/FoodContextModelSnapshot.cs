@@ -283,8 +283,17 @@ namespace FoodDelivery.Migrations
                     b.Property<Guid?>("CancelledByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DispatchStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DispatchStatus")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("EstimatedDeliveryTime")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastShipperReleaseReason")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
@@ -295,8 +304,20 @@ namespace FoodDelivery.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("PrepMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ShipperAssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("ShipperCancellationCompensationPending")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("ShipperReleaseCount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -2177,6 +2198,26 @@ namespace FoodDelivery.Migrations
                         {
                             RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
                             PermissionId = new Guid("3b3a1dbb-a477-6322-4580-4ff269a0591d")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("e827ae98-f118-1f4e-e890-4cb036aba6b8")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("f8edc86c-8f35-bc18-75a5-17cfec2310f0")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("c4bdb36c-4205-1966-10fc-6b5701a69c42")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("44444444-4444-4444-4444-444444444444"),
+                            PermissionId = new Guid("e35c101b-a88c-8804-7ccb-6f0c2a5cf1e1")
                         },
                         new
                         {
