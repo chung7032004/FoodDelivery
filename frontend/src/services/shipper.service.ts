@@ -19,7 +19,7 @@ export interface ApplyShipperRequest {
   vehiclePlate: string;
 }
 export interface ShipperStats { totalAssignedOrders: number; totalCompletedOrders: number; totalFailedOrders: number; totalEarnings: number; averageRating: number; }
-export interface ShipperOrder { id: string; orderCode: string; customerName: string; totalAmount: number; shippingAddress?: string | null; status: string; createdAt: string; }
+export interface ShipperOrder { id: string; orderCode: string; customerName: string; totalAmount: number; shippingFee: number; shippingAddress?: string | null; status: string; dispatchStatus?: string; prepMinutes?: number | null; createdAt: string; }
 export interface OrderDetail { orderId: string; orderCode: string; customerName: string; customerEmail: string; shippingAddress: string; receiverName: string; receiverPhone: string; shippingFee: number; estimatedDeliveryTime: string | null; actualDeliveryTime: string | null; paymentMethod: string; paymentStatus: string; currentStatus: string; cancelReason: string | null; totalAmount: number; shipperId: string | null; items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[]; }
 
 export const shipperService = {
@@ -36,4 +36,5 @@ export const shipperService = {
   confirmPickup: (id: string) => api.post(`/shipper/orders/${id}/pickup`),
   complete: (id: string) => api.post(`/shipper/orders/${id}/complete`),
   fail: (id: string, reason: string) => api.post(`/shipper/orders/${id}/fail`, { orderId: id, reason }),
+  releaseOrder: (id: string, reason: string) => api.post(`/shipper/orders/${id}/release`, { orderId: id, reason }),
 };

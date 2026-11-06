@@ -1,15 +1,92 @@
 import { useEffect, useState } from 'react';
-import { Bike, CheckCircle2, Power } from 'lucide-react';
-import { ShipperLayout } from './ShipperLayout';
+import type { ReactNode } from 'react';
+import { MapPin, UserRound } from 'lucide-react';
+import { AddressesTab } from '@/components/account/AddressesTab';
+import { ProfileTab } from '@/components/account/ProfileTab';
 import { PageHeader, Panel } from '@/components/admin/AdminUI';
-import { ShipperProfile, shipperService } from '@/services/shipper.service';
+import { accountService, type AccountResponse } from '@/services/account.service';
+import { ShipperLayout } from './ShipperLayout';
+
+type ProfileTabKey = 'account' | 'addresses';
 
 export default function ShipperProfilePage() {
-  const [profile, setProfile] = useState<ShipperProfile | null>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTabKey>('account');
+  const [account, setAccount] = useState<AccountResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  async function load() { try { setProfile(await shipperService.getProfile()); } catch { setError('Không thể tải hồ sơ tài xế.'); } finally { setLoading(false); } }
-  useEffect(() => { void load(); }, []);
-  async function toggleAvailability() { if (!profile) return; try { await shipperService.updateAvailability(!profile.isAvailable); await load(); } catch { setError('Không thể cập nhật trạng thái.'); } }
-  return <ShipperLayout><PageHeader eyebrow="Tài khoản tài xế" title="Hồ sơ tài xế" description="Kiểm tra trạng thái hoạt động và thông tin giao hàng của bạn." />{error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}{loading ? <Panel><div className="p-10 text-center text-sm text-slate-500">Đang tải hồ sơ...</div></Panel> : profile && <div className="max-w-xl"><Panel title="Trạng thái tài khoản"><div className="space-y-5 p-5"><div className="flex items-center gap-4"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><Bike size={28} /></span><div><p className="font-display text-xl font-bold">{profile.isActive ? 'Tài khoản đang hoạt động' : 'Tài khoản bị tạm dừng'}</p><p className="mt-1 text-sm text-slate-500">Mã tài xế: {profile.shipperId}</p></div></div><div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Đã giao thành công</p><strong className="mt-1 block text-xl">{profile.totalDeliveredOrders}</strong></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Trạng thái nhận đơn</p><strong className="mt-1 block text-xl">{profile.isAvailable ? 'Bật' : 'Tắt'}</strong></div></div><button onClick={() => void toggleAvailability()} className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white ${profile.isAvailable ? 'bg-slate-700' : 'bg-emerald-600'}`}><Power size={17} />{profile.isAvailable ? 'Tắt nhận đơn' : 'Bật nhận đơn'}</button><p className="flex items-center gap-2 text-xs text-slate-500"><CheckCircle2 size={14} className="text-emerald-600" />Chỉ shipper đã được admin duyệt mới nhận được đơn.</p></div></Panel></div>}</ShipperLayout>;
+
+  useEffect(() => {
+    let active = true;
+    accountService.getMe()
+      .then((result) => {
+        if (!active) return;
+        if (result.isSuccess && result.data) setAccount(result.data);
+        else setError(result.message ?? 'Không thể tải thông tin tài khoản.');
+      })
+      .catch(() => {
+        if (active) setError('Không thể tải thông tin tài khoản.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <ShipperLayout>
+      <PageHeader
+        eyebrow="Thiết lập tài khoản"
+        title="Hồ sơ shipper"
+        description="Cập nhật thông tin liên hệ và địa chỉ của bạn."
+      />
+      {error && (
+        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+      <Panel title="Thông tin tài khoản" subtitle="Thông tin này được dùng để liên hệ khi giao hàng.">
+        <div className="flex gap-2 border-b border-slate-200 px-4 pt-3">
+          <Tab active={activeTab === 'account'} onClick={() => setActiveTab('account')}>
+            <UserRound size={16} />Thông tin cá nhân
+          </Tab>
+          <Tab active={activeTab === 'addresses'} onClick={() => setActiveTab('addresses')}>
+            <MapPin size={16} />Địa chỉ
+          </Tab>
+        </div>
+        <div className="p-5 sm:p-6">
+          {loading ? (
+            <p className="py-8 text-center text-sm text-slate-500">Đang tải hồ sơ...</p>
+          ) : activeTab === 'account' ? (
+            account ? (
+              <ProfileTab user={account} onUpdated={setAccount} />
+            ) : (
+              <p className="py-8 text-center text-sm text-slate-500">Không có thông tin tài khoản.</p>
+            )
+          ) : (
+            <>
+              <p className="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                Quản lý địa chỉ cá nhân đã lưu tại đây. Hiện hệ thống chưa giới hạn đơn theo khoảng cách hoặc khu vực của shipper.
+              </p>
+              <AddressesTab />
+            </>
+          )}
+        </div>
+      </Panel>
+    </ShipperLayout>
+  );
+}
+
+function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-bold ${
+        active ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+      }`}
+    >
+      {children}
+    </button>
+  );
 }

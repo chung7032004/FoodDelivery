@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Package, RefreshCw } from "lucide-react";
+import { OrderDeliveryHistoryModal } from "@/components/modals/OrderDeliveryHistoryModal";
+import { OutOfStockProposalModal } from "@/components/modals/OutOfStockProposalModal";
 import { getImageUrl } from "@/utils/image";
 import { orderService, type OrderDetail, type OrderHistoryItem } from "@/services/order.service";
 
@@ -40,15 +42,23 @@ function getStatus(status: number | string) {
 }
 
 export function OrdersTab() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [proposalOrderId, setProposalOrderId] = useState<string | null>(null);
   const historyQuery = useQuery({
     queryKey: ["my-order-history", page],
     queryFn: () => orderService.getMyHistory(page, PAGE_SIZE),
   });
   const detailQuery = useQuery({
     queryKey: ["my-order-detail", expandedOrderId],
-    queryFn: () => orderService.getDetail(expandedOrderId!),
+    queryFn: async () => {
+      const result = await orderService.getDetail(expandedOrderId!);
+      if (!result.isSuccess || !result.data) {
+        throw new Error(result.message ?? "Không tải được chi tiết đơn hàng.");
+      }
+      return result;
+    },
     enabled: Boolean(expandedOrderId),
   });
 
@@ -56,6 +66,29 @@ export function OrdersTab() {
   const pagination = historyQuery.data?.data?.meta;
   const totalPages = Math.max(1, pagination?.totalPages ?? 1);
   const detail = detailQuery.data?.data ?? null;
+  const proposalOrder = orders.find((order) => order.orderId === proposalOrderId);
+  const proposalMutation = useMutation({
+    mutationFn: ({ orderId, isAccepted }: { orderId: string; isAccepted: boolean }) =>
+      orderService.respondToProposal(orderId, isAccepted),
+    onSuccess: async (_result, variables) => {
+      setProposalOrderId(null);
+      setExpandedOrderId(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-order-history"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-order-detail", variables.orderId] }),
+      ]);
+    },
+  });
+  const proposalError = proposalMutation.isError
+    ? proposalMutation.error instanceof Error
+      ? proposalMutation.error.message
+      : "Không thể gửi phản hồi. Vui lòng thử lại."
+    : "";
+  const closeProposalModal = useCallback(() => {
+    if (proposalMutation.isPending) return;
+    setProposalOrderId(null);
+    proposalMutation.reset();
+  }, [proposalMutation.isPending, proposalMutation.reset]);
 
   return (
     <section className="space-y-5">
@@ -94,6 +127,11 @@ export function OrdersTab() {
                 detail={expandedOrderId === order.orderId ? detail : null}
                 isDetailLoading={expandedOrderId === order.orderId && detailQuery.isLoading}
                 detailError={expandedOrderId === order.orderId && detailQuery.isError ? "Không tải được chi tiết đơn hàng." : ""}
+                onRespondToProposal={(orderId) => {
+                  setExpandedOrderId(orderId);
+                  setProposalOrderId(orderId);
+                  proposalMutation.reset();
+                }}
               />
             ))}
           </div>
@@ -113,6 +151,27 @@ export function OrdersTab() {
           )}
         </>
       )}
+      <OutOfStockProposalModal
+        isOpen={Boolean(proposalOrderId)}
+        orderCode={proposalOrder?.orderCode ?? ""}
+        detail={proposalOrderId && expandedOrderId === proposalOrderId && !detailQuery.isFetching ? detail : null}
+        isLoading={Boolean(proposalOrderId) && expandedOrderId === proposalOrderId && detailQuery.isFetching}
+        loadError={
+          proposalOrderId && expandedOrderId === proposalOrderId && detailQuery.isError
+            ? "Không thể tải thông tin đề xuất."
+            : ""
+        }
+        isSubmitting={proposalMutation.isPending}
+        error={proposalError}
+        onRetry={() => void detailQuery.refetch()}
+        onAccept={() => {
+          if (proposalOrderId) proposalMutation.mutate({ orderId: proposalOrderId, isAccepted: true });
+        }}
+        onReject={() => {
+          if (proposalOrderId) proposalMutation.mutate({ orderId: proposalOrderId, isAccepted: false });
+        }}
+        onClose={closeProposalModal}
+      />
     </section>
   );
 }
@@ -124,6 +183,7 @@ function OrderRow({
   detail,
   isDetailLoading,
   detailError,
+  onRespondToProposal,
 }: {
   order: OrderHistoryItem;
   expanded: boolean;
@@ -131,6 +191,7 @@ function OrderRow({
   detail: OrderDetail | null;
   isDetailLoading: boolean;
   detailError: string;
+  onRespondToProposal: (orderId: string) => void;
 }) {
   const status = getStatus(order.currentStatus);
 
@@ -144,6 +205,15 @@ function OrderRow({
           </div>
           <p className="text-sm text-muted">Đặt lúc {formatDate(order.createdAt)}</p>
           {order.estimatedDeliveryTime && <p className="text-xs text-muted">Dự kiến giao: {formatDate(order.estimatedDeliveryTime)}</p>}
+          {String(order.currentStatus) === "2" || String(order.currentStatus) === "WaitingCustomerDecision" ? (
+            <button
+              type="button"
+              onClick={() => onRespondToProposal(order.orderId)}
+              className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            >
+              Phản hồi đề xuất của nhà hàng
+            </button>
+          ) : null}
         </div>
         <div className="flex items-center gap-4">
           <p className="text-right text-sm font-semibold text-slate-900">{formatVnd(order.totalAmount)}</p>
@@ -166,6 +236,8 @@ function OrderRow({
 }
 
 function OrderDetailPanel({ detail }: { detail: OrderDetail }) {
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 text-sm sm:grid-cols-2">
@@ -193,11 +265,29 @@ function OrderDetailPanel({ detail }: { detail: OrderDetail }) {
         ))}
       </div>
 
-      <div className="ml-auto max-w-xs space-y-1.5 text-sm">
+      <div className="ml-auto max-w-sm space-y-1.5 text-sm">
         <div className="flex justify-between gap-4 text-muted"><span>Phí giao hàng</span><span>{formatVnd(detail.shippingFee)}</span></div>
-        <div className="flex justify-between gap-4 border-t border-slate-200 pt-2 font-semibold text-slate-900"><span>Tổng cộng</span><span>{formatVnd(detail.totalAmount)}</span></div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-2 font-semibold text-slate-900">
+          <span>Tổng cộng</span>
+          <div className="flex items-center gap-3">
+            <span>{formatVnd(detail.totalAmount)}</span>
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              className="rounded-lg border border-orange-200 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-50"
+            >
+              Lịch sử giao hàng
+            </button>
+          </div>
+        </div>
       </div>
       {detail.cancelReason && <p className="text-sm text-slate-600">Lý do hủy: {detail.cancelReason}</p>}
+      <OrderDeliveryHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        orderCode={detail.orderCode}
+        statusHistories={detail.statusHistories ?? []}
+      />
     </div>
   );
 }

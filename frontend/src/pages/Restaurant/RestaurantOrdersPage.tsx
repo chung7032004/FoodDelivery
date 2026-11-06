@@ -39,33 +39,39 @@ type Tab = 'active' | 'completed';
 export default function RestaurantOrdersPage() {
   const [orders, setOrders] = useState<RestaurantOrder[]>([]);
   const [tab, setTab] = useState<Tab>('active');
+  const [completedDays, setCompletedDays] = useState(30);
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
 
   // Tải danh sách đơn hàng
-  const loadOrders = useCallback(async (isMounted: () => boolean = () => true) => {
-    setLoading(true);
+  const loadOrders = useCallback(async (isMounted: () => boolean = () => true, showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError('');
     try {
       const result =
         tab === 'active'
           ? await staffService.getOrders()
-          : await staffService.getCompletedOrders();
+          : await staffService.getCompletedOrders(completedDays);
       if (isMounted()) setOrders(result.data || []);
     } catch {
       if (isMounted()) setError('Không thể tải danh sách đơn hàng.');
     } finally {
-      if (isMounted()) setLoading(false);
+      if (isMounted() && showLoading) setLoading(false);
     }
-  }, [tab]);
+  }, [completedDays, tab]);
 
   useEffect(() => {
     let isSubscribed = true;
     void loadOrders(() => isSubscribed);
+    const refreshInterval = window.setInterval(
+      () => void loadOrders(() => isSubscribed, false),
+      15000
+    );
     return () => {
       isSubscribed = false;
+      window.clearInterval(refreshInterval);
     };
   }, [loadOrders]);
 
@@ -74,12 +80,13 @@ export default function RestaurantOrdersPage() {
   // Xử lý chuyển trạng thái đơn hàng
   async function handleAction(
     order: RestaurantOrder,
-    next: 'confirm' | 'prepare' | 'ready'
+    next: 'confirm' | 'prepare' | 'ready',
+    prepMinutes?: number
   ) {
     setBusy(order.id);
     setError('');
     try {
-      if (next === 'confirm') await staffService.confirm(order.id);
+      if (next === 'confirm') await staffService.confirm(order.id, prepMinutes);
       if (next === 'prepare') await staffService.startPreparing(order.id);
       if (next === 'ready') await staffService.markReady(order.id);
       await loadOrders();
@@ -149,7 +156,21 @@ export default function RestaurantOrdersPage() {
         </button>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {tab === 'completed' && (
+          <label className="mr-2 flex items-center gap-2 text-xs font-medium text-slate-600">
+            Thời gian
+            <select
+              value={completedDays}
+              onChange={(event) => setCompletedDays(Number(event.target.value))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-sky-400"
+            >
+              <option value={30}>30 ngày gần nhất</option>
+              <option value={90}>90 ngày gần nhất</option>
+              <option value={0}>Tất cả thời gian</option>
+            </select>
+          </label>
+        )}
         <StatusFilter label="Tất cả" active={statusFilter === null} onClick={() => setStatusFilter(null)} />
         {visibleStatuses.map((status) => (
           <StatusFilter
@@ -235,13 +256,15 @@ function OrderCard({
   busy: boolean;
   onAction: (
     order: RestaurantOrder,
-    next: 'confirm' | 'prepare' | 'ready'
+    next: 'confirm' | 'prepare' | 'ready',
+    prepMinutes?: number
   ) => void;
   onReportOutOfStock: (order: RestaurantOrder, removedProductIds: string[], note: string) => void;
 }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [removedProductIds, setRemovedProductIds] = useState<string[]>([]);
   const [reportNote, setReportNote] = useState('');
+  const [prepMinutes, setPrepMinutes] = useState('');
   // Xác định nút hành động tiếp theo
   const getActionConfig = () => {
     if (order.status === 1) {
@@ -297,6 +320,37 @@ function OrderCard({
 
         <OrderProgress status={order.status} />
 
+        {order.status >= 3 && order.status <= 6 && (
+          <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2.5 text-sm">
+            {order.shipperName ? (
+              <>
+                <p className="font-semibold text-sky-900">Shipper: {order.shipperName}</p>
+                <p className="mt-1 text-xs text-sky-800">
+                  {order.shipperVehicleType}
+                  {order.shipperVehiclePlate ? ` · ${order.shipperVehiclePlate}` : ''}
+                  {order.shipperPhone ? ' · ' : ''}
+                  {order.shipperPhone && (
+                    <a className="font-semibold underline" href={`tel:${order.shipperPhone}`}>
+                      {order.shipperPhone}
+                    </a>
+                  )}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs font-medium text-sky-800">
+                {order.status === 3 || order.status === 4
+                  ? 'Đang tìm shipper song song với lúc chuẩn bị món.'
+                  : 'Đang tìm shipper nhận giao.'}
+              </p>
+            )}
+          </div>
+        )}
+        {order.prepMinutes != null && (
+          <p className="mb-3 text-xs font-semibold text-slate-600">
+            Thời gian chuẩn bị dự kiến: {order.prepMinutes} phút
+          </p>
+        )}
+
         {/* Danh sách món ăn */}
         <div className="my-4 space-y-2 border-y border-slate-100 py-3">
           {order.items.map((item, index) => (
@@ -318,6 +372,19 @@ function OrderCard({
 
       {/* Tổng tiền & Nút Thao tác */}
       <div>
+        {order.status === 1 && (
+          <label className="mb-3 flex items-center gap-2 text-xs font-medium text-slate-600">
+            Thời gian chuẩn bị (phút, không bắt buộc)
+            <input
+              type="number"
+              min="1"
+              value={prepMinutes}
+              onChange={(event) => setPrepMinutes(event.target.value)}
+              className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+              aria-label="Thời gian chuẩn bị dự kiến (phút)"
+            />
+          </label>
+        )}
         <div className="flex items-center justify-between gap-3 pt-2">
           <span className="text-sm font-bold text-slate-900">
             Tổng món: <span className="text-base text-orange-600">{money.format(order.totalAmount)}</span>
@@ -326,7 +393,11 @@ function OrderCard({
           {actionConfig && (
             <button
               disabled={busy}
-              onClick={() => onAction(order, actionConfig.type)}
+              onClick={() => onAction(
+                order,
+                actionConfig.type,
+                actionConfig.type === 'confirm' && prepMinutes ? Number(prepMinutes) : undefined
+              )}
               className="flex items-center gap-2 rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
             >
               <actionConfig.Icon size={15} />
