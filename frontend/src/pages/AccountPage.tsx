@@ -7,6 +7,7 @@ import { AddressesTab as AddressesTabView } from '@/components/account/Addresses
 import { OrdersTab as OrdersTabView } from '@/components/account/OrdersTab';
 import { ProfileTab as ProfileTabView } from '@/components/account/ProfileTab';
 import { SecurityTab as SecurityTabView } from '@/components/account/SecurityTab';
+import { WalletTab as WalletTabView } from '@/components/account/WalletTab';
 import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { accountService, type AccountResponse, type UserRoleRestriction } from '@/services/account.service';
@@ -19,14 +20,16 @@ import {
   ShieldCheck,
   LogOut,
   MessageSquareWarning,
+  Wallet,
 } from 'lucide-react';
 
-type Tab = 'profile' | 'orders' | 'addresses' | 'security' | 'appeals';
+type Tab = 'profile' | 'orders' | 'addresses' | 'wallet' | 'security' | 'appeals';
 
 const TABS: { key: Tab; label: string; icon: typeof UserIcon }[] = [
   { key: 'profile',   label: 'Thông tin', icon: UserIcon },
   { key: 'orders',    label: 'Đơn hàng',  icon: Package },
   { key: 'addresses', label: 'Địa chỉ',   icon: MapPin },
+  { key: 'wallet',    label: 'Ví tiền',   icon: Wallet },
   { key: 'security',  label: 'Bảo mật',   icon: ShieldCheck },
   { key: 'appeals',   label: 'Khiếu nại quyền', icon: MessageSquareWarning },
 ];
@@ -160,6 +163,7 @@ export function AccountPage() {
           {!isLoading && !error && user && activeTab === 'profile' && <ProfileTabView user={user} onUpdated={setUser} />}
           {activeTab === 'orders' && <OrdersTabView />}
           {activeTab === 'addresses' && <AddressesTabView />}
+          {activeTab === 'wallet' && <WalletTabView />}
           {activeTab === 'security' && <SecurityTabView />}
           {activeTab === 'appeals' && <RoleRestrictionsTab />}
         </div>

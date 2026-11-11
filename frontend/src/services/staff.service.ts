@@ -37,6 +37,7 @@ export const staffService = {
   confirm: (id: string, prepMinutes?: number) => api.post(`/staff/orders/${id}/confirm`, null, { params: prepMinutes ? { prepMinutes } : undefined }),
   startPreparing: (id: string) => api.post(`/staff/orders/${id}/start-preparing`),
   markReady: (id: string) => api.post(`/staff/orders/${id}/mark-ready`),
+  cancelOrder: (id: string, reason: string) => api.post(`/staff/orders/${id}/cancel`, { reason }),
   reportOutOfStock: (id: string, removedProductIds: string[], note: string) =>
     api.post(`/staff/orders/${id}/report-out-of-stock`, { removedProductIds, note }),
   reportIssue: (id: string, issueDescription: string, issueType: string) => api.post(`/staff/orders/${id}/report-issue`, { issueDescription, issueType }),

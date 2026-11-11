@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '@/pages/Auth/LoginPage';
 import { RegisterPage } from '../pages/Auth/RegisterPage';
-import  { ProtectedRoute}  from './ProtectedRoute';
+import { ProtectedRoute } from './ProtectedRoute';
 import { AccountPage } from '../pages/AccountPage';
 import { SendOtpPage } from '@/pages/Auth/SendOtpPage';
 import { ResetPasswordPage } from '@/pages/Auth/ResetPasswordPage';
@@ -32,6 +32,7 @@ import ShipperAssignedPage from '@/pages/Shipper/ShipperAssignedPage';
 import ShipperProfilePage from '@/pages/Shipper/ShipperProfilePage';
 import ShipperApplyPage from '@/pages/Shipper/ShipperApplyPage';
 import { RestaurantApprovalRoute } from '@/routes/RestaurantApprovalRoute';
+import { PaymentCallbackPage } from '@/pages/PaymentCallbackPage';
 
 
 
@@ -43,12 +44,13 @@ export function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/send-otp" element={<SendOtpPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path= "/list-category" element={<ListCategoryPage />} />
-      <Route path = "/product/:productId" element={<ProductDetailPage />} />
+      <Route path="/list-category" element={<ListCategoryPage />} />
+      <Route path="/product/:productId" element={<ProductDetailPage />} />
       <Route path="/restaurants/:restaurantId" element={<PublicRestaurantPage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
       <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+      <Route path="/payment/callback" element={<PaymentCallbackPage />} />
       {/* Route cần đăng nhập mới vào được */}
       <Route
         path="/account"

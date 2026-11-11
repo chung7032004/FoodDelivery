@@ -19,7 +19,7 @@ export interface BuyNowRequest {
 }
 
 export type ShippingService = "Standard" | "Express";
-export type PaymentMethod = 0 | 1 | 2;
+export type PaymentMethod = 0 | 1 | 2 | 3; // 0: Cash, 1: Card, 2: Momo, 3: VnPay
 
 export interface CreatedOrder {
   orderId: string;
@@ -29,6 +29,7 @@ export interface CreatedOrder {
   totalAmount: number;
   shippingFee: number;
   estimatedDeliveryTime: string;
+  paymentUrl?: string;
 }
 
 export interface ShippingFeeEstimate {
@@ -114,6 +115,10 @@ export const orderService = {
   },
   respondToProposal: async (orderId: string, isAccepted: boolean): Promise<ApiResult<null>> => {
     const { data } = await api.post<ApiResult<null>>(`/orders/${orderId}/respond-proposal`, { isAccepted });
+    return data;
+  },
+  cancelOrder: async (orderId: string, reason: string): Promise<ApiResult<null>> => {
+    const { data } = await api.post<ApiResult<null>>(`/orders/${orderId}/cancel`, { reason });
     return data;
   },
 };

@@ -29,9 +29,10 @@ export function CheckoutPage() {
   const requestedCartItemIds = searchParams.get("cartItemIds")?.split(",").filter(Boolean);
   const [addressId, setAddressId] = useState("");
   const [shippingService, setShippingService] = useState<ShippingService>("Standard");
-  const [paymentMethod] = useState<PaymentMethod>(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(0);
   const [note, setNote] = useState("");
   const [placedOrder, setPlacedOrder] = useState<CreatedOrder | null>(null);
+
 
   const cartQuery = useQuery({
     queryKey: cartQueryKey,
@@ -116,12 +117,20 @@ export function CheckoutPage() {
         toast.error(result.message ?? "Không thể tạo đơn hàng. Vui lòng thử lại.");
         return;
       }
-      setPlacedOrder(result.data);
-      toast.success(`Đặt hàng thành công: ${result.data.orderCode}`);
+      // 1. Luôn xóa cache giỏ hàng và cập nhật lịch sử đơn
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: cartQueryKey }),
         queryClient.invalidateQueries({ queryKey: ["my-order-history"] }),
       ]);
+      // 2. NẾU LÀ VNPAY: Có paymentUrl thì chuyển hướng ngay sang cổng thanh toán
+      if (result.data.paymentUrl) {
+        toast.success("Đang chuyển hướng tới cổng thanh toán VNPAY...");
+        window.location.href = result.data.paymentUrl;
+        return;
+      }
+      // 3. Đơn hàng COD thông thường: hiển thị màn hình đặt hàng thành công
+      setPlacedOrder(result.data);
+      toast.success(`Đặt hàng thành công: ${result.data.orderCode}`);
     },
     onError: (error: Error) => toast.error(error.message || "Không thể tạo đơn hàng. Vui lòng thử lại."),
   });
@@ -195,9 +204,8 @@ export function CheckoutPage() {
                   <fieldset className="mt-3 space-y-2">
                     <legend className="sr-only">Chọn địa chỉ giao hàng</legend>
                     {addresses.map((address) => (
-                      <label key={address.id} className={`block cursor-pointer border p-4 transition-colors ${
-                        selectedAddress?.id === address.id ? "border-[#fb6900] bg-[#fb6900]/5" : "border-slate-200 hover:border-slate-300"
-                      }`}>
+                      <label key={address.id} className={`block cursor-pointer border p-4 transition-colors ${selectedAddress?.id === address.id ? "border-[#fb6900] bg-[#fb6900]/5" : "border-slate-200 hover:border-slate-300"
+                        }`}>
                         <span className="flex items-start gap-3">
                           <input
                             type="radio"
@@ -227,9 +235,8 @@ export function CheckoutPage() {
                     { value: "Standard", label: "Giao tiêu chuẩn", description: "Phí giao hàng tiết kiệm" },
                     { value: "Express", label: "Giao nhanh", description: "Ưu tiên giao hàng" },
                   ] as const).map((option) => (
-                    <label key={option.value} className={`cursor-pointer border p-4 transition-colors ${
-                      shippingService === option.value ? "border-[#fb6900] bg-[#fb6900]/5" : "border-slate-200 hover:border-slate-300"
-                    }`}>
+                    <label key={option.value} className={`cursor-pointer border p-4 transition-colors ${shippingService === option.value ? "border-[#fb6900] bg-[#fb6900]/5" : "border-slate-200 hover:border-slate-300"
+                      }`}>
                       <span className="flex items-start gap-3">
                         <input
                           type="radio"
@@ -267,13 +274,36 @@ export function CheckoutPage() {
 
               <section>
                 <h2 className="flex items-center gap-2 text-lg font-semibold"><Truck size={19} /> Phương thức thanh toán</h2>
-                <label className="mt-3 flex cursor-pointer items-start gap-3 border border-[#fb6900] bg-[#fb6900]/5 p-4">
-                  <input type="radio" name="paymentMethod" checked readOnly className="mt-1 accent-[#fb6900]" />
-                  <span>
-                    <span className="block font-semibold">Thanh toán khi nhận hàng (COD)</span>
-                    <span className="mt-1 block text-sm text-slate-500">Thanh toán tiền mặt khi nhận món.</span>
-                  </span>
-                </label>
+                <div className="space-y-3">
+                  {/* Lựa chọn 1: Tiền mặt */}
+                  <label
+                    onClick={() => setPaymentMethod(0)}
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${paymentMethod === 0 ? "border-[#fb6900] bg-orange-50/40" : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                  >
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 0} onChange={() => setPaymentMethod(0)} className="mt-1 accent-[#fb6900]" />
+                    <span>
+                      <span className="block font-semibold">Thanh toán khi nhận hàng (COD)</span>
+                      <span className="mt-1 block text-sm text-slate-500">Thanh toán bằng tiền mặt khi shipper giao món.</span>
+                    </span>
+                  </label>
+
+                  {/* Lựa chọn 2: VNPAY */}
+                  <label
+                    onClick={() => setPaymentMethod(3)}
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${paymentMethod === 3 ? "border-[#fb6900] bg-orange-50/40" : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                  >
+                    <input type="radio" name="paymentMethod" checked={paymentMethod === 3} onChange={() => setPaymentMethod(3)} className="mt-1 accent-[#fb6900]" />
+                    <span>
+                      <span className="block font-semibold flex items-center gap-2">
+                        Thanh toán qua VNPAY
+                        <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">QR / Thẻ ATM</span>
+                      </span>
+                      <span className="mt-1 block text-sm text-slate-500">Quét mã VNPAY-QR hoặc thẻ ATM / Internet Banking nội địa.</span>
+                    </span>
+                  </label>
+                </div>
               </section>
 
               <section>
