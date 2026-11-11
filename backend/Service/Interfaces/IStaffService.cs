@@ -17,6 +17,7 @@ public interface IStaffService
     Task<Result<string>> ConfirmOrder(Guid userId, Guid orderId, int? prepMinutes = null);
     Task<Result<string>> StartPreparingOrder(Guid userId, Guid orderId);
     Task<Result<string>> MarkOrderReady(Guid userId, Guid orderId);
+    Task<Result<string>> CancelOrder(Guid userId, Guid orderId, string? reason);
     Task<Result<string>> ReportOrderIssue(Guid userId, Guid orderId, string issueDescription, string issueType);
     Task<Result<string>> ReportOutOfStock(Guid userId, Guid orderId, List<Guid> removedProductIds, string note);
 }

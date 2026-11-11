@@ -17,6 +17,7 @@ namespace FoodDelivery.Entities
         public OrderStatus Status {get; set;} 
         public PaymentMethod PaymentMethod {get; set;} 
         public PaymentStatus PaymentStatus {get; set;} 
+        public long RowVersion { get; set; }
         public Guid? CancelledByUserId { get; set; }
         public User? CancelledByUser { get; set; }
         public string CancelReason {get; set;} = string.Empty;

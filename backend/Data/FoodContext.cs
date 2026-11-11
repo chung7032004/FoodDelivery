@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 public class FoodContext : DbContext
 {
+    private static readonly DateTime PermissionSeedTimestamp =
+        new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public DbSet<Shipper> Shippers { get; set; }
     public DbSet<Staff> Staff { get; set; }
     public DbSet<Notification> Notifications { get; set; }
@@ -30,12 +33,31 @@ public class FoodContext : DbContext
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<UserRoleRestriction> UserRoleRestrictions { get; set; }
     public DbSet<UserRoleAppeal> UserRoleAppeals { get; set; }
+    public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public override async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
-        // (OPTIONAL) logic custom
+        BumpOrderDetailVersions();
         return await base.SaveChangesAsync(cancellationToken);
     }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        BumpOrderDetailVersions();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    private void BumpOrderDetailVersions()
+    {
+        foreach (var entry in ChangeTracker.Entries<OrderDetail>()
+                     .Where(entry => entry.State == EntityState.Modified))
+        {
+            var version = entry.Property(orderDetail => orderDetail.RowVersion);
+            version.CurrentValue = version.OriginalValue + 1;
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -57,7 +79,8 @@ public class FoodContext : DbContext
             Id = PermissionIdGenerator.Generate(f.GetRawConstantValue()?.ToString() ?? string.Empty),
             Name = f.GetRawConstantValue()?.ToString() ?? string.Empty,
             Description = $"Quyền cho {f.ReflectedType?.Name ?? "UnknownClass"} - {f.Name}",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = PermissionSeedTimestamp,
+            UpdatedAt = PermissionSeedTimestamp
         })
         .DistinctBy(p=> p.Name) // loại bỏ trùng lặp nếu có
         .ToList();
@@ -189,6 +212,37 @@ public class FoodContext : DbContext
             .HasForeignKey<Shipper>(s => s.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Wallet>(entity =>
+        {
+            entity.HasOne(wallet => wallet.User)
+                .WithOne(user => user.Wallet)
+                .HasForeignKey<Wallet>(wallet => wallet.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(wallet => wallet.UserId).IsUnique();
+            entity.Property(wallet => wallet.Balance).HasPrecision(18, 2);
+            entity.Property(wallet => wallet.RowVersion).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<WalletTransaction>(entity =>
+        {
+            entity.HasOne(transaction => transaction.Wallet)
+                .WithMany(wallet => wallet.Transactions)
+                .HasForeignKey(transaction => transaction.WalletId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Order>()
+                .WithMany()
+                .HasForeignKey(transaction => transaction.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(transaction => transaction.Type).HasConversion<int>();
+            entity.Property(transaction => transaction.Amount).HasPrecision(18, 2);
+            entity.Property(transaction => transaction.BalanceAfter).HasPrecision(18, 2);
+            entity.Property(transaction => transaction.Description).HasMaxLength(500);
+            entity.HasIndex(transaction => new { transaction.WalletId, transaction.CreatedAt });
+            entity.HasIndex(transaction => new { transaction.OrderId, transaction.Type })
+                .IsUnique()
+                .HasFilter("\"OrderId\" IS NOT NULL AND \"Type\" = 0");
+        });
+
         modelBuilder.Entity<OrderDetail>(entity =>
         {
             // 1–1: Order ↔ OrderDetail
@@ -215,6 +269,8 @@ public class FoodContext : DbContext
                 .HasConversion<int>();
             entity.Property(od => od.PaymentStatus)
                 .HasConversion<int>();
+            entity.Property(od => od.RowVersion)
+                .IsConcurrencyToken();
             // Required / Optional
             entity.Property(od => od.CancelReason)
                 .HasMaxLength(500);

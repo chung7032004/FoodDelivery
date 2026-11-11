@@ -19,6 +19,7 @@ namespace FoodDelivery.Service.Implements
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
         private readonly IOrderStateMachine _orderStateMachine;
+        private readonly IWalletService _walletService;
         private readonly FoodContext _context;
 
         public ShipperService(
@@ -27,6 +28,7 @@ namespace FoodDelivery.Service.Implements
             IUserRepository userRepository,
             INotificationService notificationService,
             IOrderStateMachine orderStateMachine,
+            IWalletService walletService,
             FoodContext context)
         {
             _shipperRepository = shipperRepository;
@@ -34,6 +36,7 @@ namespace FoodDelivery.Service.Implements
             _userRepository = userRepository;
             _notificationService = notificationService;
             _orderStateMachine = orderStateMachine;
+            _walletService = walletService;
             _context = context;
         }
 
@@ -693,6 +696,9 @@ namespace FoodDelivery.Service.Implements
 
         public async Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null)
         {
+            reason = reason?.Trim() ?? string.Empty;
+            if (reason.Length == 0 || reason.Length > 300) return false;
+
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
             if (orderDetail == null || !cancelledBy.HasValue) return false;
             
@@ -706,10 +712,14 @@ namespace FoodDelivery.Service.Implements
                     orderDetail.Status, OrderAction.DeliveryFailed, ActorRole.Shipper, orderDetail.Order))
                 return false;
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             orderDetail.Status = _orderStateMachine.GetNextStatus(
                 orderDetail.Status, OrderAction.DeliveryFailed, ActorRole.Shipper, orderDetail.Order);
-            orderDetail.CancelReason = reason ?? string.Empty;
+            orderDetail.CancelReason = reason;
             orderDetail.CancelledByUserId = cancelledBy.Value;
+            var wasPaid = orderDetail.PaymentStatus == PaymentStatus.Paid;
+            if (wasPaid)
+                orderDetail.PaymentStatus = PaymentStatus.Refunded;
             
             _shipperRepository.UpdateOrderDetail(orderDetail);
             await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory 
@@ -719,15 +729,28 @@ namespace FoodDelivery.Service.Implements
                 ChangeByUserId = cancelledBy.Value,
                 ActionBy = OrderActionBy.Shipper,
                 ChangedAt = DateTime.UtcNow,
-                Note = reason ?? "Giao hàng thất bại"
+                Note = wasPaid ? $"{reason} Tiền đã được hoàn vào ví khách hàng." : reason
             });
+            if (wasPaid)
+            {
+                await _walletService.CreditAsync(
+                    orderDetail.Order.CustomerId,
+                    orderDetail.Order.TotalAmount,
+                    WalletTransactionType.OrderRefund,
+                    orderDetail.Order.Id,
+                    $"Hoàn tiền đơn hàng {orderDetail.Order.OrderCode} giao thất bại.");
+            }
             var saved = await _shipperRepository.SaveChangesAsync();
+            if (saved)
+                await transaction.CommitAsync();
             if (saved && orderDetail.Order != null)
             {
                 await CreateRequiredNotificationAsync(orderDetail.Order.CustomerId, new NotificationRequest
                 {
-                    Title = "Giao hàng không thành công",
-                    Message = $"Đơn #{orderDetail.Order.OrderCode} chưa giao được. Lý do: {reason ?? "Không có"}",
+                    Title = wasPaid ? "Đơn giao thất bại, tiền đã hoàn vào ví" : "Giao hàng không thành công",
+                    Message = wasPaid
+                        ? $"Đơn #{orderDetail.Order.OrderCode} chưa giao được. Tiền đã được hoàn vào ví. Lý do: {reason}"
+                        : $"Đơn #{orderDetail.Order.OrderCode} chưa giao được. Lý do: {reason}",
                     Type = (int)NotificationType.DELIVERY,
                     Link = "/account"
                 });
@@ -737,11 +760,19 @@ namespace FoodDelivery.Service.Implements
                     await CreateRequiredNotificationAsync(admin.Id, new NotificationRequest
                     {
                         Title = "Đơn hàng giao thất bại",
-                        Message = $"Shipper báo giao thất bại đơn #{orderDetail.Order.OrderCode}. Lý do: {reason ?? "Không có"}",
+                        Message = $"Shipper báo giao thất bại đơn #{orderDetail.Order.OrderCode}. Lý do: {reason}",
                         Type = (int)NotificationType.SYSTEM,
                         Link = "/admin/orders"
                     });
                 }
+
+                await NotifyRestaurantUsersAsync(orderDetail.Order.RestaurantId, new NotificationRequest
+                {
+                    Title = "Đơn hàng giao thất bại",
+                    Message = $"Shipper không giao được đơn #{orderDetail.Order.OrderCode}. Lý do: {reason}",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = "/restaurant/orders"
+                });
             }
             return saved;
         }

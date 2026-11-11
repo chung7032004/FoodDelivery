@@ -27,5 +27,6 @@ namespace FoodDelivery.Entities
         public virtual ICollection<Notification> Notifications {get; set;} = new List<Notification>();
         public virtual ICollection<PasswordResetOtp> PasswordResetOtps {get; set;} = new List<PasswordResetOtp>();
         public Shipper? Shipper { get; set; }
+        public Wallet? Wallet { get; set; }
     }
 }

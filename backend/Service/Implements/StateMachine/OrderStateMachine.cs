@@ -20,6 +20,7 @@ public sealed class OrderStateMachine : IOrderStateMachine
         // ReportOutOfStock: cả Owner và Staff
         new(OrderStatus.Pending, OrderStatus.WaitingCustomerDecision, OrderAction.ReportOutOfStock,  ActorRole.RestaurantOwner),
         new(OrderStatus.Pending, OrderStatus.WaitingCustomerDecision, OrderAction.ReportOutOfStock,  ActorRole.RestaurantStaff),
+        new(OrderStatus.Pending, OrderStatus.WaitingCustomerDecision, OrderAction.ReportOutOfStock,  ActorRole.Admin),
 
         // Customer hủy
         new(OrderStatus.Pending, OrderStatus.Cancelled, OrderAction.CancelByCustomer,   ActorRole.Customer),
@@ -27,8 +28,9 @@ public sealed class OrderStateMachine : IOrderStateMachine
         // Admin hủy
         new(OrderStatus.Pending, OrderStatus.Cancelled, OrderAction.CancelByAdmin,      ActorRole.Admin),
 
-        // Nhà hàng hủy — CHỈ OWNER
+        // Nhà hàng hủy — Cả Owner và Staff
         new(OrderStatus.Pending, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantOwner),
+        new(OrderStatus.Pending, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantStaff),
 
         // ==================== WaitingCustomerDecision ====================
         new(OrderStatus.WaitingCustomerDecision, OrderStatus.Confirmed, OrderAction.AcceptProposal,     ActorRole.Customer),
@@ -36,6 +38,7 @@ public sealed class OrderStateMachine : IOrderStateMachine
         new(OrderStatus.WaitingCustomerDecision, OrderStatus.Cancelled, OrderAction.CancelByCustomer,   ActorRole.Customer),
         new(OrderStatus.WaitingCustomerDecision, OrderStatus.Cancelled, OrderAction.CancelByAdmin,      ActorRole.Admin),
         new(OrderStatus.WaitingCustomerDecision, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantOwner),
+        new(OrderStatus.WaitingCustomerDecision, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantStaff),
 
         // ==================== Confirmed ====================
         // StartPreparing: cả Owner và Staff
@@ -45,6 +48,7 @@ public sealed class OrderStateMachine : IOrderStateMachine
         new(OrderStatus.Confirmed, OrderStatus.Cancelled, OrderAction.CancelByCustomer,   ActorRole.Customer),
         new(OrderStatus.Confirmed, OrderStatus.Cancelled, OrderAction.CancelByAdmin,      ActorRole.Admin),
         new(OrderStatus.Confirmed, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantOwner),
+        new(OrderStatus.Confirmed, OrderStatus.Cancelled, OrderAction.CancelByRestaurant, ActorRole.RestaurantStaff),
 
         // ==================== Preparing ====================
         // MarkReady: cả Owner và Staff
@@ -53,6 +57,7 @@ public sealed class OrderStateMachine : IOrderStateMachine
 
         new(OrderStatus.Preparing, OrderStatus.Cancelled,      OrderAction.CancelByAdmin,        ActorRole.Admin),
         new(OrderStatus.Preparing, OrderStatus.Cancelled,      OrderAction.CancelByRestaurant,   ActorRole.RestaurantOwner),
+        new(OrderStatus.Preparing, OrderStatus.Cancelled,      OrderAction.CancelByRestaurant,   ActorRole.RestaurantStaff),
 
         // ==================== ReadyForPickup ====================
         new(OrderStatus.ReadyForPickup, OrderStatus.Shipping,  OrderAction.Pickup,        ActorRole.Shipper,

@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:5147
+@token = replace-with-a-valid-access-token
+
+### Get current wallet balance
+GET {{baseUrl}}/api/wallet
+Authorization: Bearer {{token}}
+
+### Get wallet transaction history
+GET {{baseUrl}}/api/wallet/transactions?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### History pagination is capped at 100 transactions per page
+GET {{baseUrl}}/api/wallet/transactions?page=1&pageSize=100
+Authorization: Bearer {{token}}

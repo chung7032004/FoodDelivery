@@ -8,4 +8,5 @@ public class CreateOrderResponseDto
     public decimal TotalAmount { get; set; }
     public decimal ShippingFee {get; set;}
     public DateTime EstimatedDeliveryTime {get; set;}
+    public string? PaymentUrl { get; set; }
 }

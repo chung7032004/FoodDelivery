@@ -13,7 +13,8 @@ public enum PaymentMethod
 {
     Cash = 0,
     Card = 1,
-    Momo = 2
+    Momo = 2,
+    VnPay = 3
 }
 public enum PaymentStatus
 {

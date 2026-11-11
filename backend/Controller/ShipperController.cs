@@ -156,8 +156,11 @@ namespace FoodDelivery.Controllers
         [HasPermission(PermissionConstants.Shippers.CancelAssignedOrder)]
         public async Task<IActionResult> MarkFailed(Guid orderId, [FromBody] ShipperActionDTO request)
         {
+            if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Trim().Length > 300)
+                return BadRequest(new { message = "Vui lòng nhập lý do giao thất bại từ 1 đến 300 ký tự." });
+
             var userId = User.GetUserId();
-            var success = await _shipperService.MarkFailedAsync(orderId, request.Reason ?? "Giao hàng thất bại", userId);
+            var success = await _shipperService.MarkFailedAsync(orderId, request.Reason.Trim(), userId);
             return success
                 ? Ok(new { message = "Đã ghi nhận giao hàng thất bại" })
                 : BadRequest(new { message = "Không thể cập nhật trạng thái giao hàng" });
