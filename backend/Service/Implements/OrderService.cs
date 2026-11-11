@@ -11,6 +11,7 @@ using FoodDelivery.Repositories;
 using FoodDelivery.Constants;
 using FoodDelivery.Service.Interfaces.IShipping;
 using System.Data;
+using FoodDelivery.Service.Interfaces.IPayment;
 
 namespace FoodDelivery.Service.Implementations;
 public class OrderService :IOrderService
@@ -27,9 +28,9 @@ public class OrderService :IOrderService
     private readonly IRoleRepository _roleRepository;
     private readonly IStaffRepository _staffRepository;
     private readonly IShippingEstimationService _shippingEstimation;
-    private readonly IVnPayService _vnPayService;
-    private readonly IWalletService _walletService;
+    private readonly IPaymentGatewayResolver _paymentGatewayResolver;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWalletService _walletService;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
@@ -44,7 +45,7 @@ public class OrderService :IOrderService
         IRoleRepository roleRepository,
         IStaffRepository staffRepository,
         IShippingEstimationService shippingEstimation,
-        IVnPayService vnPayService,
+        IPaymentGatewayResolver paymentGatewayResolver,
         IWalletService walletService,
         IHttpContextAccessor httpContextAccessor,
         FoodContext context)
@@ -62,7 +63,7 @@ public class OrderService :IOrderService
         _roleRepository = roleRepository;
         _staffRepository = staffRepository;
         _shippingEstimation = shippingEstimation;
-        _vnPayService = vnPayService;
+        _paymentGatewayResolver = paymentGatewayResolver;
         _walletService = walletService;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -419,9 +420,11 @@ public class OrderService :IOrderService
         string shippingService,
         PaymentMethod paymentMethod)
     {
-        // Cho phép cả Cash và VnPay
-        if (paymentMethod != PaymentMethod.Cash && paymentMethod != PaymentMethod.VnPay)
-            return HttpErrors.BadRequest<CreateOrderResponseDto>("PAYMENT_METHOD_UNAVAILABLE", "Phương thức thanh toán chưa được hỗ trợ.");
+        if(!_paymentGatewayResolver.IsSupported(paymentMethod))
+        {
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("PAYMENT_METHOD_UNAVAILABLE", $"Phương thức thanh toán '{paymentMethod}' hiện chưa được hỗ trợ.");
+        }
+
         if (!IsSupportedShippingService(shippingService))
             return HttpErrors.BadRequest<CreateOrderResponseDto>("UNKNOWN_SERVICE", "Kiểu giao hàng không được hỗ trợ.");
 
@@ -488,13 +491,11 @@ public class OrderService :IOrderService
 
         });
         string? paymentUrl = null;
-        if (paymentMethod == PaymentMethod.VnPay)
+        var gateway = _paymentGatewayResolver.GetGateway(paymentMethod);
+        if(_httpContextAccessor.HttpContext != null)
         {
-            var httpContext = _httpContextAccessor.HttpContext
-                ?? throw new InvalidOperationException("VNPay payment URLs can only be created for an HTTP request.");
-            paymentUrl = _vnPayService.CreatePaymentUrl(order, httpContext);
+            paymentUrl = await gateway.CreatePaymentUrlAsync(order, _httpContextAccessor.HttpContext);
         }
-
         await _orderRepository.AddAsync(order);
         await _context.SaveChangesAsync();
 
