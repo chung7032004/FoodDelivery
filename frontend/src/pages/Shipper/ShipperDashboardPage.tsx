@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bike, Check, Clock3, MapPin, Navigation, PackageCheck, Power, RefreshCw, Wallet } from 'lucide-react';
+import { AlertTriangle, Bike, Check, Clock3, MapPin, Navigation, PackageCheck, Power, RefreshCw, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ShipperLayout } from './ShipperLayout';
 import { PageHeader, Panel, StatCard } from '@/components/admin/AdminUI';
 import { ShipperOrder, ShipperProfile, ShipperStats, shipperService } from '@/services/shipper.service';
+import { CancelOrderModal } from '@/components/modals/CancelOrderModal';
 
 const money = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
 const statusName: Record<string, string> = { Confirmed: 'Đã xác nhận', Preparing: 'Đang chuẩn bị', ReadyForPickup: 'Món đã sẵn sàng', Shipping: 'Đang giao', Completed: 'Hoàn tất', Cancelled: 'Đã hủy' };
 const statusColor: Record<string, string> = { Confirmed: 'bg-indigo-50 text-indigo-700', Preparing: 'bg-sky-50 text-sky-700', ReadyForPickup: 'bg-amber-50 text-amber-700', Shipping: 'bg-sky-50 text-sky-700', Completed: 'bg-emerald-50 text-emerald-700', Cancelled: 'bg-red-50 text-red-700' };
+const DELIVERY_FAILURE_REASONS = [
+  'Không liên hệ được với khách hàng',
+  'Khách hàng từ chối nhận hàng',
+  'Địa chỉ giao hàng không chính xác',
+  'Sự cố trong quá trình giao hàng',
+];
 type View = 'available' | 'assigned' | 'completed';
 
 export default function ShipperDashboardPage({ view = 'available' }: { view?: View }) {
@@ -19,6 +26,7 @@ export default function ShipperDashboardPage({ view = 'available' }: { view?: Vi
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [failingOrder, setFailingOrder] = useState<ShipperOrder | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isApproved = profile?.status === 'Approved' || profile?.status === 1;
   const canGoOnline = Boolean(profile?.isActive && isApproved);
@@ -53,9 +61,29 @@ export default function ShipperDashboardPage({ view = 'available' }: { view?: Vi
     if (!profile) return; setBusy('availability');
     try { await shipperService.updateAvailability(!profile.isAvailable); await load(); } catch { setError('Không thể cập nhật trạng thái sẵn sàng.'); } finally { setBusy(''); }
   }
-  async function orderAction(order: ShipperOrder, action: 'accept' | 'pickup' | 'complete' | 'fail' | 'release') {
+  async function orderAction(
+    order: ShipperOrder,
+    action: 'accept' | 'pickup' | 'complete' | 'fail' | 'release',
+    reason?: string
+  ) {
     setBusy(order.id);
-    try { if (action === 'accept') await shipperService.acceptOrder(order.id); if (action === 'pickup') await shipperService.confirmPickup(order.id); if (action === 'complete') await shipperService.complete(order.id); if (action === 'fail') await shipperService.fail(order.id, 'Không thể giao đơn'); if (action === 'release') await shipperService.releaseOrder(order.id, 'Shipper không thể tiếp tục nhận đơn trước khi lấy hàng'); await load(); } catch { setError('Không thể cập nhật đơn hàng.'); } finally { setBusy(''); }
+    setError('');
+    try {
+      if (action === 'accept') await shipperService.acceptOrder(order.id);
+      if (action === 'pickup') await shipperService.confirmPickup(order.id);
+      if (action === 'complete') await shipperService.complete(order.id);
+      if (action === 'fail') {
+        if (!reason?.trim()) throw new Error('Vui lòng nhập lý do giao thất bại.');
+        await shipperService.fail(order.id, reason.trim());
+        setFailingOrder(null);
+      }
+      if (action === 'release') await shipperService.releaseOrder(order.id, 'Shipper không thể tiếp tục nhận đơn trước khi lấy hàng');
+      await load();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : 'Không thể cập nhật đơn hàng.');
+    } finally {
+      setBusy('');
+    }
   }
 
   return <ShipperLayout>
@@ -157,15 +185,47 @@ export default function ShipperDashboardPage({ view = 'available' }: { view?: Vi
               view={activeView}
               canAccept={Boolean(profile?.isAvailable && !hasActiveOrder)}
               onAction={orderAction}
+              onFail={() => {
+                setError('');
+                setFailingOrder(order);
+              }}
             />
           ))}
         </div>
       )}
     </Panel>
+    <CancelOrderModal
+      isOpen={Boolean(failingOrder)}
+      title={failingOrder ? `Báo giao thất bại #${failingOrder.orderCode}` : 'Báo giao thất bại'}
+      subtitle="Đơn sẽ được hủy và thông báo cho khách hàng. Vui lòng ghi lý do chính xác."
+      suggestedReasons={DELIVERY_FAILURE_REASONS}
+      isSubmitting={Boolean(failingOrder && busy === failingOrder.id)}
+      error={error}
+      confirmText="Xác nhận giao thất bại"
+      onConfirm={(reason) => {
+        if (failingOrder) void orderAction(failingOrder, 'fail', reason);
+      }}
+      onClose={() => {
+        if (failingOrder && busy === failingOrder.id) return;
+        setFailingOrder(null);
+        setError('');
+      }}
+    />
   </ShipperLayout>;
 }
 function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) { return <button onClick={onClick} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-bold ${active ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500'}`}>{children}</button>; }
-function OrderCard({ order, busy, view, canAccept, onAction }: { order: ShipperOrder; busy: boolean; view: View; canAccept: boolean; onAction: (order: ShipperOrder, action: 'accept' | 'pickup' | 'complete' | 'fail' | 'release') => void }) {
+function OrderCard({ order, busy, view, canAccept, onAction, onFail }: {
+  order: ShipperOrder;
+  busy: boolean;
+  view: View;
+  canAccept: boolean;
+  onAction: (
+    order: ShipperOrder,
+    action: 'accept' | 'pickup' | 'complete' | 'fail' | 'release',
+    reason?: string
+  ) => void;
+  onFail: () => void;
+}) {
   const next = view === 'available'
     ? ['accept', 'Nhận đơn'] as const
     : order.status === 'ReadyForPickup'
@@ -219,7 +279,8 @@ function OrderCard({ order, busy, view, canAccept, onAction }: { order: ShipperO
           </button>
         )}
         {view === 'assigned' && order.status === 'Shipping' && (
-          <button disabled={busy} onClick={() => onAction(order, 'fail')} className="rounded-xl border border-red-200 px-3 py-3 text-xs font-bold text-red-600 hover:bg-red-50">
+          <button disabled={busy} onClick={onFail} className="flex items-center gap-1 rounded-xl border border-red-200 px-3 py-3 text-xs font-bold text-red-600 hover:bg-red-50">
+            <AlertTriangle size={14} />
             Báo lỗi
           </button>
         )}

@@ -10,6 +10,8 @@ using FoodDelivery.Service.StateMachine;
 using FoodDelivery.Repositories;
 using FoodDelivery.Constants;
 using FoodDelivery.Service.Interfaces.IShipping;
+using System.Data;
+using FoodDelivery.Service.Interfaces.IPayment;
 
 namespace FoodDelivery.Service.Implementations;
 public class OrderService :IOrderService
@@ -26,7 +28,10 @@ public class OrderService :IOrderService
     private readonly IRoleRepository _roleRepository;
     private readonly IStaffRepository _staffRepository;
     private readonly IShippingEstimationService _shippingEstimation;
-private readonly FoodContext _context;
+    private readonly IPaymentGatewayResolver _paymentGatewayResolver;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWalletService _walletService;
+    private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
         IOrderRepository orderRepo,  
@@ -40,6 +45,9 @@ private readonly FoodContext _context;
         IRoleRepository roleRepository,
         IStaffRepository staffRepository,
         IShippingEstimationService shippingEstimation,
+        IPaymentGatewayResolver paymentGatewayResolver,
+        IWalletService walletService,
+        IHttpContextAccessor httpContextAccessor,
         FoodContext context)
     {
         _productRepository = productRepo;
@@ -55,6 +63,9 @@ private readonly FoodContext _context;
         _roleRepository = roleRepository;
         _staffRepository = staffRepository;
         _shippingEstimation = shippingEstimation;
+        _paymentGatewayResolver = paymentGatewayResolver;
+        _walletService = walletService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     private async Task NotifyRestaurantUsersAsync(Guid restaurantId, NotificationRequest request)
@@ -204,11 +215,31 @@ private readonly FoodContext _context;
             ActionBy = MapActor(actor)
         });
 
-        await using var transaction = transactionalSideEffects
+        await using var transaction = transactionalSideEffects || next == OrderStatus.Cancelled
             ? await _context.Database.BeginTransactionAsync()
             : null;
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            if (next == OrderStatus.Cancelled && order.OrderDetail.PaymentStatus == PaymentStatus.Paid)
+            {
+                order.OrderDetail.PaymentStatus = PaymentStatus.Refunded;
+                await _walletService.CreditAsync(
+                    order.CustomerId,
+                    order.TotalAmount,
+                    WalletTransactionType.OrderRefund,
+                    order.Id,
+                    $"Hoàn tiền đơn hàng {order.OrderCode} đã bị hủy.");
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (transaction is not null)
+                await transaction.RollbackAsync();
+            return HttpErrors.Conflict("ORDER_CHANGED", "Đơn hàng vừa được cập nhật. Vui lòng tải lại và thử lại.");
+        }
 
         if (onSuccess != null)
             await onSuccess(order);
@@ -389,10 +420,13 @@ private readonly FoodContext _context;
         string shippingService,
         PaymentMethod paymentMethod)
     {
+        if(!_paymentGatewayResolver.IsSupported(paymentMethod))
+        {
+            return HttpErrors.BadRequest<CreateOrderResponseDto>("PAYMENT_METHOD_UNAVAILABLE", $"Phương thức thanh toán '{paymentMethod}' hiện chưa được hỗ trợ.");
+        }
+
         if (!IsSupportedShippingService(shippingService))
             return HttpErrors.BadRequest<CreateOrderResponseDto>("UNKNOWN_SERVICE", "Kiểu giao hàng không được hỗ trợ.");
-        if (paymentMethod != PaymentMethod.Cash)
-            return HttpErrors.BadRequest<CreateOrderResponseDto>("PAYMENT_METHOD_UNAVAILABLE", "Hiện tại chỉ hỗ trợ thanh toán khi nhận hàng.");
 
         var address = await _addressRepository.GetByIdAsync(addressId);
         if(address == null)
@@ -456,6 +490,12 @@ private readonly FoodContext _context;
           Note = "Bạn đã tạo đơn hàng."
 
         });
+        string? paymentUrl = null;
+        var gateway = _paymentGatewayResolver.GetGateway(paymentMethod);
+        if(_httpContextAccessor.HttpContext != null)
+        {
+            paymentUrl = await gateway.CreatePaymentUrlAsync(order, _httpContextAccessor.HttpContext);
+        }
         await _orderRepository.AddAsync(order);
         await _context.SaveChangesAsync();
 
@@ -519,7 +559,8 @@ private readonly FoodContext _context;
             Subtotal = order.Subtotal,
             TotalAmount = order.TotalAmount,
             ShippingFee = order.ShippingFee,
-            EstimatedDeliveryTime = estimatedDeliveryTime
+            EstimatedDeliveryTime = estimatedDeliveryTime,
+            PaymentUrl = paymentUrl
         });
     }
     public async Task<Result<PagedResponse<OrderHistoryItemResponse>>> GetMyOrderAsync(Guid customerId, int page, int pageSize)
@@ -625,6 +666,10 @@ private readonly FoodContext _context;
     }   
     public async Task<Result> CancelOrderByCustomerAsync(Guid userId,Guid orderId, CancelOrderRequestDto request)
     {
+        var reason = request.Reason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 300)
+            return HttpErrors.BadRequest("INVALID_CANCEL_REASON", "Vui lòng nhập lý do hủy từ 1 đến 300 ký tự.");
+
         var order = await _orderRepository.GetOrderById(orderId);
         if(order == null)
         {
@@ -646,11 +691,11 @@ private readonly FoodContext _context;
             OrderAction.CancelByCustomer,
             ActorRole.Customer,
             userId,
-            request.Reason ?? "Khách hàng đã hủy đơn.",
+            reason,
             beforeSave: currentOrder =>
             {
                 currentOrder.OrderDetail.CancelledByUserId = userId;
-                currentOrder.OrderDetail.CancelReason = request.Reason ?? string.Empty;
+                currentOrder.OrderDetail.CancelReason = reason;
             },
             onSuccess: async currentOrder =>
             {
@@ -660,7 +705,7 @@ private readonly FoodContext _context;
                     await CreateRequiredNotificationAsync(admin.Id, new NotificationRequest
                     {
                         Title = "Khách hàng hủy đơn hàng",
-                        Message = $"Khách hàng đã hủy đơn #{currentOrder.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                        Message = $"Khách hàng đã hủy đơn #{currentOrder.OrderCode}. Lý do: {reason}",
                         Type = (int)NotificationType.ORDER,
                         Link = "/admin/orders"
                     });
@@ -669,14 +714,14 @@ private readonly FoodContext _context;
                 await NotifyRestaurantUsersAsync(currentOrder.RestaurantId, new NotificationRequest
                 {
                     Title = "Khách hàng đã hủy đơn",
-                    Message = $"Khách hàng đã hủy đơn #{currentOrder.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                    Message = $"Khách hàng đã hủy đơn #{currentOrder.OrderCode}. Lý do: {reason}",
                     Type = (int)NotificationType.ORDER,
                     Link = "/restaurant/orders"
                 });
                 await NotifyAssignedShipperAsync(
                     currentOrder,
                     "Đơn hàng đã bị hủy",
-                    $"Đơn #{currentOrder.OrderCode} đã bị khách hàng hủy. Lý do: {request.Reason ?? "Không có"}");
+                    $"Đơn #{currentOrder.OrderCode} đã bị khách hàng hủy. Lý do: {reason}");
             },
             transactionalSideEffects: true);
     }
@@ -695,13 +740,17 @@ private readonly FoodContext _context;
 
             if (!order.OrderItems.Any())
             {
-                // Không còn món nào → hủy tự động (System actor)
                 return await ApplyTransitionAsync(
                     order,
-                    action: OrderAction.RejectProposal,
+                    action: OrderAction.CancelByCustomer,
                     actor: ActorRole.Customer,
                     actorUserId: customerId,
                     historyNote: "Hủy tự động do không còn món nào khả dụng.",
+                    beforeSave: currentOrder =>
+                    {
+                        currentOrder.OrderDetail.CancelledByUserId = customerId;
+                        currentOrder.OrderDetail.CancelReason = "Đơn hàng không còn món nào khả dụng.";
+                    },
                     onSuccess: async o =>
                     {
                         await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
@@ -746,13 +795,20 @@ private readonly FoodContext _context;
         }
         else
         {
-            // Nhánh 2: Khách từ chối → Cancelled
+            var reason = string.IsNullOrWhiteSpace(request.Note)
+                ? "Khách hàng hủy đơn vì không đồng ý với thay đổi món của nhà hàng."
+                : request.Note.Trim();
             return await ApplyTransitionAsync(
                 order,
                 action: OrderAction.RejectProposal,
                 actor: ActorRole.Customer,
                 actorUserId: customerId,
-                historyNote: request.Note ?? "Khách hàng không đồng ý với thay đổi từ nhà hàng.",
+                historyNote: reason,
+                beforeSave: currentOrder =>
+                {
+                    currentOrder.OrderDetail.CancelledByUserId = customerId;
+                    currentOrder.OrderDetail.CancelReason = reason;
+                },
                 onSuccess: async o =>
                 {
                     await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
@@ -873,52 +929,92 @@ private readonly FoodContext _context;
         { 
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
         }
-        if(order.OrderDetail.Status != OrderStatus.Pending)
-        {
-            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể xác nhận đơn hàng ở trạng thái {order.OrderDetail.Status}");
-        }
-        order.OrderDetail.Status = OrderStatus.WaitingCustomerDecision;
-        var itemsToUpdate = order.OrderItems.Where(oi=> request.RemovedProductIds.Contains(oi.ProductId)).ToList();
-        if (!itemsToUpdate.Any())
-        {
-            return HttpErrors.NotFound("NO_ITEMS_FOUND", "Không tìm thấy món ăn nào khớp với danh sách yêu cầu.");
-        }
-        foreach (var item in itemsToUpdate)
-        {
-            item.IsRemoved = true;
-            item.RemoveReason = "Món ăn thiếu nguyên liệu để làm.";
-        }
-        var history = new OrderStatusHistory
-        {
-            ActionBy = OrderActionBy.Admin,
-            ChangeByUserId = adminId,
-            ChangedAt = DateTime.UtcNow,
-            Note = request.Note ?? "Một số món ăn đã hết hàng, chờ khách hàng quyết định.",
-            OrderId = orderId,
-            Status = OrderStatus.WaitingCustomerDecision
-        };
-        await _orderRepository.AddOrderHistoryAsync(history);
-        await _context.SaveChangesAsync();
+        if (order.OrderDetail.Status != OrderStatus.Pending)
+            return HttpErrors.BadRequest("INVALID_STATUS", $"Không thể báo hết món ở trạng thái {order.OrderDetail.Status}.");
 
-        // 📢 Send notification to customer: Some items out of stock
-        try
+        var requestedIds = request.RemovedProductIds?.Where(id => id != Guid.Empty).ToHashSet()
+            ?? new HashSet<Guid>();
+        if (requestedIds.Count == 0)
+            return HttpErrors.BadRequest("NO_ITEMS_SELECTED", "Hãy chọn ít nhất một món đã hết hàng.");
+
+        var itemsToRemove = order.OrderItems
+            .Where(item => !item.IsRemoved && requestedIds.Contains(item.ProductId))
+            .ToList();
+        if (!requestedIds.IsSubsetOf(itemsToRemove.Select(item => item.ProductId).ToHashSet()))
+            return HttpErrors.BadRequest("INVALID_ORDER_ITEMS", "Danh sách món không hợp lệ với đơn hàng này.");
+
+        var removedNames = string.Join(", ", itemsToRemove.Select(item => item.ProductName).Distinct());
+        var reason = string.IsNullOrWhiteSpace(request.Note)
+            ? $"Admin báo hết món: {removedNames}."
+            : request.Note.Trim();
+        var remainingItems = order.OrderItems
+            .Where(item => !item.IsRemoved && !requestedIds.Contains(item.ProductId))
+            .ToList();
+
+        if (remainingItems.Count == 0)
         {
-            var removedItems = string.Join(", ", itemsToUpdate.Select(i => i.ProductName));
-            var notificationRequest = new NotificationRequest
+            var cancelReason = $"Đơn hàng bị hủy vì tất cả món đều hết hàng ({removedNames}).";
+            return await ApplyTransitionAsync(
+                order,
+                OrderAction.CancelByAdmin,
+                ActorRole.Admin,
+                adminId,
+                cancelReason,
+                beforeSave: currentOrder =>
+                {
+                    currentOrder.OrderDetail.CancelledByUserId = adminId;
+                    currentOrder.OrderDetail.CancelReason = cancelReason;
+                    foreach (var item in itemsToRemove)
+                    {
+                        item.IsRemoved = true;
+                        item.RemoveReason = "Hết món";
+                    }
+                },
+                onSuccess: async currentOrder =>
+                {
+                    await CreateRequiredNotificationAsync(currentOrder.CustomerId, new NotificationRequest
+                    {
+                        Title = "Đơn hàng đã bị hủy",
+                        Message = $"Đơn hàng #{currentOrder.OrderCode} đã bị hủy vì tất cả món đều hết hàng.",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/account"
+                    });
+                    await NotifyRestaurantUsersAsync(currentOrder.RestaurantId, new NotificationRequest
+                    {
+                        Title = "Đơn hàng đã bị hủy",
+                        Message = $"Đơn hàng #{currentOrder.OrderCode} đã bị admin hủy vì tất cả món đều hết hàng.",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/restaurant/orders"
+                    });
+                },
+                transactionalSideEffects: true);
+        }
+
+        return await ApplyTransitionAsync(
+            order,
+            OrderAction.ReportOutOfStock,
+            ActorRole.Admin,
+            adminId,
+            reason,
+            beforeSave: currentOrder =>
             {
-                Title = "Một số món hàng hết stock",
-                Message = $"Các món: {removedItems} không còn nguyên liệu. Vui lòng xác nhận tiếp tục hay hủy đơn.",
-                Type = (int)NotificationType.ORDER,
-                Link = "/account"
-            };
-            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending notification: {ex.Message}");
-        }
-
-        return Result.Success(); 
+                foreach (var item in itemsToRemove)
+                {
+                    item.IsRemoved = true;
+                    item.RemoveReason = reason;
+                }
+            },
+            onSuccess: async currentOrder =>
+            {
+                await CreateRequiredNotificationAsync(currentOrder.CustomerId, new NotificationRequest
+                {
+                    Title = "Nhà hàng báo món hết hàng",
+                    Message = $"{removedNames} hiện không có sẵn. Vui lòng xác nhận tiếp tục với các món còn lại hoặc hủy đơn.",
+                    Type = (int)NotificationType.ORDER,
+                    Link = "/account"
+                });
+            },
+            transactionalSideEffects: true);
     }
 
     public async Task<Result> ReportOutOfStockByRestaurantAsync(
@@ -953,6 +1049,58 @@ private readonly FoodContext _context;
             ? $"Nhà hàng báo hết món: {removedNames}."
             : request.Note.Trim();
 
+        var remainingItems = order.OrderItems
+            .Where(item => !item.IsRemoved && !requestedIds.Contains(item.ProductId))
+            .ToList();
+
+        // Nếu tất cả các món trong đơn đều hết -> Trực tiếp hủy đơn
+        if (remainingItems.Count == 0)
+        {
+            var cancelReason = $"Nhà hàng hết toàn bộ món trong đơn ({removedNames}).";
+            return await ApplyTransitionAsync(
+                order,
+                action: OrderAction.CancelByRestaurant,
+                actor: actor.Value,
+                actorUserId: userId,
+                historyNote: cancelReason,
+                beforeSave: currentOrder =>
+                {
+                    currentOrder.OrderDetail.CancelledByUserId = userId;
+                    currentOrder.OrderDetail.CancelReason = cancelReason;
+                    foreach (var item in itemsToRemove)
+                    {
+                        item.IsRemoved = true;
+                        item.RemoveReason = "Hết món";
+                    }
+                },
+                onSuccess: async currentOrder =>
+                {
+                    await CreateRequiredNotificationAsync(currentOrder.CustomerId, new NotificationRequest
+                    {
+                        Title = "Đơn hàng đã bị hủy",
+                        Message = $"Đơn hàng #{currentOrder.OrderCode} đã bị nhà hàng hủy do hết toàn bộ món ({removedNames}).",
+                        Type = (int)NotificationType.ORDER,
+                        Link = "/account"
+                    });
+                    await NotifyAssignedShipperAsync(
+                        currentOrder,
+                        "Đơn hàng đã bị hủy",
+                        $"Đơn #{currentOrder.OrderCode} đã bị nhà hàng hủy do hết toàn bộ món.");
+                    var admins = await _userRepository.GetUsersByRoleAsync("admin");
+                    foreach (var admin in admins)
+                    {
+                        await CreateRequiredNotificationAsync(admin.Id, new NotificationRequest
+                        {
+                            Title = "Nhà hàng hủy đơn do hết món",
+                            Message = $"Đơn #{currentOrder.OrderCode} bị hủy vì toàn bộ món đã hết hàng.",
+                            Type = (int)NotificationType.ORDER,
+                            Link = "/admin/orders"
+                        });
+                    }
+                },
+                transactionalSideEffects: true);
+        }
+
         return await ApplyTransitionAsync(
             order,
             action: OrderAction.ReportOutOfStock,
@@ -969,14 +1117,15 @@ private readonly FoodContext _context;
             },
             onSuccess: async currentOrder =>
             {
-                await _notificationService.CreateNotificationAsync(currentOrder.CustomerId, new NotificationRequest
+                await CreateRequiredNotificationAsync(currentOrder.CustomerId, new NotificationRequest
                 {
                     Title = "Nhà hàng báo món hết hàng",
                     Message = $"{removedNames} hiện không có sẵn. Vui lòng xác nhận tiếp tục với các món còn lại hoặc hủy đơn.",
                     Type = (int)NotificationType.ORDER,
                     Link = "/account"
                 });
-            });
+            },
+            transactionalSideEffects: true);
     }
 
     //chuyển trạng thái qua preparing
@@ -1054,7 +1203,11 @@ private readonly FoodContext _context;
     }
      public async Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request)
     {
-        var order = await _orderRepository.GetOrderById(orderId);
+         var reason = request.Reason?.Trim();
+         if (string.IsNullOrWhiteSpace(reason) || reason.Length > 300)
+             return HttpErrors.BadRequest("INVALID_CANCEL_REASON", "Vui lòng nhập lý do hủy từ 1 đến 300 ký tự.");
+
+         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
 
@@ -1063,18 +1216,18 @@ private readonly FoodContext _context;
             action: OrderAction.CancelByAdmin,
             actor: ActorRole.Admin,
             actorUserId: adminId,
-            historyNote: request.Reason ?? "Admin đã hủy đơn hàng.",
+            historyNote: reason,
             beforeSave: o =>
             {
                 o.OrderDetail.CancelledByUserId = adminId;
-                o.OrderDetail.CancelReason = request.Reason ?? "Không có lý do cụ thể.";
+                o.OrderDetail.CancelReason = reason;
             },
             onSuccess: async o =>
             {
                 await CreateRequiredNotificationAsync(o.CustomerId, new NotificationRequest
                 {
                     Title = "Đơn hàng đã bị hủy",
-                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy. Lý do: {request.Reason ?? "Không có"}",
+                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy. Lý do: {reason}",
                     Type = (int)NotificationType.ORDER,
                     Link = "/account"
                 });
@@ -1082,7 +1235,7 @@ private readonly FoodContext _context;
                 await NotifyAssignedShipperAsync(
                     o,
                     "Đơn hàng đã bị hủy",
-                    $"Đơn #{o.OrderCode} đã bị hủy. Lý do: {request.Reason ?? "Không có"}");
+                    $"Đơn #{o.OrderCode} đã bị hủy. Lý do: {reason}");
 
                 await NotifyRestaurantUsersAsync(o.RestaurantId, new NotificationRequest
                 {
@@ -1097,34 +1250,38 @@ private readonly FoodContext _context;
 
     public async Task<Result> CancelOrderByRestaurantAsync(Guid userId, Guid orderId, CancelOrderRequestDto request)
     {
+        var reason = request.Reason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 300)
+            return HttpErrors.BadRequest("INVALID_CANCEL_REASON", "Vui lòng nhập lý do hủy từ 1 đến 300 ký tự.");
+
         var order = await _orderRepository.GetOrderById(orderId);
         if (order == null)
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
 
         var actorRole = await ResolveActorRoleAsync(userId);
-        if (actorRole is null || !actorRole.Value.IsOwner())
-            return HttpErrors.Forbidden("FORBIDDEN", "Chỉ chủ nhà hàng mới được hủy đơn.");
+        if (actorRole is null || !actorRole.Value.IsRestaurantSide())
+            return HttpErrors.Forbidden("FORBIDDEN", "Chỉ nhà hàng mới được hủy đơn.");
 
         if (!await IsUserInRestaurantAsync(userId, order.RestaurantId, actorRole.Value))
-            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không phải chủ nhà hàng này.");
+            return HttpErrors.Forbidden("FORBIDDEN", "Bạn không thuộc nhà hàng này.");
 
         return await ApplyTransitionAsync(
             order,
             action: OrderAction.CancelByRestaurant,
             actor: actorRole.Value,
             actorUserId: userId,
-            historyNote: request.Reason ?? "Chủ nhà hàng đã hủy đơn.",
+            historyNote: reason,
             beforeSave: o =>
             {
                 o.OrderDetail.CancelledByUserId = userId;
-                o.OrderDetail.CancelReason = request.Reason ?? "Không có lý do cụ thể.";
+                o.OrderDetail.CancelReason = reason;
             },
             onSuccess: async o =>
             {
                 await CreateRequiredNotificationAsync(o.CustomerId, new NotificationRequest
                 {
                     Title = "Đơn hàng đã bị hủy",
-                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy bởi nhà hàng. Lý do: {request.Reason ?? "Không có"}",
+                    Message = $"Đơn hàng #{o.OrderCode} đã bị hủy bởi nhà hàng. Lý do: {reason}",
                     Type = (int)NotificationType.ORDER,
                     Link = "/account"
                 });
@@ -1132,7 +1289,7 @@ private readonly FoodContext _context;
                 await NotifyAssignedShipperAsync(
                     o,
                     "Đơn hàng đã bị hủy",
-                    $"Đơn #{o.OrderCode} đã bị nhà hàng hủy. Lý do: {request.Reason ?? "Không có"}");
+                    $"Đơn #{o.OrderCode} đã bị nhà hàng hủy. Lý do: {reason}");
 
                 var admins = await _userRepository.GetUsersByRoleAsync("admin");
                 foreach (var admin in admins)
@@ -1140,7 +1297,7 @@ private readonly FoodContext _context;
                     await CreateRequiredNotificationAsync(admin.Id, new NotificationRequest
                     {
                         Title = "Nhà hàng hủy đơn",
-                        Message = $"Nhà hàng đã hủy đơn #{o.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                        Message = $"Nhà hàng đã hủy đơn #{o.OrderCode}. Lý do: {reason}",
                         Type = (int)NotificationType.ORDER,
                         Link = "/admin/orders"
                     });
@@ -1195,19 +1352,67 @@ private readonly FoodContext _context;
     /// <summary>
     /// Mark order payment as complete (when customer pays)
     /// </summary>
-    public async Task<Result> MarkPaymentCompleteAsync(Guid orderId)
+    public async Task<Result> ProcessVnPayPaymentAsync(
+        Guid orderId,
+        long paidAmount,
+        CancellationToken cancellationToken = default)
     {
-        var order = await _orderRepository.GetOrderById(orderId);
+        await using var transaction = await _context.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken);
+        var order = await _context.Orders
+            .Include(currentOrder => currentOrder.OrderDetail)
+            .FirstOrDefaultAsync(currentOrder => currentOrder.Id == orderId, cancellationToken);
         if (order == null)
-        {
             return HttpErrors.NotFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+
+        if (order.OrderDetail.PaymentMethod != PaymentMethod.VnPay)
+            return HttpErrors.BadRequest("INVALID_PAYMENT_METHOD", "Đơn hàng không sử dụng VNPay.");
+
+        var expectedAmount = decimal.Truncate(order.TotalAmount * 100m);
+        if (order.TotalAmount <= 0 || expectedAmount != paidAmount)
+            return HttpErrors.BadRequest("INVALID_PAYMENT_AMOUNT", "Số tiền thanh toán không khớp với đơn hàng.");
+
+        if (order.OrderDetail.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+        {
+            await transaction.CommitAsync();
+            return Result.Success();
         }
 
-        order.OrderDetail.PaymentStatus = PaymentStatus.Paid;
+        if (order.OrderDetail.PaymentStatus != PaymentStatus.Unpaid)
+            return HttpErrors.Conflict("INVALID_PAYMENT_STATUS", "Trạng thái thanh toán không hợp lệ.");
 
-        await _context.SaveChangesAsync();
+        var wasCancelled = order.OrderDetail.Status == OrderStatus.Cancelled;
+        order.OrderDetail.PaymentStatus = wasCancelled ? PaymentStatus.Refunded : PaymentStatus.Paid;
+        if (wasCancelled)
+        {
+            await _walletService.CreditAsync(
+                order.CustomerId,
+                order.TotalAmount,
+                WalletTransactionType.OrderRefund,
+                order.Id,
+                $"Hoàn tiền VNPay cho đơn {order.OrderCode} đã bị hủy trước khi thanh toán hoàn tất.",
+                cancellationToken);
+        }
 
-        // 📢 Send notification to all admins: Payment received
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            var currentStatus = await _context.OrderDetails
+                .AsNoTracking()
+                .Where(detail => detail.OrderId == orderId)
+                .Select(detail => new { detail.PaymentStatus, detail.Status })
+                .SingleOrDefaultAsync(cancellationToken);
+            if (currentStatus?.PaymentStatus is PaymentStatus.Paid or PaymentStatus.Refunded)
+                return Result.Success();
+            return HttpErrors.Conflict("ORDER_CHANGED", "Đơn hàng vừa được cập nhật. VNPay sẽ gửi lại thông báo thanh toán.");
+        }
+
         try
         {
             var admins = await _userRepository.GetUsersByRoleAsync("admin");
@@ -1215,8 +1420,10 @@ private readonly FoodContext _context;
             {
                 var notificationRequest = new NotificationRequest
                 {
-                    Title = "Khách hàng đã thanh toán",
-                    Message = $"Khách hàng đã thanh toán đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    Title = wasCancelled ? "Đã hoàn tiền vào ví khách hàng" : "Khách hàng đã thanh toán",
+                    Message = wasCancelled
+                        ? $"Đơn #{order.OrderCode} đã bị hủy. Tiền thanh toán VNPay được hoàn vào ví khách hàng."
+                        : $"Khách hàng đã thanh toán đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
                     Type = (int)NotificationType.PAYMENT,
                     Link = "/admin/orders"
                 };
@@ -1231,8 +1438,10 @@ private readonly FoodContext _context;
 
         await _notificationService.CreateNotificationAsync(order.CustomerId, new NotificationRequest
         {
-            Title = "Thanh toán thành công",
-            Message = $"Thanh toán cho đơn #{order.OrderCode} đã được xác nhận.",
+            Title = wasCancelled ? "Tiền đã được hoàn vào ví" : "Thanh toán thành công",
+            Message = wasCancelled
+                ? $"Đơn #{order.OrderCode} đã bị hủy. Tiền thanh toán đã được hoàn vào ví FoodDelivery."
+                : $"Thanh toán cho đơn #{order.OrderCode} đã được xác nhận.",
             Type = (int)NotificationType.PAYMENT,
             Link = "/account"
         });

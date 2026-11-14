@@ -146,14 +146,6 @@ public class OrdersController : ControllerBase
         return result.ToActionResult();
     }
     
-    [HttpPut("orders/{orderId}/payment-complete")]
-    [HasPermission(PermissionConstants.Orders.MarkPaymentComplete)]
-    public async Task<IActionResult> MarkPaymentComplete(Guid orderId)
-    {
-        var result = await _orderService.MarkPaymentCompleteAsync(orderId);
-        return result.ToActionResult();
-    }
-
     [HttpPost("admin/orders/{orderId}/cancel")]
     [HasPermission(PermissionConstants.Orders.Cancel)]
     [Authorize(Roles = "Admin")]

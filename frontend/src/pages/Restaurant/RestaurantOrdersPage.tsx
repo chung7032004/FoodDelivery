@@ -3,6 +3,14 @@ import { AlertTriangle, Check, ChefHat, Clock3, PackageCheck, Phone, RefreshCw }
 import { RestaurantLayout } from './RestaurantLayout';
 import { PageHeader, Panel } from '@/components/admin/AdminUI';
 import { RestaurantOrder, staffService } from '@/services/staff.service';
+import { CancelOrderModal } from '@/components/modals/CancelOrderModal';
+
+const RESTAURANT_CANCEL_SUGGESTIONS = [
+  'Món trong đơn đã hết nguyên liệu',
+  'Nhà hàng gặp sự cố vận hành',
+  'Không thể xác nhận thông tin đơn hàng',
+  'Không thể chuẩn bị đơn đúng thời gian',
+];
 
 const statusLabels: Record<number, string> = {
   1: 'Đơn mới',
@@ -44,6 +52,8 @@ export default function RestaurantOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
+  const [cancellingOrder, setCancellingOrder] = useState<RestaurantOrder | null>(null);
+  const [cancelError, setCancelError] = useState('');
 
   // Tải danh sách đơn hàng
   const loadOrders = useCallback(async (isMounted: () => boolean = () => true, showLoading = true) => {
@@ -105,6 +115,22 @@ export default function RestaurantOrdersPage() {
       await loadOrders();
     } catch {
       setError('Không thể báo món hết hàng. Vui lòng kiểm tra lại đơn và thử lại.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function handleCancelOrder(reason: string) {
+    if (!cancellingOrder) return;
+    setBusy(cancellingOrder.id);
+    setCancelError('');
+    setError('');
+    try {
+      await staffService.cancelOrder(cancellingOrder.id, reason);
+      setCancellingOrder(null);
+      await loadOrders();
+    } catch {
+      setCancelError('Không thể hủy đơn hàng. Vui lòng kiểm tra trạng thái đơn và thử lại.');
     } finally {
       setBusy('');
     }
@@ -211,10 +237,28 @@ export default function RestaurantOrdersPage() {
               busy={busy === order.id}
               onAction={handleAction}
               onReportOutOfStock={handleOutOfStock}
+              onCancel={() => {
+                setCancelError('');
+                setCancellingOrder(order);
+              }}
             />
           ))}
         </div>
       )}
+      <CancelOrderModal
+        isOpen={Boolean(cancellingOrder)}
+        title={cancellingOrder ? `Hủy đơn #${cancellingOrder.orderNumber}` : 'Hủy đơn hàng'}
+        subtitle="Vui lòng chọn lý do để khách hàng biết vì sao đơn bị hủy."
+        suggestedReasons={RESTAURANT_CANCEL_SUGGESTIONS}
+        isSubmitting={Boolean(cancellingOrder && busy === cancellingOrder.id)}
+        error={cancelError}
+        onConfirm={(reason) => void handleCancelOrder(reason)}
+        onClose={() => {
+          if (cancellingOrder && busy === cancellingOrder.id) return;
+          setCancellingOrder(null);
+          setCancelError('');
+        }}
+      />
     </RestaurantLayout>
   );
 }
@@ -251,6 +295,7 @@ function OrderCard({
   busy,
   onAction,
   onReportOutOfStock,
+  onCancel,
 }: {
   order: RestaurantOrder;
   busy: boolean;
@@ -260,6 +305,7 @@ function OrderCard({
     prepMinutes?: number
   ) => void;
   onReportOutOfStock: (order: RestaurantOrder, removedProductIds: string[], note: string) => void;
+  onCancel: () => void;
 }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [removedProductIds, setRemovedProductIds] = useState<string[]>([]);
@@ -406,6 +452,17 @@ function OrderCard({
           )}
         </div>
 
+        {[1, 2, 3, 4].includes(order.status) && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onCancel}
+            className="mt-3 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+          >
+            Hủy đơn hàng
+          </button>
+        )}
+
         {order.status === 1 && (
           <div className="mt-4">
             <button
@@ -453,7 +510,7 @@ function OrderCard({
                   disabled={busy || removedProductIds.length === 0}
                   className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                 >
-                  {busy ? 'Đang gửi...' : 'Gửi đề xuất cho khách'}
+                  {busy ? 'Đang xử lý...' : 'Xác nhận món hết hàng'}
                 </button>
               </form>
             )}

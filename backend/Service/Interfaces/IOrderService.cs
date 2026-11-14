@@ -18,7 +18,10 @@ public interface IOrderService
     Task<Result> StartPreparingAsync(Guid adminId, Guid orderId);
     Task<Result> MarkAsReadyAsync(Guid adminId, Guid orderId);
     Task<Result> MarkAsDeliveredAsync(Guid shipperId, Guid orderId);
-    Task<Result> MarkPaymentCompleteAsync(Guid orderId);
+    Task<Result> ProcessVnPayPaymentAsync(
+        Guid orderId,
+        long paidAmount,
+        CancellationToken cancellationToken = default);
     Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request);
     Task<Result> AssignShipperAsync(Guid adminId, Guid orderId, Guid shipperId);
     Task<Result> CancelOrderByRestaurantAsync(Guid userId, Guid orderId, CancelOrderRequestDto request);

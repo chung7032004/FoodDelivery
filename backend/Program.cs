@@ -8,9 +8,11 @@ using FoodDelivery.Repositories.Implements;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Implements;
+using FoodDelivery.Service.Implements.Payment;
 using FoodDelivery.Service.Implements.Shipping;
 using FoodDelivery.Service.Implements.StateMachine;
 using FoodDelivery.Service.Interfaces;
+using FoodDelivery.Service.Interfaces.IPayment;
 using FoodDelivery.Service.Interfaces.IShipping;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -124,6 +126,7 @@ builder.Services.AddScoped<ICartService,CartService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IReviewService,ReviewService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IRestaurantService,RestaurantService>();
 builder.Services.AddScoped<IShipperService, ShipperService>();
 builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
@@ -134,6 +137,14 @@ builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddSingleton<IOrderStateMachine, OrderStateMachine>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<VnpayOptions>(
+    builder.Configuration.GetSection(FoodDelivery.Common.Options.VnpayOptions.SectionName));
+builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IPaymentGateway, CashPaymentGateway>();
+builder.Services.AddScoped<IPaymentGateway, VnPayPaymentGateway>();
+builder.Services.AddScoped<IPaymentGatewayResolver, PaymentGatewayResolver>();
 
 builder.Services.AddMemoryCache();
 // Cấu hình Redis Cache

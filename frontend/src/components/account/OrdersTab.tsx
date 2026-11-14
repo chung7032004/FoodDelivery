@@ -3,10 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Package, RefreshCw } from "lucide-react";
 import { OrderDeliveryHistoryModal } from "@/components/modals/OrderDeliveryHistoryModal";
 import { OutOfStockProposalModal } from "@/components/modals/OutOfStockProposalModal";
+import { CancelOrderModal } from "@/components/modals/CancelOrderModal";
 import { getImageUrl } from "@/utils/image";
 import { orderService, type OrderDetail, type OrderHistoryItem } from "@/services/order.service";
 
 const PAGE_SIZE = 5;
+const CUSTOMER_CANCEL_SUGGESTIONS = [
+  "Tôi muốn đổi địa chỉ nhận hàng",
+  "Tôi muốn thay đổi món / thêm bớt món",
+  "Thời gian chuẩn bị / giao hàng quá lâu",
+  "Tôi đặt nhầm đơn hàng",
+  "Tìm thấy món khác / quán khác phù hợp hơn",
+];
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   "1": { label: "Chờ xác nhận", className: "bg-amber-100 text-amber-800" },
@@ -46,6 +54,18 @@ export function OrdersTab() {
   const [page, setPage] = useState(1);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [proposalOrderId, setProposalOrderId] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<{ id: string; code: string } | null>(null);
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason: string }) =>
+      orderService.cancelOrder(orderId, reason),
+    onSuccess: async () => {
+      setCancellingOrder(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-order-history"] }),
+      ]);
+    },
+  });
   const historyQuery = useQuery({
     queryKey: ["my-order-history", page],
     queryFn: () => orderService.getMyHistory(page, PAGE_SIZE),
@@ -84,11 +104,12 @@ export function OrdersTab() {
       ? proposalMutation.error.message
       : "Không thể gửi phản hồi. Vui lòng thử lại."
     : "";
+  const { isPending: isProposalPending, reset: resetProposalMutation } = proposalMutation;
   const closeProposalModal = useCallback(() => {
-    if (proposalMutation.isPending) return;
+    if (isProposalPending) return;
     setProposalOrderId(null);
-    proposalMutation.reset();
-  }, [proposalMutation.isPending, proposalMutation.reset]);
+    resetProposalMutation();
+  }, [isProposalPending, resetProposalMutation]);
 
   return (
     <section className="space-y-5">
@@ -132,6 +153,10 @@ export function OrdersTab() {
                   setProposalOrderId(orderId);
                   proposalMutation.reset();
                 }}
+                onCancel={(orderId, orderCode) => {
+                  cancelMutation.reset();
+                  setCancellingOrder({ id: orderId, code: orderCode });
+                }}
               />
             ))}
           </div>
@@ -172,6 +197,25 @@ export function OrdersTab() {
         }}
         onClose={closeProposalModal}
       />
+      <CancelOrderModal
+        isOpen={Boolean(cancellingOrder)}
+        title={`Hủy đơn hàng${cancellingOrder ? ` #${cancellingOrder.code}` : ""}`}
+        suggestedReasons={CUSTOMER_CANCEL_SUGGESTIONS}
+        isSubmitting={cancelMutation.isPending}
+        error={cancelMutation.isError
+          ? cancelMutation.error instanceof Error
+            ? cancelMutation.error.message
+            : "Không thể hủy đơn hàng. Vui lòng thử lại."
+          : ""}
+        onConfirm={(reason) => {
+          if (cancellingOrder) cancelMutation.mutate({ orderId: cancellingOrder.id, reason });
+        }}
+        onClose={() => {
+          if (cancelMutation.isPending) return;
+          setCancellingOrder(null);
+          cancelMutation.reset();
+        }}
+      />
     </section>
   );
 }
@@ -184,6 +228,7 @@ function OrderRow({
   isDetailLoading,
   detailError,
   onRespondToProposal,
+  onCancel,
 }: {
   order: OrderHistoryItem;
   expanded: boolean;
@@ -192,8 +237,11 @@ function OrderRow({
   isDetailLoading: boolean;
   detailError: string;
   onRespondToProposal: (orderId: string) => void;
+  onCancel: (orderId: string, orderCode: string) => void;
 }) {
   const status = getStatus(order.currentStatus);
+  const canCancel = ["1", "2", "3", "Pending", "WaitingCustomerDecision", "Confirmed"]
+    .includes(String(order.currentStatus));
 
   return (
     <article className="py-4">
@@ -214,6 +262,15 @@ function OrderRow({
               Phản hồi đề xuất của nhà hàng
             </button>
           ) : null}
+          {canCancel && (
+            <button
+              type="button"
+              onClick={() => onCancel(order.orderId, order.orderCode)}
+              className="mt-2 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+            >
+              Hủy đơn hàng
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <p className="text-right text-sm font-semibold text-slate-900">{formatVnd(order.totalAmount)}</p>

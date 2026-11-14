@@ -234,6 +234,16 @@ public class StaffService : IStaffService
             "Đơn hàng đã sẵn sàng cho shipper.");
     }
 
+    public async Task<Result<string>> CancelOrder(Guid userId, Guid orderId, string? reason)
+    {
+        return ToStatusResult(
+            await _orderService.CancelOrderByRestaurantAsync(userId, orderId, new DTOs.Order.CancelOrderRequestDto
+            {
+                Reason = string.IsNullOrWhiteSpace(reason) ? "Nhà hàng hủy đơn." : reason.Trim()
+            }),
+            "Đã hủy đơn hàng thành công.");
+    }
+
     private static Result<string> ToStatusResult(Result result, string successMessage) =>
         result.IsSuccess
             ? Result<string>.Success(successMessage)
@@ -253,7 +263,7 @@ public class StaffService : IStaffService
             RemovedProductIds = removedProductIds,
             Note = note
         });
-        return ToStatusResult(result, "Đã báo hết món và gửi đề xuất cho khách hàng.");
+        return ToStatusResult(result, "Đã xử lý thông tin món hết hàng.");
     }
 
     public async Task<Result<string>> ReportOrderIssue(Guid userId, Guid orderId, string issueDescription, string issueType)

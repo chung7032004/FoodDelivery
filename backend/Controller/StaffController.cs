@@ -1,5 +1,6 @@
 using FoodDelivery.DTOs.Staff;
 using FoodDelivery.DTOs.Review;
+using FoodDelivery.DTOs.Order;
 using FoodDelivery.Entities;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
@@ -211,6 +212,19 @@ public class StaffController : ControllerBase
             request.RemovedProductIds,
             request.Note);
 
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpPost("orders/{orderId}/cancel")]
+    public async Task<IActionResult> CancelOrder(
+        [FromRoute] Guid orderId,
+        [FromBody] CancelOrderRequestDto request)
+    {
+        var userId = User.GetUserId();
+        var result = await _staffService.CancelOrder(userId, orderId, request.Reason);
         if (!result.IsSuccess)
             return BadRequest(result);
 
