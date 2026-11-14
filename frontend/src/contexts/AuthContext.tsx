@@ -3,20 +3,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback } 
 import { bootstrapSession, tokenStore } from '@/services/api';
 import { decodeAccessToken, getRolesFromPayload, isTokenExpired } from '@/utils/jwt';
 import { authService } from '@/services/auth.service';
-
-interface AuthUser {
-  id: string;
-  name: string;
-  email?: string;
-  roles: string[];
-}
-
-interface AuthContextValue {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isAuthReady: boolean;
-  logout: () => Promise<void>;
-}
+import type { AuthUser, AuthContextValue } from '@/types';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 

@@ -1,59 +1,25 @@
 import { api } from './api';
-import type { PagedResponse } from '@/types/common';
+import type {
+  ApiResult,
+  PagedResponse,
+  RestaurantApplicationStatus,
+  RestaurantRegistrationRequest,
+  RestaurantApplication,
+  MyRestaurantApplication,
+  RestaurantProfile,
+  PublicRestaurantProfile,
+  RestaurantStatus,
+} from '@/types';
 
-export type RestaurantApplicationStatus = 0 | 1 | 2;
-
-export interface RestaurantRegistrationRequest {
-  name: string;
-  address: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  openTime: string;
-  closeTime: string;
-}
-
-export interface RestaurantApplication {
-  restaurantId: string;
-  ownerId: string;
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  name: string;
-  address: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  openTime: string;
-  closeTime: string;
-  isOpen: boolean;
-  applicationStatus: RestaurantApplicationStatus;
-  rejectionReason: string | null;
-  createdAt: string;
-  reviewedAt: string | null;
-}
-
-export interface MyRestaurantApplication {
-  hasApplication: boolean;
-  application: RestaurantApplication | null;
-}
-
-export interface RestaurantProfile {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  isOpen: boolean;
-  closingMessage: string | null;
-  openTime: string;
-  closeTime: string;
-  latitude: number;
-  longitude: number;
-}
-
-export type PublicRestaurantProfile = RestaurantProfile;
-
-interface ApiResult<T> { data: T; isSuccess: boolean; message: string | null; }
+export type {
+  RestaurantApplicationStatus,
+  RestaurantRegistrationRequest,
+  RestaurantApplication,
+  MyRestaurantApplication,
+  RestaurantProfile,
+  PublicRestaurantProfile,
+  RestaurantStatus,
+};
 
 export const restaurantService = {
   getMyApplication: async () => (await api.get<ApiResult<MyRestaurantApplication>>('/restaurant/application/me')).data,
@@ -69,7 +35,7 @@ export const restaurantService = {
   getProfile: async () => (await api.get<ApiResult<RestaurantProfile>>('/restaurant/profile')).data,
   getPublicProfile: async (restaurantId: string) =>
     (await api.get<ApiResult<PublicRestaurantProfile>>(`/restaurant/public/${restaurantId}`)).data,
-  getStatus: async () => (await api.get<ApiResult<{ isOpen: boolean; closingMessage: string | null; updatedAt: string }>>('/restaurant/status')).data,
+  getStatus: async () => (await api.get<ApiResult<RestaurantStatus>>('/restaurant/status')).data,
   updateProfile: (payload: Omit<RestaurantProfile, 'id' | 'isOpen' | 'closingMessage'>) => api.put('/restaurant/profile', payload),
   open: () => api.put('/restaurant/open'),
   close: (closingMessage: string) => api.put('/restaurant/close', { closingMessage }),

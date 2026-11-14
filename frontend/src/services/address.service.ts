@@ -1,26 +1,7 @@
-import type { ApiResult } from "@/types/common";
+import type { ApiResult, CustomerAddress, AddressRequest } from "@/types";
 import { api } from "./api";
 
-export interface CustomerAddress {
-  id: string;
-  fullAddress: string | null;
-  receiverName: string | null;
-  phoneNumber: string | null;
-  label: string | null;
-  isDefault: boolean;
-  latitude: number;
-  longitude: number;
-}
-
-export interface AddressRequest {
-  fullAddress: string;
-  label: string;
-  receiverName: string;
-  phoneNumber: string;
-  latitude: number;
-  longitude: number;
-  isDefault: boolean;
-}
+export type { CustomerAddress, AddressRequest };
 
 export const addressService = {
   getMine: async (): Promise<ApiResult<CustomerAddress[]>> => {

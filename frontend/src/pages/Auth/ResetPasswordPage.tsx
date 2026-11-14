@@ -2,24 +2,11 @@ import { AuthLayout } from "@/components/layout/AuthLayout"
 import Button from "@/components/ui/Button"
 import Input from "@/components/ui/Input"
 import { authService } from "@/services/auth.service"
+import type { ResetPasswordFormData, ResetPasswordErrors } from "@/types"
 import { useMutation } from "@tanstack/react-query"
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react"
 import React, { useCallback, useState } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
-interface ResetPasswordFormData {
-    email? : string
-    otp? : string 
-    password? : string
-    confirmPassword? : string  
-}
-interface ResetPasswordErrors {
-    email? : string
-    otp? : string 
-    newPassword? : string
-    confirmNewPassword? : string
-    form? : string
-}
 function validateResetPassword(data: ResetPasswordFormData): ResetPasswordErrors {
     const errors: ResetPasswordErrors = {};
     if (!data.email?.trim()) {

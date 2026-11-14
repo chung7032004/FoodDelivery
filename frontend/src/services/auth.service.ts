@@ -1,33 +1,20 @@
 import { decodeAccessToken, getRolesFromPayload } from '@/utils/jwt';
 import { api, tokenStore } from './api';
+import type {
+  LoginRequest,
+  RegisterRequest,
+  ChangePasswordRequest,
+  LoginResponse,
+  AuthUser,
+} from '@/types';
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  fullName: string;
-  phone: string;
-}
-
-export interface ChangePasswordRequest {
-  oldPassword: string;
-  newPassword: string;
-  confirmNewPassword: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-}
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string | null;
-  roles: string[];
-}
+export type {
+  LoginRequest,
+  RegisterRequest,
+  ChangePasswordRequest,
+  LoginResponse,
+  AuthUser,
+};
 
 function buildUserFromToken (token: string): AuthUser | null {
   const payload = decodeAccessToken(token);
@@ -35,7 +22,7 @@ function buildUserFromToken (token: string): AuthUser | null {
   return {
     id: payload.sub,
     name: payload.name,
-    email: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || null,
+    email: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || undefined,
     roles: getRolesFromPayload(payload)
   };
 }
@@ -56,8 +43,8 @@ export const authService = {
     try {
       await api.post('/auth/logout');
     } catch (error) {
-      console.error('Logout failed:', error);}
-    finally{
+      console.error('Logout failed:', error);
+    } finally {
       tokenStore.clear();
     }
   },
@@ -82,5 +69,4 @@ export const authService = {
     if (!token) return null;
     return buildUserFromToken(token);
   },
-  
 };

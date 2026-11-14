@@ -3,23 +3,10 @@ import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } 
 import { LocateFixed } from "lucide-react";
 import Input from "@/components/ui/Input";
 import type { LatLngExpression } from "leaflet";
+import type { Coordinates, PhotonFeature, NominatimFeature, SavedAddressLocation } from "@/types";
 import "leaflet/dist/leaflet.css";
 
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
-interface PhotonFeature {
-  geometry: { coordinates: [number, number] };
-  properties: Record<string, string | undefined>;
-}
-
-interface NominatimFeature {
-  lat: string;
-  lon: string;
-  display_name: string;
-}
+export type { SavedAddressLocation };
 
 let nominatimQueue = Promise.resolve();
 let lastNominatimRequestAt = 0;
@@ -174,13 +161,6 @@ export function AddressMapPicker({
   );
 }
 
-export interface SavedAddressLocation {
-  id: string;
-  label: string | null;
-  latitude: number;
-  longitude: number;
-  isDefault: boolean;
-}
 
 export function AddressOverviewMap({ addresses }: { addresses: SavedAddressLocation[] }) {
   const locations = addresses.filter((address) =>

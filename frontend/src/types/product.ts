@@ -7,7 +7,7 @@ export interface ProductResponseDto {
   isAvailable: boolean;
   isFeatured: boolean;
   displayOrder: number;
-  createdAt: string; // ISO string, parse bằng new Date() khi cần
+  createdAt: string; // ISO string
   categoryId: string;
   categoryName: string;
   restaurantId: string;
@@ -49,4 +49,17 @@ export interface ProductDetailResponseDto {
 
   averageRating: number;
   reviewCount: number;
+}
+
+export interface ProductForm {
+  name: string;
+  description: string;
+  price: string;
+  costPrice: string;
+  categoryId: string;
+  restaurantId: string;
+  isAvailable: boolean;
+  isFeatured: boolean;
+  displayOrder: string;
+  images: File[];
 }

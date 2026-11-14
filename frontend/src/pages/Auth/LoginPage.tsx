@@ -7,18 +7,7 @@ import { AuthLayout } from '@/components/layout/AuthLayout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { authService } from '@/services/auth.service';
-import { ApiErrorResponse } from '@/services/api';
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-interface LoginErrors {
-  email?: string;
-  password?: string;
-  form?: string;
-}
+import type { ApiErrorResponse, LoginFormData, LoginErrors } from '@/types';
 
 
 function validateLogin(data: LoginFormData): LoginErrors {

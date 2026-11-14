@@ -13,14 +13,7 @@ import {
   ProgressBar,
   StatCard,
 } from '@/components/admin/AdminUI';
-
-interface DashboardStats {
-  users: number;
-  orders: number;
-  categories: number;
-  products: number;
-  pendingShippers: number;
-}
+import type { DashboardStats } from '@/types';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({

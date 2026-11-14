@@ -15,3 +15,8 @@ export interface CartItemDto {
 }
 
 export type CartResponse = PagedResponse<CartItemDto>;
+
+export interface CartItem {
+  dishId: number;
+  quantity: number;
+}

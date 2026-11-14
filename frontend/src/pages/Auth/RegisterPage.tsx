@@ -5,23 +5,8 @@ import { AuthLayout } from '../../components/layout/AuthLayout';
 import  Input  from '../../components/ui/Input';
 import  Button  from '../../components/ui/Button';
 import { authService } from '@/services/auth.service';
+import type { RegisterFormData, RegisterErrors, ApiResult } from '@/types';
 import axios from 'axios';
-
-interface RegisterFormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-}
-interface ApiResult<T = null> {
-  isSuccess: boolean;
-  errorCode: string | null;
-  message: string | null;
-  statusCode: number;
-  data: T;
-} 
-type RegisterErrors = Partial<Record<keyof RegisterFormData, string>> & { form?: string };
 
 function validateRegister(data: RegisterFormData): RegisterErrors {
   const errors: RegisterErrors = {};

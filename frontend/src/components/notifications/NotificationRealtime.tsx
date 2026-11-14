@@ -7,12 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { tokenStore } from '@/services/api';
 import { notificationQueryKey } from '@/services/notification.service';
-
-interface NotificationMessage {
-  title: string;
-  message: string;
-  link?: string | null;
-}
+import type { NotificationMessage } from '@/types';
 
 function getNotificationHubUrl() {
   const apiUrl = new URL((import.meta.env.VITE_API_URL || '/api').trim(), window.location.origin);
