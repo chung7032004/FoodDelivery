@@ -1,79 +1,101 @@
-import { ButtonPrimary, ButtonGhost } from '../ui';
-import type { HeroStat } from '../../types';
-import { HERO_STATS } from '../../constants/mockData';
+import { FormEvent } from 'react';
+import { ArrowDown, ArrowRight, Clock3, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-export function HeroSection() {
+interface HeroSectionProps {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  onSearch: () => void;
+}
+
+export function HeroSection({ searchTerm, onSearchChange, onSearch }: HeroSectionProps) {
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSearch();
+  }
+
   return (
-    <section className="grid min-h-[420px] grid-cols-1 overflow-hidden lg:grid-cols-2">
+    <section className="relative isolate overflow-hidden bg-[#fff8f2]">
+      <div className="pointer-events-none absolute -right-32 -top-40 -z-10 h-[34rem] w-[34rem] rounded-full bg-orange-200/50 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 left-1/4 -z-10 h-96 w-96 rounded-full bg-amber-100/70 blur-3xl" />
 
-      {/* ── Left: Dark content ── */}
-      <div className="flex flex-col justify-center gap-4 bg-[#1A1A1A] px-5 py-10 sm:gap-5 sm:px-8 sm:py-12 lg:px-12 lg:py-14">
+      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-8 lg:py-20">
+        <div className="relative z-10">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3.5 py-2 text-xs font-semibold text-orange-700 shadow-sm">
+            <Sparkles size={15} />
+            Món ngon giao đến tận cửa
+          </div>
 
-        {/* Live badge */}
-        <div className="flex w-fit items-center gap-2 rounded-full border border-brand/40 bg-brand/20 px-3 py-1.5 text-xs font-medium text-orange-300 sm:px-4">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-400" />
-          Giao hàng trong 30 phút
-        </div>
+          <h1 className="max-w-2xl font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.75rem]">
+            Hôm nay ăn gì?
+            <span className="mt-1 block text-[#e8441a]">Để EatRush tìm giúp bạn.</span>
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+            Khám phá thực đơn quanh bạn, chọn món yêu thích và đặt hàng chỉ với vài thao tác.
+          </p>
 
-        {/* Headline */}
-        <h1 className="font-display text-3xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
-          Đói bụng?<br />
-          Gọi món<br />
-          <span className="text-orange-400">ngay thôi</span>
-        </h1>
-
-        {/* Desc */}
-        <p className="max-w-sm text-sm leading-relaxed text-gray-400">
-          Hơn 500 nhà hàng, 2000+ món ngon được giao tận cửa. Nhanh, tươi, đúng giờ.
-        </p>
-
-        {/* CTAs */}
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <ButtonPrimary size="lg">Đặt ngay</ButtonPrimary>
-          <ButtonGhost>Xem nhà hàng</ButtonGhost>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-4 flex flex-wrap gap-6 border-t border-white/10 pt-6 sm:gap-8">
-          {HERO_STATS.map(({ value, label }: HeroStat) => (
-            <div key={label}>
-              <div className="font-display text-xl font-bold text-white sm:text-2xl">
-                {value}
-              </div>
-              <div className="mt-0.5 text-xs text-gray-500">{label}</div>
+          <form
+            onSubmit={submitSearch}
+            className="mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_16px_50px_rgba(114,61,24,0.10)] sm:flex-row sm:items-center"
+          >
+            <label htmlFor="home-product-search" className="sr-only">Tìm món ăn</label>
+            <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
+              <Search size={20} className="shrink-0 text-orange-500" />
+              <input
+                id="home-product-search"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Bạn muốn ăn món gì?"
+                className="h-11 w-full min-w-0 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              />
             </div>
-          ))}
-        </div>
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#e8441a] px-5 text-sm font-bold text-white transition hover:bg-[#cc3a15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+            >
+              Tìm món <ArrowRight size={17} />
+            </button>
+          </form>
 
-      </div>
-
-      {/* ── Right: Visual ── */}
-      <div className="relative flex min-h-[280px] items-center justify-center overflow-hidden bg-[#F0EAE0] sm:min-h-[320px] lg:min-h-0">
-
-        {/* Glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_40%,rgba(232,68,26,0.18),transparent_60%)]" />
-
-        {/* Main emoji */}
-        <span className="relative z-10 animate-[float_3s_ease-in-out_infinite] text-[80px] leading-none sm:text-[100px] lg:text-[120px]">
-          🍜
-        </span>
-
-        {/* Hot badge */}
-        <div className="absolute left-4 top-4 z-20 flex items-center gap-1.5 rounded-xl bg-brand px-2.5 py-1.5 text-xs font-semibold text-orange-500 shadow-md sm:left-6 sm:top-8 sm:px-3 sm:py-2">
-          🔥 Hôm nay hot
-        </div>
-
-        {/* Speed badge */}
-        <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-xl sm:bottom-10 sm:right-8 sm:gap-3 sm:px-4 sm:py-3">
-          <span className="text-2xl sm:text-3xl">⚡</span>
-          <div>
-            <div className="text-xs font-medium text-gray-900 sm:text-sm">Giao siêu tốc</div>
-            <div className="mt-0.5 text-[10px] text-gray-400 sm:text-xs">Trung bình 25 phút</div>
+          <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2">
+              <Clock3 size={17} className="text-orange-500" />
+              Theo dõi trạng thái đơn
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck size={17} className="text-orange-500" />
+              Thanh toán khi nhận hoặc VNPay
+            </span>
           </div>
         </div>
 
-      </div>
+        <div className="relative mx-auto flex min-h-[300px] w-full max-w-xl items-center justify-center sm:min-h-[380px]">
+          <div className="absolute h-[75%] w-[75%] rounded-full bg-gradient-to-br from-orange-200 via-orange-100 to-amber-50 shadow-[0_30px_90px_rgba(232,68,26,0.15)]" />
+          <div className="absolute h-[62%] w-[62%] rounded-full border border-white/80" />
+          <div className="relative z-10 flex h-48 w-48 items-center justify-center rounded-full border-[10px] border-white bg-gradient-to-br from-amber-50 to-orange-100 text-[6rem] shadow-[0_24px_70px_rgba(81,43,20,0.18)] sm:h-60 sm:w-60 sm:text-[7.5rem]">
+            🍜
+          </div>
 
+          <div className="absolute left-0 top-[15%] z-20 rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-xl sm:left-4">
+            <p className="text-[11px] font-medium text-slate-500">Gợi ý hôm nay</p>
+            <p className="mt-0.5 text-sm font-bold text-slate-900">Món ngon đang chờ bạn</p>
+          </div>
+          <div className="absolute bottom-[13%] right-0 z-20 flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-xl sm:right-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-xl">🛵</span>
+            <div>
+              <p className="text-sm font-bold text-slate-900">Đặt món dễ dàng</p>
+              <p className="mt-0.5 text-xs text-slate-500">Chọn món, theo dõi đơn</p>
+            </div>
+          </div>
+          <Link
+            to="/products"
+            className="absolute bottom-0 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-white bg-white/90 px-4 py-2 text-xs font-semibold text-slate-700 shadow-md transition hover:-translate-y-0.5 hover:text-orange-600"
+          >
+            Khám phá thực đơn <ArrowDown size={14} />
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }

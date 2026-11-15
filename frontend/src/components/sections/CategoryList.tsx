@@ -1,112 +1,88 @@
 import { Link } from 'react-router-dom';
-import { ChartBarStacked } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ChartBarStacked, ChevronRight } from 'lucide-react';
 import { getImageUrl } from '@/utils/image';
 import type { Category } from '@/types/category';
 import { cn } from '@/utils/cn';
 
 interface CategoryListProps {
   categories: Category[];
-  /** Số món mỗi category — key = category.id. Nếu không truyền, ẩn dòng "x món". */
-  productCounts?: Record<string, number>;
+  selectedCategoryId: string | null;
+  onSelectCategory: (id: string | null) => void;
 }
 
-// ─── CategoryItem ─────────────────────────────────────────────────
-interface CategoryItemProps {
-  category: Category;
-  isActive: boolean;
-  productCount?: number;
-  onClick: (id: string) => void;
-}
-
-function CategoryItem({ category, isActive, productCount, onClick }: CategoryItemProps) {
+export function CategoryList({ categories, selectedCategoryId, onSelectCategory }: CategoryListProps) {
   return (
-    <button
-      type="button"
-      onClick={() => onClick(category.id)}
-      aria-pressed={isActive}
-      className={cn(
-        'group flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white p-3 sm:p-4',
-        'transition-all duration-200',
-        isActive
-          ? 'border-brand bg-orange-50'
-          : 'border-transparent hover:border-brand/30 hover:bg-orange-50/50'
-      )}
-    >
-      {/* Icon / Image */}
-      {category.imageUrl ? (
-        <img
-          src={getImageUrl(category.imageUrl)}
-          alt={category.name}
-          className="h-10 w-10 rounded object-cover transition-transform duration-200 group-hover:scale-105 sm:h-11 sm:w-11"
-        />
-      ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fb6900]/10 text-[#fb6900] transition-transform duration-200 group-hover:scale-105 sm:h-11 sm:w-11">
-          <ChartBarStacked size={20} />
-        </span>
-      )}
-
-      {/* Name */}
-      <span className="line-clamp-1 w-full text-center text-xs font-medium text-gray-900 sm:text-sm">
-        {category.name}
-      </span>
-
-      {/* Count — chỉ hiện nếu có dữ liệu */}
-      {typeof productCount === 'number' && (
-        <span className="text-[10px] text-gray-400 sm:text-xs">
-          {productCount} món
-        </span>
-      )}
-    </button>
-  );
-}
-
-// ─── CategoryList ─────────────────────────────────────────────────
-export function CategoryList({ categories, productCounts }: CategoryListProps) {
-  const [activeId, setActiveId] = useState<string | null>(
-    categories.length ? categories[0].id : null
-  );
-
-  // Đồng bộ activeId khi categories thay đổi (fetch lại, filter...)
-  useEffect(() => {
-    if (!categories.length) {
-      setActiveId(null);
-      return;
-    }
-    const stillExists = categories.some((c) => c.id === activeId);
-    if (!stillExists) {
-      setActiveId(categories[0].id);
-    }
-  }, [categories, activeId]);
-
-  if (!categories.length) return null;
-
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      {/* Section header */}
-      <div className="mb-5 flex items-baseline justify-between sm:mb-7">
-        <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-          Danh mục món
-        </h2>
+    <section aria-labelledby="home-categories-heading" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-600">Chọn theo khẩu vị</p>
+          <h2 id="home-categories-heading" className="mt-1 font-display text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            Danh mục món ăn
+          </h2>
+        </div>
         <Link
           to="/list-category"
-          className="text-sm font-medium text-brand hover:underline"
+          className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-orange-600 transition hover:text-orange-700"
         >
-          Xem tất cả →
+          Tất cả danh mục <ChevronRight size={16} />
         </Link>
       </div>
 
-      {/* Category grid — responsive */}
-      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5">
-        {categories.map((cat) => (
-          <CategoryItem
-            key={cat.id}
-            category={cat}
-            isActive={activeId === cat.id}
-            productCount={productCounts?.[cat.id]}
-            onClick={setActiveId}
-          />
-        ))}
+      <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
+        <button
+          type="button"
+          aria-pressed={selectedCategoryId === null}
+          onClick={() => onSelectCategory(null)}
+          className={cn(
+            'flex min-w-[92px] shrink-0 flex-col items-center gap-2 rounded-2xl border px-4 py-3 transition',
+            selectedCategoryId === null
+              ? 'border-orange-500 bg-orange-50 shadow-sm'
+              : 'border-slate-200 bg-white hover:border-orange-200 hover:bg-orange-50/50'
+          )}
+        >
+          <span className={cn(
+            'flex h-11 w-11 items-center justify-center rounded-xl',
+            selectedCategoryId === null ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600'
+          )}>
+            <ChartBarStacked size={20} />
+          </span>
+          <span className="text-xs font-semibold text-slate-800">Tất cả</span>
+        </button>
+
+        {categories.map((category) => {
+          const isSelected = selectedCategoryId === category.id;
+          return (
+            <button
+              key={category.id}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onSelectCategory(isSelected ? null : category.id)}
+              className={cn(
+                'group flex min-w-[92px] shrink-0 flex-col items-center gap-2 rounded-2xl border px-4 py-3 transition',
+                isSelected
+                  ? 'border-orange-500 bg-orange-50 shadow-sm'
+                  : 'border-slate-200 bg-white hover:border-orange-200 hover:bg-orange-50/50'
+              )}
+            >
+              <span className={cn(
+                'flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl transition-transform group-hover:scale-105',
+                isSelected ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+              )}>
+                {category.imageUrl ? (
+                  <img
+                    src={getImageUrl(category.imageUrl)}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <ChartBarStacked size={20} />
+                )}
+              </span>
+              <span className="max-w-24 truncate text-xs font-semibold text-slate-800">{category.name}</span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

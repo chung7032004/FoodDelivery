@@ -6,6 +6,7 @@ export interface Dish {
   price: number;
   mainImageUrl?: string | null;
   restaurant?: string;     // BE chưa có -> optional
+  category?: string;
   distance?: string;       // BE chưa có -> optional
   rating?: number;
   reviewCount?: number;
