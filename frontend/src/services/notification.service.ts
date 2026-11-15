@@ -1,20 +1,7 @@
-import type { ApiResult } from '@/types/common';
 import { api } from './api';
+import type { ApiResult, NotificationItem, NotificationSummary } from '@/types';
 
-export interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  isRead: boolean;
-  createdAt: string;
-  link: string | null;
-}
-
-export interface NotificationSummary {
-  unreadCount: number;
-  notifications: NotificationItem[];
-}
+export type { NotificationItem, NotificationSummary };
 
 export const notificationQueryKey = (userId: string) => ['notifications', userId] as const;
 

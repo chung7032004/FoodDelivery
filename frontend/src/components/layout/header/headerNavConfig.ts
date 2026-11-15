@@ -1,5 +1,7 @@
-import type { LucideIcon } from 'lucide-react';
 import { ShieldCheck, Store, Package } from 'lucide-react';
+import type { RoleLink } from '@/types';
+
+export type { RoleLink };
 
 export const NAV_LINKS = [
   { label: 'Trang chủ', to: '/' },
@@ -7,17 +9,6 @@ export const NAV_LINKS = [
   { label: 'Nhà hàng', to: '/restaurants' },
   { label: 'Khuyến mãi', to: '/promotions' },
 ] as const;
-
-export interface RoleLink {
-  to: string;
-  label: string;
-  title: string;
-  icon: LucideIcon;
-  /** class cho pill desktop */
-  pillClass: string;
-  /** class cho item mobile */
-  itemClass: string;
-}
 
 export const ROLE_LINKS: Record<'admin' | 'restaurant' | 'shipper', RoleLink> = {
   admin: {

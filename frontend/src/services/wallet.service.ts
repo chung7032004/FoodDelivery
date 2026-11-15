@@ -1,31 +1,18 @@
-import { type ApiResult } from '@/types';
 import { api } from './api';
+import type {
+  ApiResult,
+  WalletBalanceResponse,
+  WalletTransactionResponse,
+  PaginationMeta,
+  WalletHistoryPage,
+} from '@/types';
 
-export interface WalletBalanceResponse {
-  balance: number;
-}
-
-export interface WalletTransactionResponse {
-  id: string;
-  type: 'OrderRefund' | 'OrderPayment' | 'TopUp' | 'Withdraw';
-  amount: number;
-  balanceAfter: number;
-  orderId: string | null;
-  description: string;
-  createdAt: string;
-}
-
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-}
-
-export interface WalletHistoryPage {
-  data: WalletTransactionResponse[];
-  meta: PaginationMeta;
-}
+export type {
+  WalletBalanceResponse,
+  WalletTransactionResponse,
+  PaginationMeta,
+  WalletHistoryPage,
+};
 
 export const walletService = {
   getBalance: async (): Promise<ApiResult<WalletBalanceResponse>> => {

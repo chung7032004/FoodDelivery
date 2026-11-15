@@ -7,7 +7,7 @@ export function mapProductToDish(p: ProductResponseDto): Dish {
     name: p.name,
     price: p.price,
     mainImageUrl: p.mainImageUrl,
-    restaurant: p.categoryName, // tạm dùng categoryName, chưa có tên quán
+    category: p.categoryName,
     emoji: '🍽️',                // BE chưa trả emoji, tạm hardcode
     rating: 0,
     reviewCount: 0,

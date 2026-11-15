@@ -1,92 +1,26 @@
 import { api } from './api';
+import type {
+  PaginationMeta,
+  PagedResult,
+  AdminUser,
+  AdminUserDetail,
+  AdminOrder,
+  AdminReview,
+  ShipperApplication,
+  AdminRoleAppeal,
+  ApiResult,
+} from '@/types';
 
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-}
-
-export interface PagedResult<T> {
-  data: T[];
-  meta: PaginationMeta;
-}
-
-export interface AdminUser {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  lastLogin: string | null;
-  totalOrders: number;
-  totalSpent: number;
-  roles: string[];
-}
-
-export interface AdminUserDetail extends AdminUser {
-  avatarUrl: string;
-  createdAt: string;
-  updatedAt: string | null;
-  recentOrders: {
-    orderId: string;
-    orderCode: string;
-    amount: number;
-    status: number;
-    createdAt: string;
-  }[];
-}
-
-export interface AdminOrder {
-  id: string;
-  orderCode: string;
-  customerName: string;
-  totalAmount: number;
-  status: string | number;
-  createdAt: string;
-  paymentMethod: string | number;
-}
-
-export interface AdminReview {
-  id: string;
-  customerName: string;
-  productName: string;
-  rating: number;
-  comment: string | null;
-  isHidden: boolean;
-  createdAt: string;
-}
-
-export interface ShipperApplication {
-  shipperId: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  vehicleType: string;
-  vehiclePlate: string;
-  status: string | number;
-  appliedAt: string;
-  userId: string; // Added userId
-  identityCard: string; // Added identityCard
-}
-
-export interface AdminRoleAppeal {
-  appealId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  roleName: 'Shipper' | 'RestaurantOwner';
-  restrictionReason: string;
-  appealReason: string;
-  submittedAt: string;
-}
-
-interface ApiResult<T> {
-  data: T;
-  isSuccess: boolean;
-  message: string | null;
-}
+export type {
+  PaginationMeta,
+  PagedResult,
+  AdminUser,
+  AdminUserDetail,
+  AdminOrder,
+  AdminReview,
+  ShipperApplication,
+  AdminRoleAppeal,
+};
 
 export const adminService = {
   getUsers: async (params: { searchQuery?: string; isActive?: boolean; page?: number; pageSize?: number }) => {

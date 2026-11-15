@@ -3,7 +3,10 @@ using FoodDelivery.DTOs.Product;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Packaging;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FoodDelivery.Service.Implements
 {
@@ -174,6 +177,210 @@ namespace FoodDelivery.Service.Implements
                     "Tạo sản phẩm thất bại: " + ex.Message);
             }
         }
+
+        public async Task<Result<ProductBulkImportResponseDto>> ImportProductsAsync(
+            Guid restaurantId,
+            IFormFile file,
+            CancellationToken cancellationToken)
+        {
+            const long maximumFileSize = 5 * 1024 * 1024;
+            const int maximumProductCount = 500;
+
+            if (restaurantId == Guid.Empty)
+                return HttpErrors.BadRequest<ProductBulkImportResponseDto>("RESTAURANT_REQUIRED", "Vui lòng chọn nhà hàng.");
+            if (file.Length == 0 || file.Length > maximumFileSize)
+                return HttpErrors.BadRequest<ProductBulkImportResponseDto>("INVALID_IMPORT_FILE", "File Excel phải có dung lượng từ 1 byte đến 5 MB.");
+            if (!string.Equals(Path.GetExtension(file.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
+                return HttpErrors.BadRequest<ProductBulkImportResponseDto>("INVALID_IMPORT_FILE_TYPE", "Chỉ hỗ trợ file Excel định dạng .xlsx.");
+
+            var restaurantExists = await _context.Restaurants.AnyAsync(
+                restaurant => restaurant.Id == restaurantId
+                    && restaurant.ApplicationStatus == RestaurantApplicationStatus.Approved,
+                cancellationToken);
+            if (!restaurantExists)
+                return HttpErrors.BadRequest<ProductBulkImportResponseDto>("RESTAURANT_NOT_FOUND", "Nhà hàng không tồn tại hoặc chưa được duyệt.");
+
+            List<ParsedImportProduct> rows;
+            try
+            {
+                using var stream = file.OpenReadStream();
+                using var workbook = new XLWorkbook(stream);
+                var worksheet = workbook.Worksheets.FirstOrDefault();
+                if (worksheet == null || worksheet.FirstRowUsed() == null)
+                    return HttpErrors.BadRequest<ProductBulkImportResponseDto>("EMPTY_IMPORT_FILE", "File Excel không có dữ liệu.");
+
+                var header = worksheet.FirstRowUsed()!;
+                var columns = header.CellsUsed()
+                    .ToDictionary(
+                        cell => cell.GetString().Trim(),
+                        cell => cell.Address.ColumnNumber,
+                        StringComparer.OrdinalIgnoreCase);
+                var missingHeaders = new[] { "Tên món ăn", "Giá bán", "Giá vốn", "Danh mục" }
+                    .Where(name => !columns.ContainsKey(name))
+                    .ToList();
+                if (missingHeaders.Count > 0)
+                    return HttpErrors.BadRequest<ProductBulkImportResponseDto>(
+                        "INVALID_IMPORT_HEADERS",
+                        $"Thiếu cột bắt buộc: {string.Join(", ", missingHeaders)}.");
+
+                var errors = new List<string>();
+                var omittedErrorCount = 0;
+                rows = new List<ParsedImportProduct>();
+                var dataRowCount = 0;
+                foreach (var row in worksheet.RowsUsed().Where(row => row.RowNumber() > header.RowNumber()))
+                {
+                    if (!row.CellsUsed().Any())
+                        continue;
+
+                    dataRowCount++;
+                    if (dataRowCount > maximumProductCount)
+                    {
+                        errors.Add($"File chỉ được chứa tối đa {maximumProductCount} món ăn.");
+                        break;
+                    }
+
+                    string GetValue(string columnName) =>
+                        columns.TryGetValue(columnName, out var column) ? row.Cell(column).GetString().Trim() : string.Empty;
+
+                    var name = GetValue("Tên món ăn");
+                    var categoryName = GetValue("Danh mục");
+                    var description = GetValue("Mô tả");
+                    var rowErrors = new List<string>();
+
+                    if (name.Length < 2)
+                        rowErrors.Add("Tên món ăn phải có ít nhất 2 ký tự");
+                    if (name.Length > 200)
+                        rowErrors.Add("Tên món ăn không được vượt quá 200 ký tự");
+                    if (string.IsNullOrWhiteSpace(categoryName))
+                        rowErrors.Add("Danh mục không được để trống");
+
+                    if (!TryReadDecimal(row.Cell(columns["Giá bán"]), out var price) || price <= 0)
+                        rowErrors.Add("Giá bán phải là số lớn hơn 0");
+                    if (!TryReadDecimal(row.Cell(columns["Giá vốn"]), out var costPrice) || costPrice < 0)
+                        rowErrors.Add("Giá vốn phải là số lớn hơn hoặc bằng 0");
+
+                    if (rowErrors.Count > 0)
+                    {
+                        if (errors.Count < 50)
+                            errors.Add($"Dòng {row.RowNumber()}: {string.Join("; ", rowErrors)}.");
+                        else
+                            omittedErrorCount++;
+                        continue;
+                    }
+
+                    rows.Add(new ParsedImportProduct(name, categoryName, description, price, costPrice));
+                }
+
+                if (errors.Count > 0)
+                {
+                    if (dataRowCount > maximumProductCount)
+                        errors.Add($"File chỉ được chứa tối đa {maximumProductCount} món ăn.");
+                    var message = string.Join(Environment.NewLine, errors);
+                    if (omittedErrorCount > 0)
+                        message += Environment.NewLine + $"Còn {omittedErrorCount} lỗi khác không được hiển thị.";
+                    return HttpErrors.BadRequest<ProductBulkImportResponseDto>(
+                        "IMPORT_VALIDATION_FAILED",
+                        message);
+                }
+                if (rows.Count == 0)
+                    return HttpErrors.BadRequest<ProductBulkImportResponseDto>("EMPTY_IMPORT_FILE", "File Excel chưa có món ăn nào để nhập.");
+            }
+            catch (Exception exception) when (exception is IOException
+                or ArgumentException
+                or InvalidDataException
+                or OpenXmlPackageException)
+            {
+                return HttpErrors.BadRequest<ProductBulkImportResponseDto>("INVALID_EXCEL_FILE", "Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng và nội dung file.");
+            }
+
+            var categories = await _context.Categories
+                .Where(category => category.RestaurantId == restaurantId || category.RestaurantId == null)
+                .OrderBy(category => category.RestaurantId == restaurantId ? 0 : 1)
+                .ToListAsync(cancellationToken);
+            var categoriesByName = categories
+                .GroupBy(category => category.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            var createdCategoryCount = 0;
+            var importedProducts = new List<Product>(rows.Count);
+
+            foreach (var row in rows)
+            {
+                if (!categoriesByName.TryGetValue(row.CategoryName, out var category))
+                {
+                    category = new Category
+                    {
+                        Name = row.CategoryName,
+                        RestaurantId = restaurantId,
+                        ImageUrl = string.Empty,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    categoriesByName.Add(row.CategoryName, category);
+                    _context.Categories.Add(category);
+                    createdCategoryCount++;
+                }
+
+                importedProducts.Add(new Product
+                {
+                    Id = Guid.NewGuid(),
+                    RestaurantId = restaurantId,
+                    Category = category,
+                    Name = row.Name,
+                    Description = row.Description,
+                    Price = row.Price,
+                    CostPrice = row.CostPrice,
+                    IsAvailable = true,
+                    DisplayOrder = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    ProductImages = new List<ProductImage>()
+                });
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var categoryCounts = await _context.Products
+                    .Where(product => product.RestaurantId == restaurantId)
+                    .GroupBy(product => product.CategoryId)
+                    .Select(group => new { CategoryId = group.Key, Count = group.Count() })
+                    .ToDictionaryAsync(item => item.CategoryId, item => item.Count, cancellationToken);
+
+                foreach (var product in importedProducts)
+                {
+                    var count = categoryCounts.GetValueOrDefault(product.Category.Id);
+                    product.DisplayOrder = (count + 1) * 10;
+                    categoryCounts[product.Category.Id] = count + 1;
+                }
+
+                _context.Products.AddRange(importedProducts);
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+            return Result<ProductBulkImportResponseDto>.Success(new ProductBulkImportResponseDto
+            {
+                ImportedCount = importedProducts.Count,
+                CreatedCategoryCount = createdCategoryCount
+            });
+        }
+
+        private static bool TryReadDecimal(IXLCell cell, out decimal value)
+        {
+            var text = cell.GetString().Trim();
+            return decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out value)
+                || decimal.TryParse(text, NumberStyles.Number, CultureInfo.GetCultureInfo("vi-VN"), out value);
+        }
+
+        private sealed record ParsedImportProduct(
+            string Name,
+            string CategoryName,
+            string Description,
+            decimal Price,
+            decimal CostPrice);
 
         public async Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto dto)
         {

@@ -2,15 +2,10 @@ import { useEffect } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { X } from "lucide-react";
 import type { LatLngExpression } from "leaflet";
+import type { MapLocation } from "@/types";
 import "leaflet/dist/leaflet.css";
 
-export interface MapLocation {
-  id?: string | number;
-  lat: number;
-  lng: number;
-  label?: string;
-  isDefault?: boolean;
-}
+export type { MapLocation };
 
 interface SimpleMapModalProps {
   isOpen: boolean;

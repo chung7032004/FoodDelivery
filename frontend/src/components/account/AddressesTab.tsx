@@ -4,22 +4,8 @@ import { AddressMapPicker, AddressOverviewMap } from "@/components/account/Addre
 import Input from "@/components/ui/Input";
 import { MapPin, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { addressService, type AddressRequest, type CustomerAddress } from "@/services/address.service";
-
-interface AddressFormState {
-  fullAddress: string;
-  label: string;
-  receiverName: string;
-  phoneNumber: string;
-  latitude: string;
-  longitude: string;
-  isDefault: boolean;
-}
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { addressService } from "@/services/address.service";
+import type { AddressRequest, CustomerAddress, AddressFormState, Coordinates } from "@/types";
 
 const EMPTY_FORM: AddressFormState = {
   fullAddress: "",
