@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, Search, Trash2, ChartBarStacked } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2, ChartBarStacked, Download, Upload } from 'lucide-react';
 import { RestaurantLayout } from '@/pages/Restaurant/RestaurantLayout';
 import { AdminModal } from '@/components/admin/AdminModal';
 import { categoryService, CategoryResponse } from '@/services/category.service';
@@ -66,11 +66,16 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [editing, setEditing] = useState<ProductResponseDto | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importRestaurantId, setImportRestaurantId] = useState('');
+  const [importError, setImportError] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   // Tải danh sách sản phẩm và danh mục
   const load = useCallback(async () => {
@@ -282,6 +287,63 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
     }
   }
 
+  async function downloadImportTemplate() {
+    try {
+      const { data } = await productService.downloadImportTemplate();
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'food-delivery-products-template.xlsx';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      setImportError(getErrorMessage(downloadError, 'Không thể tải file mẫu.'));
+    }
+  }
+
+  async function importProducts(event: FormEvent) {
+    event.preventDefault();
+    if (!importFile) {
+      setImportError('Vui lòng chọn file Excel định dạng .xlsx.');
+      return;
+    }
+    if (workspace === 'admin' && !importRestaurantId.trim()) {
+      setImportError('Vui lòng nhập mã nhà hàng cần nhập thực đơn.');
+      return;
+    }
+
+    setSubmitting(true);
+    setImportError('');
+    setNotice('');
+    try {
+      const payload = new FormData();
+      payload.append('file', importFile);
+      if (workspace === 'admin') {
+        payload.append('restaurantId', importRestaurantId.trim());
+      }
+
+      const response = await productService.bulkImport(payload);
+      if (!response.data.isSuccess || !response.data.data) {
+        throw new Error(response.data.message ?? 'Không thể nhập thực đơn.');
+      }
+
+      setNotice(
+        `Đã nhập ${response.data.data.importedCount} món ăn` +
+        (response.data.data.createdCategoryCount > 0
+          ? ` và tạo ${response.data.data.createdCategoryCount} danh mục mới.`
+          : '.')
+      );
+      setImportFile(null);
+      setImportRestaurantId('');
+      setShowImport(false);
+      await load();
+    } catch (importError) {
+      setImportError(getErrorMessage(importError, 'Không thể nhập thực đơn từ file Excel.'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const Layout = workspace === 'restaurant' ? RestaurantLayout : AdminLayout;
 
   return (
@@ -296,15 +358,37 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
               : 'Quản lý món ăn, giá bán và trạng thái hiển thị.'}
           </p>
         </div>
-        <button
-          onClick={() => openForm()}
-          disabled={workspace === 'restaurant' && !restaurantId}
-          className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600"
-        >
-          <Plus size={17} />
-          Thêm sản phẩm
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setError('');
+              setImportError('');
+              setImportFile(null);
+              setImportRestaurantId('');
+              setShowImport(true);
+            }}
+            disabled={workspace === 'restaurant' && !restaurantId}
+            className="flex items-center gap-2 rounded-xl border border-orange-500 px-4 py-2.5 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 disabled:opacity-50"
+          >
+            <Upload size={17} />
+            Nhập Excel
+          </button>
+          <button
+            onClick={() => openForm()}
+            disabled={workspace === 'restaurant' && !restaurantId}
+            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600"
+          >
+            <Plus size={17} />
+            Thêm sản phẩm
+          </button>
+        </div>
       </div>
+
+      {notice && (
+        <div role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {notice}
+        </div>
+      )}
 
       {/* Thanh bộ lọc và tìm kiếm */}
       <div className="mb-4 flex flex-wrap gap-3">
@@ -582,6 +666,69 @@ export default function AdminProductsPage({ workspace = 'admin' }: AdminProducts
               className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
             >
               {submitting ? 'Đang lưu...' : 'Lưu'}
+            </button>
+          </div>
+        </form>
+      </AdminModal>
+
+      <AdminModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        title="Nhập thực đơn từ Excel"
+        description="Tải mẫu, điền thông tin món ăn rồi chọn file .xlsx để nhập."
+      >
+        <form onSubmit={importProducts}>
+          {workspace === 'admin' && (
+            <Field
+              label="Restaurant ID"
+              value={importRestaurantId}
+              onChange={setImportRestaurantId}
+              required
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => void downloadImportTemplate()}
+            className="mb-4 flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Download size={16} />
+            Tải file Excel mẫu
+          </button>
+
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            File thực đơn (.xlsx)
+            <input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              required
+              onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+              className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal file:mr-3 file:rounded-md file:border-0 file:bg-orange-500 file:px-3 file:py-1.5 file:font-semibold file:text-white"
+            />
+          </label>
+          <p className="mb-5 text-xs text-muted">
+            Tên món, giá bán, giá vốn và danh mục là bắt buộc. Danh mục chưa tồn tại sẽ được tạo tự động; ảnh có thể thêm sau.
+          </p>
+          {importError && (
+            <div role="alert" className="mb-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {importError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowImport(false)}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !importFile}
+              className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
+            >
+              {submitting ? 'Đang nhập...' : 'Nhập thực đơn'}
             </button>
           </div>
         </form>
