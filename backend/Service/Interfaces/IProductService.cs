@@ -9,6 +9,7 @@ namespace FoodDelivery.Service.Implements
         Task<Result<ProductDetailResponseDto?>> GetProductDetailByIdAsync(Guid productId);
         Task<Result<decimal?>> GetProductCostPriceAsync(Guid productId);
         Task<Result<ProductResponseDto>> CreateProductAsync(ProductCreateDto productCreateDto);
+        Task<Result<ProductBulkImportResponseDto>> ImportProductsAsync(Guid restaurantId, IFormFile file, CancellationToken cancellationToken);
         Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto productUpdateDto);
         Task<bool> UpdateDisplayOrderAsync(Guid productId, int newDisplayOrder);
         Task<bool> ToggleProductAvailabilityAsync(Guid productId);

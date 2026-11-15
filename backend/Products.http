@@ -1,0 +1,24 @@
+@baseUrl = http://localhost:5147
+@token = replace-with-access-token
+@restaurantId = 11111111-1111-1111-1111-111111111111
+
+### Download the product import template
+GET {{baseUrl}}/api/products/import-template
+Authorization: Bearer {{token}}
+
+### Import products from a filled template saved as menu.xlsx in this folder
+# RestaurantId is used by Admin and ignored for restaurant owners.
+POST {{baseUrl}}/api/products/bulk-import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=product-import
+
+--product-import
+Content-Disposition: form-data; name="restaurantId"
+
+{{restaurantId}}
+--product-import
+Content-Disposition: form-data; name="file"; filename="menu.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./menu.xlsx
+--product-import--
